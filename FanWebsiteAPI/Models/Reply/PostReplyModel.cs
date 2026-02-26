@@ -2,7 +2,7 @@
 {
     public class PostReplyModel
     {
-        public required int Id { get; set; }
+        public int Id { get; set; }
 
         public required string AuthorId { get; set; }
         public required string AuthorName { get; set; }

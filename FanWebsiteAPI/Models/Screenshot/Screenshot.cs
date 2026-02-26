@@ -5,7 +5,7 @@ namespace Fan_Website
     public class Screenshot
     {
 
-        public required int ScreenshotId { get; set; }
+        public int ScreenshotId { get; set; }
 
         [Required(ErrorMessage = "Please enter a title.")]
         public required string ScreenshotTitle { get; set; }

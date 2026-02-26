@@ -193,7 +193,9 @@ namespace Fan_Website.Controllers
                 ReplyContent = reply.Content,
                 PostId = reply.Post.PostId, 
                 PostContent = reply.Post.Content,
-                PostTitle = reply.Post.Title 
+                PostTitle = reply.Post.Title,
+                ForumId = reply.Post.Forum.ForumId,
+                ForumName = reply.Post.Forum.PostTitle
             });
         }
         [HttpGet]
