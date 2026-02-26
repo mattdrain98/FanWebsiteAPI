@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Fan_Website.ViewModel
 {
-    public class PostViewModel
+    public class PostDto
     {
         public string Title { get; set; }
         [Required(ErrorMessage = "Please enter content.")]

@@ -6,22 +6,22 @@ using System.Threading.Tasks;
 
 namespace Fan_Website.ViewModel
 {
-    public class RegisterViewModel
+    public class RegisterDto
     {
-        public string ImagePath { get; set; }
-        public string UserName { get; set; }
+        public string? ImagePath { get; set; }
+        public required string UserName { get; set; }
         [Required]
         [EmailAddress]
-        public string Email { get; set; }
+        public required string Email { get; set; }
 
         [Required]
         [DataType(DataType.Password)]
-        public string Password { get; set; }
+        public required string Password { get; set; }
 
         [DataType(DataType.Password)]
         [Display(Name = "Confirm password")]
         [Compare("Password",
             ErrorMessage = "Password and confirmation password do not match.")]
-        public string ConfirmPassword { get; set; }
+        public required string ConfirmPassword { get; set; }
     }
 }

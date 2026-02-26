@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Fan_Website.ViewModel
 {
-    public class ForumViewModel
+    public class ForumDto
     {
         public int ForumId { get; set; }
         [Required(ErrorMessage = "Please enter a title.")]

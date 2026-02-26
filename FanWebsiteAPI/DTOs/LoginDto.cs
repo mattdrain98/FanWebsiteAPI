@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Fan_Website.ViewModel
 {
-    public class LoginViewModel
+    public class LoginDto
     {
         public string UserName { get; set; }
         [Required]
