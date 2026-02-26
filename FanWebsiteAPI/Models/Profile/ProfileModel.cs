@@ -10,18 +10,18 @@ namespace Fan_Website
 {
     public class ProfileModel
     {
-        public string UserId { get; set; }
-        public string UserName { get; set; }
-        public string UserRating { get; set; }
-        public string ProfileImageUrl { get; set; }
-        public DateTime MemberSince { get; set; }
-        public IFormFile ImageUpload { get; set; }
-        public int Followers { get; set; }
-        public int Following { get; set; }
-        public List<Follow> Follows { get; set; }
-        public List<Follow> Followings { get; set; }
-        public IEnumerable<ProfileCommentModel> ProfileComments { get; set; }
-        public string Bio { get; set; }
+        public required string UserId { get; set; }
+        public required string UserName { get; set; }
+        public required string UserRating { get; set; }
+        public string? ProfileImageUrl { get; set; }
+        public required DateTime MemberSince { get; set; }
+        public IFormFile? ImageUpload { get; set; }
+        public int? Followers { get; set; }
+        public int? Following { get; set; }
+        public List<Follow>? Follows { get; set; }
+        public List<Follow>? Followings { get; set; }
+        public IEnumerable<ProfileCommentModel>? ProfileComments { get; set; }
+        public string? Bio { get; set; }
     }
 
 }

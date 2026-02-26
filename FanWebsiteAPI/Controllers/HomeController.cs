@@ -4,75 +4,81 @@ using Fan_Website.Models.Home;
 using Fan_Website.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Fan_Website.Controllers
 {
-    public class HomeController : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class HomeController : ControllerBase
     {
         private readonly ILogger<HomeController> _logger;
-        private IPost postService; 
-        public HomeController(ILogger<HomeController> logger, IPost _postService)
+        private readonly IPost _postService;
+
+        public HomeController(ILogger<HomeController> logger, IPost postService)
         {
             _logger = logger;
-            postService = _postService; 
+            _postService = postService;
         }
 
-        public IActionResult Index()
+        // GET: api/home
+        [HttpGet]
+        public ActionResult<HomeIndexModel> GetHomeIndex()
         {
-            var model = BuildHomeIndexModel(); 
-            return View(model);
+            var model = BuildHomeIndexModel();
+            return Ok(model);
         }
 
         private HomeIndexModel BuildHomeIndexModel()
         {
-            var latestPosts = postService.GetLatestPosts(10);
-            
+            var latestPosts = _postService.GetLatestPosts(10);
+
             var posts = latestPosts.Select(post => new PostListingModel
             {
-                Id = post.PostId, 
-                Title = post.Title, 
+                Id = post.PostId,
+                Title = post.Title,
                 AuthorName = post.User.UserName,
-                AuthorId = post.User.Id, 
-                AuthorRating = post.User.Rating, 
-                TotalLikes = post.TotalLikes, 
-                DatePosted = post.CreatedOn.ToString(), 
-                RepliesCount = post.Replies.Count(),  
-                
+                AuthorId = post.User.Id,
+                AuthorRating = post.User.Rating,
+                TotalLikes = post.TotalLikes,
+                DatePosted = post.CreatedOn.ToString("yyyy-MM-dd HH:mm"),
+                RepliesCount = post.Replies.Count(),
                 Forum = GetForumListingForPost(post)
-            });
+            }).ToList();
 
             return new HomeIndexModel
             {
-                LatestPosts = posts, 
+                LatestPosts = posts,
                 SearchQuery = ""
-            }; 
+            };
         }
 
         private ForumListingModel GetForumListingForPost(Post post)
         {
             var forum = post.Forum;
-
             return new ForumListingModel
             {
-                Id = forum.ForumId, 
+                Id = forum.ForumId,
                 Name = forum.PostTitle
             };
         }
 
-        public IActionResult Privacy()
+        // GET: api/home/privacy
+        [HttpGet("privacy")]
+        public ActionResult<string> Privacy()
         {
-            return View();
+            return Ok("Privacy info here");
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        // GET: api/home/error
+        [HttpGet("error")]
+        public ActionResult<ErrorViewModel> Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return Ok(new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            });
         }
     }
 }

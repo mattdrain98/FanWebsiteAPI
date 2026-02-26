@@ -1,33 +1,20 @@
-﻿using Fan_Website.Infrastructure;
-using Fan_Website.Models;
-using Fan_Website.Models.Follow;
+﻿using Fan_Website.DTOs;
+using Fan_Website.Infrastructure;
 using Fan_Website.ViewModel;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Fan_Website.Controllers
 {
-    public class AccountController : Controller
+    public class AccountController(UserManager<ApplicationUser> userManager,
+       SignInManager<ApplicationUser> signInManager, IUnitOfWork unitOfWork, IApplicationUser _userService) : Controller
     {
-        private AppDbContext context { get; set; }
-        private readonly IUnitOfWork unitOfWork; 
-        private readonly UserManager<ApplicationUser> userManager;
-        private readonly SignInManager<ApplicationUser> signInManager;
-        private readonly IApplicationUser userService; 
-        public AccountController(UserManager<ApplicationUser> userManager,
-           SignInManager<ApplicationUser> signInManager, IUnitOfWork unitOfWork, IApplicationUser _userService)
-        {
+        private AppDbContext? context { get; set; }
+        private readonly IUnitOfWork unitOfWork = unitOfWork; 
+        private readonly UserManager<ApplicationUser> userManager = userManager;
+        private readonly SignInManager<ApplicationUser> signInManager = signInManager;
+        private readonly IApplicationUser userService = _userService;
 
-            this.userManager = userManager;
-            this.signInManager = signInManager;
-            this.unitOfWork = unitOfWork;
-            userService = _userService;
-        }
         public IActionResult AccountInfo()
         {
             var users = userManager.Users; 
@@ -64,7 +51,7 @@ namespace Fan_Website.Controllers
             return View(); 
         }
         [HttpPost]
-        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto model)
         {
             if (ModelState.IsValid)
             {
@@ -153,11 +140,6 @@ namespace Fan_Website.Controllers
                     return RedirectToAction("Index", "Home");
                 }
 
-                // Store user data in AspNetUsers database table
-
-
-                // If there are any errors, add them to the ModelState object
-                // which will be displayed by the validation summary tag helper
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);

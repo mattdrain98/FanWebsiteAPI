@@ -11,7 +11,7 @@ namespace Fan_Website
     public class ApplicationUser: IdentityUser
     {
         public int Rating { get; set; }
-        public required string ImagePath { get; set; }
+        public string? ImagePath { get; set; }
         public DateTime MemberSince { get; set; }
         public bool IsActive { get; set; }
         public int Following { get; set; }

@@ -69,7 +69,7 @@ builder.Services.AddSwaggerGen();
 // CORS (Angular / mobile)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("ClientApp", policy =>
+    options.AddPolicy("FanWebsiteAPI", policy =>
     {
         policy
             .AllowAnyOrigin()
