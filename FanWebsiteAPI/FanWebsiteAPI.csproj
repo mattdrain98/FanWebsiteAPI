@@ -4,11 +4,12 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>5a824eb4-d2e5-40fb-b0c0-ca021b548b6f</UserSecretsId>
+    <UserSecretsId>f262fd43-447a-46c1-9cfc-06ddeb24baac</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
+    <PackageReference Include="Azure.Identity" Version="1.18.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.27.0" />
     <PackageReference Include="Azure.Storage.Files.Shares" Version="12.23.0" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.25.0" />

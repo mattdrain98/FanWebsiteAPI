@@ -42,7 +42,8 @@ namespace Fan_Website.Controllers
                 TotalLikes = post.TotalLikes,
                 DatePosted = post.CreatedOn.ToString("yyyy-MM-dd HH:mm"),
                 RepliesCount = post.Replies.Count(),
-                Forum = GetForumListingForPost(post)
+                Forum = GetForumListingForPost(post),
+                ForumName = post.Forum.PostTitle
             }).ToList();
 
             return new HomeIndexModel

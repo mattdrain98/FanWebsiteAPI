@@ -1,7 +1,5 @@
 ﻿
 using Fan_Website.Models;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Fan_Website.Services
 {

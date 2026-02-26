@@ -1,15 +1,7 @@
-﻿using Azure.Storage.Blobs.Models;
-using Azure.Storage.Blobs;
-using Fan_Website.Infrastructure;
-using Fan_Website.Models.Screenshot;
-using Microsoft.AspNetCore.Http;
+﻿using Fan_Website.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+
 
 namespace Fan_Website.Controllers
 {

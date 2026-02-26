@@ -4,64 +4,80 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fan_Website.Controllers
 {
-    public class ProfileCommentController : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ProfileCommentController : ControllerBase
     {
         private readonly IApplicationUser userService;
         private readonly UserManager<ApplicationUser> userManager;
+
         public ProfileCommentController(IApplicationUser _userService, UserManager<ApplicationUser> _userManager)
         {
             userService = _userService;
-            userManager = _userManager; 
+            userManager = _userManager;
         }
 
-        public async Task<IActionResult> Create(string id)
+        // GET: api/ProfileComment/{id}
+        // Retrieves a template for creating a comment (optional, can be used to prefill data in frontend)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetCommentTemplate(string id)
         {
             var currentUser = await userManager.FindByNameAsync(User.Identity.Name);
-            var user = userService.GetById(id); 
+            if (currentUser == null)
+                return Unauthorized();
+
+            var user = userService.GetById(id);
+            if (user == null)
+                return NotFound();
 
             var model = new ProfileCommentModel
             {
                 AuthorId = currentUser.Id,
-                AuthorName = User.Identity.Name,
-                AuthorImageUrl = currentUser.ImagePath, 
+                AuthorName = currentUser.UserName,
+                AuthorImageUrl = currentUser.ImagePath,
                 AuthorRating = currentUser.Rating,
                 Date = DateTime.Now,
                 UserId = user.Id,
-                OtherUserImagePath = user.ImagePath, 
-                OtherUserName = user.UserName, 
-                OtherUserRating = user.Rating 
+                OtherUserImagePath = user.ImagePath,
+                OtherUserName = user.UserName,
+                OtherUserRating = user.Rating
             };
 
-            return View(model);
+            return Ok(model);
         }
 
+        // POST: api/ProfileComment
         [HttpPost]
-        public async Task<IActionResult> AddComment(ProfileCommentModel model)
+        public async Task<IActionResult> AddComment([FromBody] ProfileCommentModel model)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var userId = userManager.GetUserId(User);
-            var user = await userManager.FindByIdAsync(userId);
+            var currentUser = await userManager.FindByIdAsync(userId);
+            if (currentUser == null)
+                return Unauthorized();
 
-
-
-            var comment = BuildComment(model, user);
+            var comment = BuildComment(model, currentUser);
 
             await userService.AddComment((ProfileComment)comment);
             await userService.UpdateUserRating(userId, typeof(ProfileComment));
-            return RedirectToAction("Detail", "Profile", new { id = model.UserId });
+
+            return CreatedAtAction(nameof(GetCommentTemplate), new { id = model.UserId }, comment);
         }
 
-        private object BuildComment(ProfileCommentModel model, ApplicationUser user)
+        // Helper method to build a ProfileComment entity from the model
+        private ProfileComment BuildComment(ProfileCommentModel model, ApplicationUser currentUser)
         {
             var userProfile = userService.GetById(model.UserId);
 
             return new ProfileComment
             {
-                CurrentUser = user,
+                CurrentUser = currentUser,
                 Content = model.CommentContent,
                 CreateOn = DateTime.Now,
                 OtherUser = userProfile

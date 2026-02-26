@@ -2,30 +2,31 @@
 using Fan_Website.Models;
 using Fan_Website.Models.Forum;
 using Fan_Website.Services;
-using Fan_Website.ViewModel;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Fan_Website.Controllers
 {
-    public class ForumController : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ForumController : ControllerBase
     {
-        private IForum forumService { get; set; }
-        private IPost postService { get; set; }
-        private IApplicationUser userService { get; set; }
-        private static UserManager<ApplicationUser> userManager;
+        private readonly IForum forumService;
+        private readonly IPost postService;
+        private readonly IApplicationUser userService;
+        private readonly UserManager<ApplicationUser> userManager;
+
         public ForumController(IForum _forumService, IPost _postService, IApplicationUser _userService, UserManager<ApplicationUser> _userManager)
         {
             forumService = _forumService;
             postService = _postService;
             userService = _userService;
-            userManager = _userManager; 
+            userManager = _userManager;
         }
-        public IActionResult Index()
+
+        // GET: api/forum
+        [HttpGet]
+        public IActionResult GetAllForums()
         {
             var forums = forumService.GetAll()
                 .Select(forum => new ForumListingModel
@@ -33,106 +34,99 @@ namespace Fan_Website.Controllers
                     Id = forum.ForumId,
                     Name = forum.PostTitle,
                     Description = forum.Description,
-                    AuthorId = forum.User.Id, 
-                    AuthorName = forum.User.UserName, 
-                    AuthorRating = forum.User.Rating.ToString() 
+                    AuthorId = forum.User.Id,
+                    AuthorName = forum.User.UserName,
+                    AuthorRating = forum.User.Rating.ToString()
                 });
 
-            var model = new ForumIndexModel
-            {
-                ForumList = forums 
-            }; 
-            return View(model);
+            return Ok(forums);
         }
 
-        public IActionResult Topic(int id, string searchQuery)
+        // GET: api/forum/{id}?searchQuery=xyz
+        [HttpGet("{id}")]
+        public IActionResult GetForumById(int id, [FromQuery] string? searchQuery)
         {
             var forum = forumService.GetById(id);
-            var posts = new List<Post>();
+            if (forum == null)
+                return NotFound();
 
-            posts = postService.GetFilteredPosts(forum, searchQuery).ToList();
+            var posts = postService.GetFilteredPosts(forum, searchQuery).ToList();
 
             var postListings = posts.Select(post => new PostListingModel
             {
                 Id = post.PostId,
                 AuthorId = post.User.Id,
                 AuthorRating = post.User.Rating,
-                AuthorName = post.User.UserName, 
+                AuthorName = post.User.UserName,
                 Title = post.Title,
-                TotalLikes = post.TotalLikes, 
+                TotalLikes = post.TotalLikes,
                 DatePosted = post.CreatedOn.ToString(),
                 RepliesCount = post.Replies.Count(),
-                Forum = BuildForumListing(post) 
+                Forum = BuildForumListing(post)
             });
 
-            var model = new ForumTopicModel
+            var result = new ForumTopicModel
             {
                 Posts = postListings,
-                Forum = BuildForumListing(forum) 
-            }; 
+                Forum = BuildForumListing(forum)
+            };
 
-            return View(model); 
+            return Ok(result);
         }
 
+        // POST: api/forum
         [HttpPost]
-        public IActionResult Search(int id, string searchQuery)
+        public async Task<IActionResult> AddForum([FromBody] AddForumModel model)
         {
-            return RedirectToAction("Topic", new { id, searchQuery }); 
-        }
-        private ForumListingModel BuildForumListing(Post post)
-        {
-            var forum = post.Forum;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return BuildForumListing(forum); 
-        }
-
-        public IActionResult Create()
-        {
-            var model = new AddForumModel();
-            return View(model); 
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> AddForum(AddForumModel model)
-        {
             var userId = userManager.GetUserId(User);
             var user = await userManager.FindByIdAsync(userId);
+
             var forum = new Forum
             {
                 PostTitle = model.Title,
                 Description = model.Description,
                 CreatedOn = DateTime.Now,
-                User = user  
+                User = user
             };
 
             await forumService.Create(forum);
             await userService.UpdateUserRating(userId, typeof(Forum));
-            return RedirectToAction("Index", "Forum", new { id = forum.ForumId }); 
+
+            return CreatedAtAction(nameof(GetForumById), new { id = forum.ForumId }, forum);
         }
+
+        // DELETE: api/forum/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteForum(int id)
+        {
+            var forum = forumService.GetById(id);
+            if (forum == null)
+                return NotFound();
+
+            await forumService.Delete(id);
+            return NoContent();
+        }
+
+        // Helper Methods
+        private ForumListingModel BuildForumListing(Post post)
+        {
+            return BuildForumListing(post.Forum);
+        }
+
         private ForumListingModel BuildForumListing(Forum forum)
         {
             return new ForumListingModel
             {
                 Id = forum.ForumId,
                 Name = forum.PostTitle,
-                Description = forum.Description, 
-                AuthorId = forum.User.Id, 
-                AuthorName = forum.User.UserName, 
-                AuthorRating = forum.User.Rating.ToString() 
+                Description = forum.Description,
+                AuthorId = forum.User.Id,
+                AuthorName = forum.User.UserName,
+                AuthorRating = forum.User.Rating.ToString()
             };
-        }
-        [HttpGet]
-        public IActionResult Delete(int id)
-        {
-            var forum = forumService.GetById(id);
-            return View(forum);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Delete(Forum forum)
-        {
-            await forumService.Delete(forum.ForumId);
-            return RedirectToAction("Index", "Forum");
         }
     }
 }

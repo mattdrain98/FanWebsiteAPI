@@ -3,24 +3,30 @@ using Fan_Website.Models.Forum;
 using Fan_Website.Models.Search;
 using Fan_Website.Services;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Fan_Website.Controllers
 {
-    public class SearchController : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SearchController : ControllerBase
     {
-        private IPost postService { get; set; }
+        private readonly IPost postService;
+
         public SearchController(IPost _postService)
         {
-            postService = _postService; 
+            postService = _postService;
         }
-        public IActionResult Results(string searchQuery)
+
+        // GET: api/Search?query=keyword
+        [HttpGet]
+        public IActionResult Results([FromQuery] string query)
         {
-            var posts = postService.GetFilteredPosts(searchQuery).ToList();
-            var areNoResults = (!string.IsNullOrEmpty(searchQuery) && !posts.Any()); 
+            if (string.IsNullOrWhiteSpace(query))
+                return BadRequest(new { Message = "Search query cannot be empty." });
+
+            var posts = postService.GetFilteredPosts(query).ToList();
+            var areNoResults = !posts.Any();
 
             var postListings = posts.Select(post => new PostListingModel
             {
@@ -30,36 +36,69 @@ namespace Fan_Website.Controllers
                 AuthorName = post.User.UserName,
                 AuthorRating = post.User.Rating,
                 DatePosted = post.CreatedOn.ToString(),
-                RepliesCount = post.Replies.Count(),
+                RepliesCount = post.Replies?.Count() ?? 0,
                 Forum = BuildForumListing(post)
-
             });
 
-            var model = new SearchResultModel
+            var result = new SearchResultModel
             {
-                Posts = postListings, 
-                SearchQuery = searchQuery, 
-                EmptySearchResults = areNoResults 
-            }; 
-            return View(model);
+                Posts = postListings,
+                SearchQuery = query,
+                EmptySearchResults = areNoResults
+            };
+
+            return Ok(result);
         }
 
+        // POST: api/Search
+        // Optional: if front-end prefers POST requests
+        [HttpPost]
+        public IActionResult Search([FromBody] SearchRequestModel request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Query))
+                return BadRequest(new { Message = "Search query cannot be empty." });
+
+            var posts = postService.GetFilteredPosts(request.Query).ToList();
+            var areNoResults = !posts.Any();
+
+            var postListings = posts.Select(post => new PostListingModel
+            {
+                Id = post.PostId,
+                Title = post.Title,
+                AuthorId = post.User.Id,
+                AuthorName = post.User.UserName,
+                AuthorRating = post.User.Rating,
+                DatePosted = post.CreatedOn.ToString(),
+                RepliesCount = post.Replies?.Count() ?? 0,
+                Forum = BuildForumListing(post)
+            });
+
+            var result = new SearchResultModel
+            {
+                Posts = postListings,
+                SearchQuery = request.Query,
+                EmptySearchResults = areNoResults
+            };
+
+            return Ok(result);
+        }
+
+        // Helper method
         private ForumListingModel BuildForumListing(Post post)
         {
             var forum = post.Forum;
-
             return new ForumListingModel
             {
-                Id = forum.ForumId, 
-                Name = forum.PostTitle, 
-                Description = forum.Description 
-            }; 
+                Id = forum.ForumId,
+                Name = forum.PostTitle,
+                Description = forum.Description
+            };
         }
+    }
 
-        [HttpPost]
-        public IActionResult Search(string searchQuery)
-        {
-            return RedirectToAction("Results", new { searchQuery }); 
-        }
+    // Model for POST search request
+    public class SearchRequestModel
+    {
+        public string Query { get; set; }
     }
 }
