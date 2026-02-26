@@ -11,10 +11,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
     .AddJsonFile("storagesettings.json", optional: false, reloadOnChange: true);
 
-// --------------------
-// Services
-// --------------------
-
 // Routing
 builder.Services.AddRouting(options =>
 {
@@ -99,6 +95,14 @@ app.UseCors("FanWebsiteAPI");
 app.UseAuthentication();
 app.UseAuthorization();
 
+// 🔹 Redirect /api to /api/home
+app.MapGet("/api", context =>
+{
+    context.Response.Redirect("/api/home");
+    return Task.CompletedTask;
+});
+
+// Map API controllers
 app.MapControllers();
 
 app.Run();
