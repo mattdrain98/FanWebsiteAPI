@@ -4,7 +4,6 @@ using Fan_Website.Models.Home;
 using Fan_Website.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
-using System.Linq;
 
 namespace Fan_Website.Controllers
 {
