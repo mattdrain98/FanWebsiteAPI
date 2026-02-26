@@ -9,7 +9,7 @@ using Microsoft.Extensions.Azure;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration
-    .AddJsonFile("storagesettings.json", optional: false, reloadOnChange: true);
+    .AddJsonFile("appsettings.Development.json", optional: false, reloadOnChange: true);
 
 // --------------------
 // Services
