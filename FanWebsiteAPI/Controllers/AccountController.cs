@@ -6,173 +6,131 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Fan_Website.Controllers
 {
-    public class AccountController(UserManager<ApplicationUser> userManager,
-       SignInManager<ApplicationUser> signInManager, IUnitOfWork unitOfWork, IApplicationUser _userService) : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AccountController : ControllerBase
     {
-        private AppDbContext? context { get; set; }
-        private readonly IUnitOfWork unitOfWork = unitOfWork; 
-        private readonly UserManager<ApplicationUser> userManager = userManager;
-        private readonly SignInManager<ApplicationUser> signInManager = signInManager;
-        private readonly IApplicationUser userService = _userService;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly IApplicationUser _userService;
 
-        public IActionResult AccountInfo()
+        public AccountController(UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager, IUnitOfWork unitOfWork, IApplicationUser userService)
         {
-            var users = userManager.Users; 
-            return View(users); 
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _unitOfWork = unitOfWork;
+            _userService = userService;
         }
 
-        public IActionResult NewUsers()
+        // GET: api/account/users
+        [HttpGet("users")]
+        public ActionResult<IEnumerable<ApplicationUser>> GetAllUsers()
         {
-            var latestUsers = userService.GetLatestUsers(10); 
-            return View(latestUsers);
+            var users = _userManager.Users.ToList();
+            return Ok(users);
         }
 
-
-        [HttpGet]
-        public IActionResult EditProfile()
+        // GET: api/account/new-users
+        [HttpGet("new-users")]
+        public ActionResult<IEnumerable<ApplicationUser>> GetLatestUsers()
         {
-            return View();
+            var latestUsers = _userService.GetLatestUsers(10);
+            return Ok(latestUsers);
         }
-        [HttpPost]
-        public async Task<IActionResult> EditProfile(IFormFile file, EditProfileDto model)
+
+        // POST: api/account/edit-profile
+        [HttpPost("edit-profile")]
+        public async Task<ActionResult> EditProfile([FromForm] IFormFile file, [FromForm] EditProfileDto model)
         {
-                await unitOfWork.UploadImageAsync(file);
-                var user = await userManager.GetUserAsync(User);
-                user.UserName = User.Identity.Name;
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized("User not found");
+
+            if (file != null)
+            {
+                await _unitOfWork.UploadImageAsync(file);
                 user.ImagePath = file.FileName;
-
-                await userManager.UpdateAsync(user);
-                return RedirectToAction("AccountInfo", "Account"); 
-
-        }
-        [HttpGet]
-        public IActionResult ChangePassword()
-        {
-            return View(); 
-        }
-        [HttpPost]
-        public async Task<IActionResult> ChangePassword(ChangePasswordDto model)
-        {
-            if (ModelState.IsValid)
-            {
-                var user = await userManager.GetUserAsync(User);
-                if (user == null) {
-                    return RedirectToAction("Login"); 
-                }
-
-                var result = await userManager.ChangePasswordAsync(user,
-                    model.Password, model.NewPassword);
-
-                if (!result.Succeeded)
-                {
-                    foreach (var error in result.Errors)
-                    {
-                        ModelState.AddModelError(string.Empty, error.Description); 
-                    }
-                    return View(); 
-                }
-                await signInManager.RefreshSignInAsync(user);
-                return View("Confirmation"); 
             }
 
-            return View(model); 
-        }
-        [HttpPost]
-        public async Task<IActionResult> Logout()
-        {
-            await signInManager.SignOutAsync();
-            return RedirectToAction("Index", "Home");
-        }
+            user.UserName = model.UserName ?? user.UserName;
 
-        [HttpGet]
-        public IActionResult Register()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Register(IFormFile file, RegisterViewModel model)
-        {
-            if (ModelState.IsValid)
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
             {
-                if (file != null)
-                {
-                    await unitOfWork.UploadImageAsync(file);
-                    // Copy data from RegisterViewModel to IdentityUser
-                    var otheruser = new ApplicationUser
-                    {
-                        UserName = model.UserName,
-                        Email = model.Email,
-                        ImagePath = file.FileName,
-                        Followers = 0,
-                        Following = 0
-                    };
-                    var otherresult = await userManager.CreateAsync(otheruser, model.Password);
-
-
-                   
-                    // If user is successfully created, sign-in the user using
-                    // SignInManager and redirect to index action of HomeController
-                    if (otherresult.Succeeded)
-                    {
-                        await signInManager.SignInAsync(otheruser, isPersistent: false);
-                        return RedirectToAction("Index", "Home");
-                    }
-
-
-                }
-
-                var user = new ApplicationUser
-                {
-                    UserName = model.UserName,
-                    Email = model.Email,
-                    MemberSince = DateTime.Now 
-                };
-                var result = await userManager.CreateAsync(user, model.Password);
-
-
-
-                // If user is successfully created, sign-in the user using
-                // SignInManager and redirect to index action of HomeController
-                if (result.Succeeded)
-                {
-                    await signInManager.SignInAsync(user, isPersistent: false);
-                    return RedirectToAction("Index", "Home");
-                }
-
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
+                return BadRequest(result.Errors.Select(e => e.Description));
             }
 
-            return View(model);
-        }
-       
-
-        [HttpGet]
-        public IActionResult Login()
-        {
-            return View();
+            return Ok(new { Message = "Profile updated successfully" });
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel model)
+        // POST: api/account/change-password
+        [HttpPost("change-password")]
+        public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized("User not found");
+
+            var result = await _userManager.ChangePasswordAsync(user, model.Password, model.NewPassword);
+            if (!result.Succeeded)
             {
-                var result = await signInManager.PasswordSignInAsync(
-                    model.UserName, model.Password, model.RememberMe, false);
-
-                if (result.Succeeded)
-                {
-                    return RedirectToAction("Index", "Home");
-                }
-
-                ModelState.AddModelError(string.Empty, "Invalid Login Attempt");
+                return BadRequest(result.Errors.Select(e => e.Description));
             }
 
-            return View(model);
+            await _signInManager.RefreshSignInAsync(user);
+            return Ok(new { Message = "Password changed successfully" });
+        }
+
+        // POST: api/account/logout
+        [HttpPost("logout")]
+        public async Task<ActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok(new { Message = "Logged out successfully" });
+        }
+
+        // POST: api/account/register
+        [HttpPost("register")]
+        public async Task<ActionResult> Register([FromForm] RegisterViewModel model, [FromForm] IFormFile file)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var user = new ApplicationUser
+            {
+                UserName = model.UserName,
+                Email = model.Email,
+                MemberSince = DateTime.Now,
+                Followers = 0,
+                Following = 0,
+                ImagePath = file?.FileName
+            };
+
+            if (file != null) await _unitOfWork.UploadImageAsync(file);
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors.Select(e => e.Description));
+            }
+
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return Ok(new { Message = "Registration successful", UserId = user.Id });
+        }
+
+        // POST: api/account/login
+        [HttpPost("login")]
+        public async Task<ActionResult> Login([FromBody] LoginViewModel model)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var result = await _signInManager.PasswordSignInAsync(
+                model.UserName, model.Password, model.RememberMe, false);
+
+            if (!result.Succeeded) return Unauthorized("Invalid login attempt");
+
+            return Ok(new { Message = "Login successful" });
         }
     }
 }
