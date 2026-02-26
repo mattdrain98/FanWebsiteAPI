@@ -1,5 +1,5 @@
 ﻿using Azure.Storage.Blobs.Models;
-using Azure.Storage.Blobs; 
+using Azure.Storage.Blobs;
 using Fan_Website.Infrastructure;
 using Fan_Website.Models.Screenshot;
 using Microsoft.AspNetCore.Http;
@@ -13,143 +13,149 @@ using System.Threading.Tasks;
 
 namespace Fan_Website.Controllers
 {
-    public class ScreenshotController: Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ScreenshotController : ControllerBase
     {
-        private AppDbContext context { get; set; }
+        private readonly AppDbContext _context;
+        private readonly IApplicationUser _userService;
+        private readonly IConfiguration _configuration;
+        private readonly IUpload _uploadService;
+        private readonly IScreenshot _screenshotService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        private readonly IApplicationUser userService;
-        private readonly IConfiguration configuration;
-        private readonly IUpload uploadService;
-        private readonly IScreenshot screenshotService; 
-        private readonly UserManager<ApplicationUser> userManager; 
-        public ScreenshotController(AppDbContext ctx, IApplicationUser _userService, 
-            IConfiguration _configuration, IUpload _uploadService, IScreenshot _screenshotService, UserManager<ApplicationUser> _userManager)
+        public ScreenshotController(
+            AppDbContext context,
+            IApplicationUser userService,
+            IConfiguration configuration,
+            IUpload uploadService,
+            IScreenshot screenshotService,
+            UserManager<ApplicationUser> userManager)
         {
-            context = ctx;
-            userService = _userService;
-            configuration = _configuration;
-            uploadService = _uploadService;
-            screenshotService = _screenshotService;
-            userManager = _userManager; 
+            _context = context;
+            _userService = userService;
+            _configuration = configuration;
+            _uploadService = uploadService;
+            _screenshotService = screenshotService;
+            _userManager = userManager;
         }
-        public IActionResult Index()
+
+        // GET: api/screenshot
+        [HttpGet]
+        public ActionResult<IEnumerable<ScreenshotDto>> GetAllScreenshots()
         {
-            var screenshots = screenshotService.GetAll()
-                .Select(screenshot => new ScreenshotListingModel
+            var screenshots = _screenshotService.GetAll()
+                .Select(s => new ScreenshotDto
                 {
-                    Id = screenshot.ScreenshotId,
-                    Content = screenshot.ScreenshotDescription,
-                    Title = screenshot.ScreenshotTitle,
-                    AuthorId = screenshot.User.Id,
-                    AuthorName = screenshot.User.UserName,
-                    AuthorRating = screenshot.User.Rating,
-                    DatePosted = screenshot.CreatedOn.ToString(), 
-                    ImageUrl = screenshot.ImagePath
+                    Id = s.ScreenshotId,
+                    Title = s.ScreenshotTitle,
+                    Content = s.ScreenshotDescription,
+                    AuthorId = s.User.Id,
+                    AuthorName = s.User.UserName,
+                    AuthorRating = s.User.Rating,
+                    DatePosted = s.CreatedOn,
+                    ImageUrl = s.ImagePath,
+                    Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
+                }).ToList();
 
-                });
-
-            var model = new ScreenshotIndexModel
-            {
-                ScreenshotList = screenshots
-            };
-            return View(model);
+            return Ok(screenshots);
         }
-        public IActionResult UserScreenshots()
+
+        // GET: api/screenshot/user
+        [HttpGet("user")]
+        public async Task<ActionResult<IEnumerable<ScreenshotDto>>> GetUserScreenshots()
         {
-            var screenshots = screenshotService.GetAll()
-                .Select(screenshot => new ScreenshotListingModel
-            {
-                Id = screenshot.ScreenshotId,
-                Content = screenshot.ScreenshotDescription,
-                Title = screenshot.ScreenshotTitle,
-                AuthorId = screenshot.User.Id,
-                AuthorName = screenshot.User.UserName,
-                AuthorRating = screenshot.User.Rating,
-                DatePosted = screenshot.CreatedOn.ToString(),
-                ImageUrl = screenshot.ImagePath
+            var userId = _userManager.GetUserId(User);
+            var screenshots = _screenshotService.GetAll()
+                .Where(s => s.User.Id == userId)
+                .Select(s => new ScreenshotDto
+                {
+                    Id = s.ScreenshotId,
+                    Title = s.ScreenshotTitle,
+                    Content = s.ScreenshotDescription,
+                    AuthorId = s.User.Id,
+                    AuthorName = s.User.UserName,
+                    AuthorRating = s.User.Rating,
+                    DatePosted = s.CreatedOn,
+                    ImageUrl = s.ImagePath,
+                    Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
+                }).ToList();
 
-            }); ;
-
-            var model = new ScreenshotIndexModel
-            {
-                ScreenshotList = screenshots 
-            };
-
-            return View(model); 
+            return Ok(screenshots);
         }
 
-        public IActionResult Create()
-        {
-            var model = new AddScreenshotModel();
-            return View(model);
-        }
+        // POST: api/screenshot
         [HttpPost]
-        public async Task<IActionResult> AddScreenshot(AddScreenshotModel model)
+        public async Task<ActionResult> AddScreenshot([FromForm] NewScreenshotDto model)
         {
-            var imageUri = model.ImageFile.FileName;
+            var userId = _userManager.GetUserId(User);
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return Unauthorized("User not found");
 
-            imageUri = await UploadScreenshotImageAsync(model.ImageFile);
+            var imageUri = model.ImageFile != null
+                ? await UploadScreenshotImageAsync(model.ImageFile)
+                : null;
 
-            var userId = userManager.GetUserId(User);
-            var user = await userManager.FindByIdAsync(userId);
             var screenshot = new Screenshot
             {
                 ScreenshotTitle = model.Title,
                 ScreenshotDescription = model.Content,
                 CreatedOn = DateTime.Now,
-                ImagePath = imageUri,
-                User = user 
-            }; 
-            await screenshotService.Add(screenshot); 
-            await userService.UpdateUserRating(userId, typeof(Screenshot));
-            return RedirectToAction("Index", "Screenshot"); 
-        }
-
-        private Screenshot BuildScreenshot(NewScreenshotModel model, ApplicationUser user)
-        {
-            return new Screenshot
-            {
-                ScreenshotId = model.Id, 
-                ScreenshotTitle = model.Title, 
-                ScreenshotDescription = model.Content, 
-                ImagePath = model.ScreenshotImageUrl, 
-                CreatedOn = DateTime.Now, 
+                ImagePath = imageUri ?? "",
                 User = user
-            }; 
+            };
+
+            await _screenshotService.Add(screenshot);
+            await _userService.UpdateUserRating(userId, typeof(Screenshot));
+
+            return Ok(new { Message = "Screenshot added successfully", ScreenshotId = screenshot.ScreenshotId });
         }
 
         private async Task<string> UploadScreenshotImageAsync(IFormFile file)
         {
-            var connectionString =
-                configuration.GetConnectionString("AzureStorageAccount");
-
-            var container = uploadService.GetBlobContainer(
-                connectionString,
-                "screenshot-images");
+            var connectionString = _configuration.GetConnectionString("AzureStorageAccount");
+            var container = _uploadService.GetBlobContainer(connectionString, "screenshot-images");
 
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
             var blobClient = container.GetBlobClient(fileName);
 
-            await blobClient.UploadAsync(
-                file.OpenReadStream(),
-                overwrite: true);
+            await blobClient.UploadAsync(file.OpenReadStream(), overwrite: true);
 
             return blobClient.Uri.AbsoluteUri;
         }
 
-        [HttpGet]
-        public IActionResult Delete(int id)
+        // DELETE: api/screenshot/5
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteScreenshot(int id)
         {
-            var screenshot = context.Screenshots.Find(id);
-            return View(screenshot);
-        }
+            var screenshot = _context.Screenshots.Find(id);
+            if (screenshot == null) return NotFound("Screenshot not found");
 
-        [HttpPost]
-        public IActionResult Delete(Screenshot screenshot)
-        {
-            context.Screenshots.Remove(screenshot);
-            context.SaveChanges();
-            return RedirectToAction("Index", "Screenshot");
+            _context.Screenshots.Remove(screenshot);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Screenshot deleted successfully" });
         }
+    }
+
+    // DTOs for API
+    public class ScreenshotDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = null!;
+        public string Content { get; set; } = null!;
+        public string AuthorId { get; set; } = null!;
+        public string AuthorName { get; set; } = null!;
+        public int AuthorRating { get; set; }
+        public DateTime DatePosted { get; set; }
+        public string ImageUrl { get; set; } = null!;
+        public string Slug { get; set; } = null!;
+    }
+
+    public class NewScreenshotDto
+    {
+        public string Title { get; set; } = null!;
+        public string Content { get; set; } = null!;
+        public IFormFile? ImageFile { get; set; }
     }
 }

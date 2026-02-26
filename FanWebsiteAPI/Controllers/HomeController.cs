@@ -3,7 +3,6 @@ using Fan_Website.Models.Forum;
 using Fan_Website.Models.Home;
 using Fan_Website.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Linq;
 

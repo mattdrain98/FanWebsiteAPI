@@ -1,72 +1,96 @@
 ﻿using Fan_Website.Infrastructure;
-using Fan_Website.Models;
 using Fan_Website.Models.Reply;
 using Fan_Website.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Fan_Website.Controllers
 {
-    public class ReplyController : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ReplyController : ControllerBase
     {
-        private readonly IPost postService;
-        private readonly IApplicationUser userService; 
-        private readonly UserManager<ApplicationUser> userManager; 
-        public ReplyController(IPost _postService, IApplicationUser _userService, UserManager<ApplicationUser> _userManager)
-        {
-            postService = _postService;
-            userService = _userService; 
-            userManager = _userManager; 
-        }
-        public async Task<IActionResult> Create(int id)
-        {
-            var post = postService.GetById(id);
-            var user = await userManager.FindByNameAsync(User.Identity.Name);
+        private readonly IPost _postService;
+        private readonly IApplicationUser _userService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-            var model = new PostReplyModel
+        public ReplyController(IPost postService, IApplicationUser userService, UserManager<ApplicationUser> userManager)
+        {
+            _postService = postService;
+            _userService = userService;
+            _userManager = userManager;
+        }
+
+        // GET: api/reply/create/5
+        [HttpGet("create/{postId}")]
+        public async Task<ActionResult<PostReplyDto>> GetReplyModel(int postId)
+        {
+            var post = _postService.GetById(postId);
+            if (post == null) return NotFound("Post not found");
+
+            var user = await _userManager.FindByNameAsync(User.Identity?.Name);
+            if (user == null) return Unauthorized("User not found");
+
+            var dto = new PostReplyDto
             {
-                PostContent = post.Content, 
-                PostTitle = post.Title, 
-                PostId = post.PostId, 
+                PostId = post.PostId,
+                PostTitle = post.Title,
+                PostContent = post.Content,
                 AuthorId = user.Id,
-                AuthorName = User.Identity.Name, 
-                AuthorImageUrl = user.ImagePath, 
+                AuthorName = user.UserName,
+                AuthorImageUrl = user.ImagePath,
                 AuthorRating = user.Rating,
                 Date = DateTime.Now,
-                ForumId = post.Forum.ForumId, 
+                ForumId = post.Forum.ForumId,
                 ForumName = post.Forum.PostTitle
-            }; 
-            return View(model);
+            };
+
+            return Ok(dto);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddReply(PostReplyModel model)
+        // POST: api/reply/add
+        [HttpPost("add")]
+        public async Task<ActionResult> AddReply([FromBody] PostReplyDto model)
         {
-            var userId = userManager.GetUserId(User);
-            var user = await userManager.FindByIdAsync(userId);
+            var userId = _userManager.GetUserId(User);
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return Unauthorized("User not found");
 
             var reply = BuildReply(model, user);
 
-            await postService.AddReply((PostReply)reply);
-            await userService.UpdateUserRating(userId, typeof(PostReply)); 
-            return RedirectToAction("Index", "Post", new { id = model.PostId }); 
+            await _postService.AddReply(reply);
+            await _userService.UpdateUserRating(userId, typeof(PostReply));
+
+            return Ok(new { Message = "Reply added successfully", PostId = model.PostId });
         }
 
-        private object BuildReply(PostReplyModel model, ApplicationUser user)
+        private PostReply BuildReply(PostReplyDto model, ApplicationUser user)
         {
-            var post = postService.GetById(model.PostId);
+            var post = _postService.GetById(model.PostId);
 
             return new PostReply
             {
-                Post = post, 
-                Content = model.ReplyContent, 
-                CreateOn = DateTime.Now, 
-                User = user 
-            }; 
+                Post = post,
+                Content = model.ReplyContent,
+                CreateOn = DateTime.Now,
+                User = user
+            };
         }
+    }
+
+    // DTO for API use
+    public class PostReplyDto
+    {
+        public int PostId { get; set; }
+        public string PostTitle { get; set; } = null!;
+        public string PostContent { get; set; } = null!;
+        public string ReplyContent { get; set; } = null!; // For POST
+        public string AuthorId { get; set; } = null!;
+        public string AuthorName { get; set; } = null!;
+        public string AuthorImageUrl { get; set; } = null!;
+        public int AuthorRating { get; set; }
+        public DateTime Date { get; set; }
+        public int ForumId { get; set; }
+        public string ForumName { get; set; } = null!;
     }
 }

@@ -1,6 +1,6 @@
 @FanWebsiteAPI_HostAddress = http://localhost:5072
 
-GET {{FanWebsiteAPI_HostAddress}}/weatherforecast/
+GET {{FanWebsiteAPI_HostAddress}}/api/home
 Accept: application/json
 
 ###
