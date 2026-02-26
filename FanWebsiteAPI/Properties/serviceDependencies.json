@@ -6,6 +6,11 @@
     "mssql1": {
       "type": "mssql",
       "connectionId": "ConnectionStrings:Fanwebsite"
+    },
+    "storage1": {
+      "type": "storage",
+      "connectionId": "FanwebsiteBlob",
+      "dynamicId": null
     }
   }
 }

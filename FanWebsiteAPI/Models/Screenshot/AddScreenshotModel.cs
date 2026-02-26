@@ -1,15 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Fan_Website.Models.Screenshot
+﻿namespace Fan_Website.Models.Screenshot
 {
     public class AddScreenshotModel
     {
-        public string Title { get; set; }
-        public string Content { get; set; }
-        public IFormFile ImageFile { get; set; }
+        public required string Title { get; set; }
+        public required string Content { get; set; }
+        public required IFormFile ImageFile { get; set; }
     }
 }

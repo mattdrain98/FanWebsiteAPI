@@ -9,6 +9,14 @@
       "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/fansite/databases/FansiteDB",
       "type": "mssql.azure",
       "connectionId": "ConnectionStrings:Fanwebsite"
+    },
+    "storage1": {
+      "serviceConnectorResourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('serviceConnectorResourceGroupName')]/providers/Microsoft.ServiceLinker/locations/westus2/connectors/FanwebsiteBlob_73733779F9, /subscriptions/f262fd43-447a-46c1-9cfc-06ddeb24baac/resourceGroups/Fansite/providers/Microsoft.ServiceLinker/locations/westus2/connectors/FanwebsiteBlob_8A5A12F6AF",
+      "secretStore": "LocalSecretsFile",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Storage/storageAccounts/fansite",
+      "type": "storage.azure",
+      "connectionId": "FanwebsiteBlob",
+      "dynamicId": null
     }
   }
 }
