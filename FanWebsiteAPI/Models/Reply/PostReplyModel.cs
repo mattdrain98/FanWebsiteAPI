@@ -1,26 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Fan_Website.Models.Reply
+﻿namespace Fan_Website.Models.Reply
 {
     public class PostReplyModel
     {
-        public int Id { get; set; }
+        public required int Id { get; set; }
 
-        public string AuthorId { get; set; }
-        public string AuthorName { get; set; }
-        public int AuthorRating { get; set; }
-        public string AuthorImageUrl { get; set; }
-        public DateTime Date { get; set; }
-        public string ReplyContent { get; set; }
+        public required string AuthorId { get; set; }
+        public required string AuthorName { get; set; }
+        public required int AuthorRating { get; set; }
+        public required string AuthorImageUrl { get; set; }
+        public required DateTime Date { get; set; }
+        public required string ReplyContent { get; set; }
 
-        public int PostId { get; set; }
-        public string PostTitle { get; set; }
-        public string PostContent { get; set; }
+        public required int PostId { get; set; }
+        public required string PostTitle { get; set; }
+        public required string PostContent { get; set; }
 
-        public string ForumName { get; set; }
-        public int ForumId { get; set; }
+        public required string ForumName { get; set; }
+        public required int ForumId { get; set; }
     }
 }
