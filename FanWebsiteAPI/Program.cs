@@ -65,12 +65,12 @@ builder.Services.AddSwaggerGen();
 // CORS (Angular / mobile)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("FanWebsiteAPI", policy =>
+    options.AddPolicy("AllowAngular", policy =>
     {
-        policy
-            .AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        policy.WithOrigins("http://localhost:4200")  // your Angular dev server
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();  // ← this is what's missing
     });
 });
 
@@ -90,7 +90,7 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
-app.UseCors("FanWebsiteAPI");
+app.UseCors("AllowAngular");
 
 app.UseAuthentication();
 app.UseAuthorization();

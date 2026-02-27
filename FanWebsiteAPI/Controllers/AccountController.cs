@@ -119,7 +119,6 @@ namespace Fan_Website.Controllers
             return Ok(new { Message = "Registration successful", UserId = user.Id });
         }
 
-        // POST: api/account/login
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginDto model)
         {
@@ -130,7 +129,18 @@ namespace Fan_Website.Controllers
 
             if (!result.Succeeded) return Unauthorized("Invalid login attempt");
 
-            return Ok(new { Message = "Login successful" });
+            var user = await _userManager.FindByNameAsync(model.UserName);
+
+            return Ok(new
+            {
+                message = "Login successful",
+                user = new
+                {
+                    userId = user.Id,
+                    userName = user.UserName,
+                    imagePath = user.ImagePath
+                }
+            });
         }
     }
 }

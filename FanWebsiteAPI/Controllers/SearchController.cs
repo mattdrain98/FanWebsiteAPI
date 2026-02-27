@@ -3,7 +3,6 @@ using Fan_Website.Models.Forum;
 using Fan_Website.Models.Search;
 using Fan_Website.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
 
 namespace Fan_Website.Controllers
 {
