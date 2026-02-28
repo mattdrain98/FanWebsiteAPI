@@ -93,7 +93,7 @@ namespace Fan_Website.Controllers
 
         // POST: api/account/register
         [HttpPost("register")]
-        public async Task<ActionResult> Register([FromForm] RegisterDto model, [FromForm] IFormFile file)
+        public async Task<ActionResult> Register([FromForm] RegisterDto model, [FromForm] IFormFile? file)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 

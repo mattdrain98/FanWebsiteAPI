@@ -4,6 +4,7 @@ using Fan_Website.Infrastructure;
 using Fan_Website.Models.Follow;
 using Fan_Website.Models.Profile;
 using Fan_Website.Models.ProfileComment;
+using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -44,17 +45,31 @@ namespace Fan_Website.Controllers
 
             var comments = BuildProfileComments(user.ProfileComments);
 
-            var model = new ProfileModel
+            var model = new ProfileDto
             {
                 UserId = user.Id,
                 UserName = user.UserName,
                 UserRating = user.Rating.ToString(),
                 ProfileImageUrl = user.ImagePath,
-                MemberSince = user.MemberSince,
+                MemberSince = user.MemberSince.ToString(),
                 Following = user.Following,
                 Followers = user.Followers,
-                Follows = user.Follows,
-                Followings = user.Followings,
+                Follows = user.Follows.Select(f => new FollowDto
+                {
+                    Id = f.Following?.Id ?? "",
+                    UserName = f.Following?.UserName ?? "",
+                    ImagePath = f.Following?.ImagePath,
+                    Rating = f.Following?.Rating ?? 0,
+                    MemberSince = f.Following?.MemberSince.ToString() ?? ""
+                }),
+                Followings = user.Followings.Select(f => new FollowDto
+                {
+                    Id = f.Follower?.Id ?? "",
+                    UserName = f.Follower?.UserName ?? "",
+                    ImagePath = f.Follower?.ImagePath,
+                    Rating = f.Follower?.Rating ?? 0,
+                    MemberSince = f.Follower?.ToString() ?? ""
+                }),
                 ProfileComments = comments,
                 Bio = user.Bio
             };
@@ -110,20 +125,25 @@ namespace Fan_Website.Controllers
             var user = userService.GetById(id);
             if (user == null) return NotFound();
 
-            // Make sure user.Follows is not null
             var follows = user.Follows ?? new List<Follow>();
 
-            // Safely select follower names
-            var followerNames = follows
+            var followersDto = follows
                 .Where(f => f.Follower != null)
-                .Select(f => f.Follower.UserName)
+                .Select(f => new FollowDto
+                {
+                    Id = f.Follower?.Id ?? "",
+                    UserName = f.Follower?.UserName ?? "",
+                    ImagePath = f.Follower?.ImagePath,
+                    Rating = f.Follower?.Rating ?? 0,
+                    MemberSince = f.Follower?.MemberSince.ToString() ?? ""
+                })
                 .ToList();
 
             return Ok(new
             {
                 user.UserName,
-                FollowersCount = user.Followers,
-                Followers = followerNames
+                FollowersCount = followersDto.Count,
+                Followers = followersDto
             });
         }
 
@@ -136,16 +156,23 @@ namespace Fan_Website.Controllers
 
             var followings = user.Followings ?? new List<Follow>();
 
-            var followingNames = followings
+            var followingDto = followings
                 .Where(f => f.Following != null)
-                .Select(f => f.Following.UserName)
+                .Select(f => new FollowDto
+                {
+                    Id = f.Following?.Id ?? "",
+                    UserName = f.Following?.UserName ?? "",
+                    ImagePath = f.Following?.ImagePath,
+                    Rating = f.Following?.Rating ?? 0,
+                    MemberSince = f.Following?.MemberSince.ToString() ?? ""
+                })
                 .ToList();
 
             return Ok(new
             {
                 user.UserName,
-                FollowingCount = user.Following,
-                Following = followingNames
+                FollowingCount = followingDto.Count,
+                Following = followingDto
             });
         }
 
@@ -196,32 +223,22 @@ namespace Fan_Website.Controllers
         }
 
         // Helper method
-        private IEnumerable<ProfileCommentModel> BuildProfileComments(IEnumerable<ProfileComment> comments)
+        private IEnumerable<ProfileCommentDto> BuildProfileComments(IEnumerable<ProfileComment> comments)
         {
-            return comments.Select(comment => new ProfileCommentModel
+            return comments.Select(c => new ProfileCommentDto
             {
-                Id = comment.Id,
-                AuthorImageUrl = comment.CurrentUser.ImagePath,
-                AuthorName = comment.CurrentUser.UserName,
-                AuthorId = comment.CurrentUser.Id,
-                AuthorRating = comment.CurrentUser.Rating,
-                Date = comment.CreateOn,
-                CommentContent = comment.Content,
-                OtherUserImagePath = comment.OtherUser.ImagePath,
-                OtherUserName = comment.OtherUser.UserName,
-                OtherUserRating = comment.OtherUser.Rating,
-                UserId = comment.OtherUser.Id
+                Id = c.Id,
+                AuthorId = c.OtherUser.Id,
+                AuthorName = c.OtherUser.UserName,
+                AuthorImageUrl = c.OtherUser.ImagePath,
+                AuthorRating = c.OtherUser.Rating,
+                Date = c.CreateOn.ToString("yyyy-MM-dd HH:mm"),
+                CommentContent = c.Content,
+                UserId = c.CurrentUser.Id,
+                OtherUserName = c.OtherUser?.UserName,
+                OtherUserImagePath = c.OtherUser?.ImagePath,
+                OtherUserRating = c.OtherUser?.Rating
             });
-        }
-        // GET api/profile/new
-        [HttpGet("new-users")]
-        public ActionResult<IEnumerable<ApplicationUser>> GetNewUsers()
-        {
-            var users = userService.GetAll()
-                .OrderByDescending(u => u.MemberSince) // newest first
-                .Take(10); // last 10 users
-
-            return Ok(users);
         }
     }
 }

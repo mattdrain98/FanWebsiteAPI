@@ -3,6 +3,7 @@ using Fan_Website.Models;
 using Fan_Website.Models.Post;
 using Fan_Website.Models.Reply;
 using Fan_Website.Services;
+using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -49,7 +50,15 @@ namespace Fan_Website.Controllers
                 PostContent = post.Content,
                 Replies = replies,
                 TotalLikes = post.Likes.Count(),
-                Likes = post.Likes,
+                Likes = post.Likes.Select(l => new LikeDto
+                {
+                    Id = l.Id,
+                    User = new LikeUserDto
+                    {
+                        Id = l.User.Id,
+                        UserName = l.User.UserName
+                    }
+                }),
                 ForumId = post.Forum.ForumId,
                 ForumName = post.Forum.PostTitle,
                 UserHasLiked = post.Likes.Any(l => l.User.Id == userId)
@@ -76,7 +85,7 @@ namespace Fan_Website.Controllers
                     ForumName = post.Forum.PostTitle,
                     TotalLikes = post.Likes.Count(),
                     RepliesCount = post.Replies.Count()
-                });
+                }); 
             return Ok(posts);
         }
 
