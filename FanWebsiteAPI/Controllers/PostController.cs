@@ -202,5 +202,29 @@ namespace Fan_Website.Controllers
                 ForumName = reply.Post.Forum.PostTitle
             });
         }
+
+        [HttpGet("top")]
+        public ActionResult<IEnumerable<PostListingModel>> GetTopPosts(int count = 10)
+        {
+            var posts = postService.GetAll()
+                .OrderByDescending(p => p.Likes.Count())
+                .ThenByDescending(p => p.CreatedOn)
+                .Take(count)
+                .Select(post => new PostListingModel
+                {
+                    Id = post.PostId,
+                    Title = post.Title,
+                    AuthorId = post.User.Id,
+                    AuthorName = post.User.UserName,
+                    AuthorRating = post.User.Rating,
+                    DatePosted = post.CreatedOn.ToString(),
+                    ForumId = post.Forum.ForumId,
+                    ForumName = post.Forum.PostTitle,
+                    TotalLikes = post.Likes.Count(),
+                    RepliesCount = post.Replies.Count()
+                });
+
+            return Ok(posts);
+        }
     }
 }

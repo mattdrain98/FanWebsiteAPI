@@ -213,5 +213,15 @@ namespace Fan_Website.Controllers
                 UserId = comment.OtherUser.Id
             });
         }
+        // GET api/profile/new
+        [HttpGet("new-users")]
+        public ActionResult<IEnumerable<ApplicationUser>> GetNewUsers()
+        {
+            var users = userService.GetAll()
+                .OrderByDescending(u => u.MemberSince) // newest first
+                .Take(10); // last 10 users
+
+            return Ok(users);
+        }
     }
 }
