@@ -26,10 +26,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("Fanwebsite")));
 
-// Identity (cleaned up, single registration)
+// Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
+
+// Cookie config for cross-domain auth
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.Name = ".AspNetCore.Identity.Application";
+});
 
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>,
     UserClaimsPrincipalFactory<ApplicationUser, IdentityRole>>();
@@ -41,7 +50,6 @@ builder.Services.AddScoped<IPost, PostService>();
 builder.Services.AddScoped<IApplicationUser, ApplicationUserService>();
 builder.Services.AddScoped<IUpload, UploadService>();
 builder.Services.AddScoped<IScreenshot, ScreenshotService>();
-
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 // Azure Storage
@@ -49,36 +57,29 @@ builder.Services.AddAzureClients(azureBuilder =>
 {
     azureBuilder.AddBlobServiceClient(
         builder.Configuration["ConnectionStrings:AzureStorageAccount:blob"]);
-
     azureBuilder.AddQueueServiceClient(
         builder.Configuration["ConnectionStrings:AzureStorageAccount:queue"]);
 });
 
-// Auth
-builder.Services.AddAuthentication();
+// Authorization
 builder.Services.AddAuthorization();
 
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-});
 // Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS (Angular / mobile)
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
         policy.WithOrigins(
             "http://localhost:4200",
-            "https://brave-sand-05fbc5b1e.2.azurestaticapps.net"  // replace with your actual URL
+            "https://brave-sand-05fbc5b1e.2.azurestaticapps.net"
         )
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
 
@@ -95,22 +96,16 @@ else
 }
 
 app.UseHttpsRedirection();
-
 app.UseRouting();
-
 app.UseCors("AllowAngular");
-
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 🔹 Redirect /api to /api/home
 app.MapGet("/api", context =>
 {
     context.Response.Redirect("/api/home");
     return Task.CompletedTask;
 });
 
-// Map API controllers
 app.MapControllers();
-
 app.Run();
