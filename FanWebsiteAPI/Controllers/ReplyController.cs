@@ -52,18 +52,25 @@ namespace Fan_Website.Controllers
 
         // POST: api/reply/add
         [HttpPost("add")]
-        public async Task<ActionResult> AddReply([FromBody] PostReplyDto model)
+        public async Task<ActionResult> AddReply([FromBody] AddReplyDto model)
         {
             var userId = _userManager.GetUserId(User);
             var user = await _userManager.FindByIdAsync(userId);
-
             if (user == null) return Unauthorized("User not found");
 
-            var reply = BuildReply(model, user);
+            var post = _postService.GetById(model.PostId);
+            if (post == null) return NotFound("Post not found");
+
+            var reply = new PostReply
+            {
+                Post = post,
+                Content = model.ReplyContent,
+                CreateOn = DateTime.Now,
+                User = user
+            };
 
             await _postService.AddReply(reply);
             await _userService.UpdateUserRating(userId, typeof(PostReply));
-
             return Ok(new { Message = "Reply added successfully", PostId = model.PostId });
         }
 
@@ -78,6 +85,30 @@ namespace Fan_Website.Controllers
                 CreateOn = DateTime.Now,
                 User = user
             };
+        }
+
+        // PUT: api/reply/{id}
+        [HttpPut("{id}")]
+        public async Task<ActionResult> EditReply(int id, [FromBody] EditReplyDto model)
+        {
+            var userId = _userManager.GetUserId(User);
+            var reply = _postService.GetReplyById(id);
+            if (reply == null) return NotFound("Reply not found");
+            if (reply.User.Id != userId) return Forbid();
+            await _postService.EditReply(id, model.Content);
+            return NoContent();
+        }
+
+        // DELETE: api/reply/{id}
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteReply(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            var reply = _postService.GetReplyById(id);
+            if (reply == null) return NotFound("Reply not found");
+            if (reply.User.Id != userId) return Forbid();
+            await _postService.DeleteReply(id);
+            return NoContent();
         }
     }
 }

@@ -182,9 +182,12 @@ namespace Fan_Website.Controllers
         [HttpPut("EditBio")]
         public async Task<IActionResult> EditBio([FromBody] ProfileEditModel model)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            await userService.EditProfile(model.UserId, model.Bio, model.UserName);
+            var currentUserId = userManager.GetUserId(User);
+            if (currentUserId != model.UserId) return Forbid();
+            var user = await userManager.FindByIdAsync(model.UserId);
+            if (user == null) return NotFound();
+            user.Bio = model.Bio;
+            await userManager.UpdateAsync(user);
             return Ok(new { Message = "Bio updated successfully." });
         }
 

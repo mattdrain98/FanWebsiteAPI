@@ -198,7 +198,7 @@ namespace Fan_Website.Controllers
             return replies.Select(reply => new PostReplyModel
             {
                 Id = reply.Id,
-                AuthorImageUrl = reply.User.ImagePath,
+                AuthorImageUrl = reply.User.ImagePath ?? null,
                 AuthorName = reply.User.UserName,
                 AuthorId = reply.User.Id,
                 AuthorRating = reply.User.Rating,

@@ -7,7 +7,7 @@
         public required string AuthorId { get; set; }
         public required string AuthorName { get; set; }
         public required int AuthorRating { get; set; }
-        public required string AuthorImageUrl { get; set; }
+        public string? AuthorImageUrl { get; set; }
         public required DateTime Date { get; set; }
         public required string ReplyContent { get; set; }
 

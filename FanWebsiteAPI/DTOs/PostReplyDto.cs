@@ -3,15 +3,15 @@
     public class PostReplyDto
     {
         public int PostId { get; set; }
-        public string PostTitle { get; set; } = null!;
-        public string PostContent { get; set; } = null!;
-        public string ReplyContent { get; set; } = null!; // For POST
-        public string AuthorId { get; set; } = null!;
-        public string AuthorName { get; set; } = null!;
-        public string AuthorImageUrl { get; set; } = null!;
+        public required string PostTitle { get; set; }
+        public required string PostContent { get; set; } 
+        public string? ReplyContent { get; set; }
+        public required string AuthorId { get; set; }
+        public required string AuthorName { get; set; }
+        public string? AuthorImageUrl { get; set; }
         public int AuthorRating { get; set; }
         public DateTime Date { get; set; }
         public int ForumId { get; set; }
-        public string ForumName { get; set; } = null!;
+        public required string ForumName { get; set; }
     }
 }
