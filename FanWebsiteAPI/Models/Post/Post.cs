@@ -14,6 +14,7 @@ namespace Fan_Website
         public string Content { get; set; } 
         public DateTime CreatedOn { get; set; }
         public ApplicationUser User { get; set; }
+        public int ForumId { get; set; }
         public Forum Forum { get; set; }
         public IEnumerable<PostReply> Replies { get; set; }
         public int TotalLikes { get; set; }

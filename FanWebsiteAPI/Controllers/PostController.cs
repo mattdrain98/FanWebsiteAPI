@@ -104,10 +104,10 @@ namespace Fan_Website.Controllers
             {
                 Id = post.PostId,
                 Title = post.Title,
-                AuthorName = post.User.UserName,
-                AuthorId = post.User.Id,
-                AuthorRating = post.User.Rating,
-                AuthorImageUrl = post.User.ImagePath,
+                AuthorName = user.UserName,
+                AuthorId = user.Id,
+                AuthorRating = user.Rating,
+                AuthorImageUrl = user.ImagePath,
                 Date = post.CreatedOn,
                 PostContent = post.Content,
                 TotalLikes = post.TotalLikes,
@@ -127,13 +127,13 @@ namespace Fan_Website.Controllers
 
         // POST api/post/{id}/likes
         [HttpPost("{id}/likes")]
-        public async Task<ActionResult<int>> UpdateLikes(int id)
+        public ActionResult<int> UpdateLikes(int id)
         {
             var post = postService.GetById(id);
             if (post == null) return NotFound();
 
             var userId = userManager.GetUserId(User);
-            var user = await userService.GetByIdAsync(userId);
+            var user = userService.GetById(userId);
 
             var like = new Like { User = user, Post = post };
             var likes = post.Likes.ToList();

@@ -1,6 +1,7 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Models.Follow;
 using Fan_Website.Models.ProfileComment;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Service
@@ -18,20 +19,20 @@ namespace Fan_Website.Service
             return context.ApplicationUsers; 
         }
 
-        public async Task<ApplicationUser?> GetByIdAsync(string id)
+        public ApplicationUser GetById(string id)
         {
-            var user = await context.Users
-              .Include(u => u.Follows)
-              .Include(u => u.Followings)
-              .Include(u => u.ProfileComments)
-              .FirstOrDefaultAsync(u => u.Id == id);
+            var user = context.Users
+        .Include(u => u.Follows).ThenInclude(f => f.Follower)
+        .Include(u => u.Followings).ThenInclude(f => f.Following)
+        .Include(u => u.ProfileComments)
+        .FirstOrDefault(u => u.Id == id);
 
             return user ?? throw new KeyNotFoundException($"User with ID {id} was not found.");
         }
 
         public async Task UpdateUserRating(string userId, Type type)
         {
-            var user = await GetByIdAsync(userId);
+            var user = GetById(userId);
             user.Rating = CalculateUserRating(type, user.Rating);
             await context.SaveChangesAsync(); 
         }
@@ -67,7 +68,7 @@ namespace Fan_Website.Service
 
         public async Task SetProfileImage(string id, Uri uri)
         {
-            var user = await GetByIdAsync(id);
+            var user = GetById(id);
             user.ImagePath = uri.AbsoluteUri;
             context.Update(user);
             await context.SaveChangesAsync(); 
@@ -78,9 +79,33 @@ namespace Fan_Website.Service
             return GetAll().OrderByDescending(user => user.MemberSince).Take(n);
         }
 
-        public async Task<IEnumerable<Follow>> GetFollowingAsync(string id)
+        public async Task<ProfileComment> GetCommentById(int id)
         {
-            var user = await GetByIdAsync(id);
+            return await context.ProfileComments
+                .Include(c => c.CommentUser)
+                .Include(c => c.ProfileUser)
+                .FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        [HttpPut("profilecomment/{id:int}")]
+        public async Task UpdateComment(ProfileComment comment)
+        {
+            context.ProfileComments.Update(comment);
+            await context.SaveChangesAsync();
+        }
+
+        [HttpDelete("profilecomment/{id:int}")]
+        public async Task DeleteComment(int id)
+        {
+            var comment = await context.ProfileComments.FindAsync(id);
+            if (comment == null) return;
+            context.ProfileComments.Remove(comment);
+            await context.SaveChangesAsync();
+        }
+
+        public IEnumerable<Follow> GetFollowing(string id)
+        { 
+            var user = GetById(id);
             var following = context.Follows.Where(follow => follow.Following == user) ?? null;
             return following; 
         }
@@ -92,7 +117,7 @@ namespace Fan_Website.Service
 
         public async Task EditProfile(string id, string bio, string username)
         {
-            var user = await GetByIdAsync(id);
+            var user = GetById(id);
             user.UserName = username;
             context.Update(user);
             await context.SaveChangesAsync();

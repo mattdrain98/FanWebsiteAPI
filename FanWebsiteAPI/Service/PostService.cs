@@ -33,7 +33,12 @@ namespace Fan_Website.Service
         public async Task Delete(int id)
         {
             var post = GetById(id);
-            context.Remove(post);
+            if (post == null) return;
+
+            context.Likes.RemoveRange(context.Likes.Where(l => l.Post.PostId == id));
+            context.Replies.RemoveRange(context.Replies.Where(r => r.Post.PostId == id));
+
+            context.Posts.Remove(post);
             await context.SaveChangesAsync();
         }
 

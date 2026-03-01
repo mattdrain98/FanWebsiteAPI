@@ -38,12 +38,12 @@ namespace Fan_Website.Controllers
 
         // GET: api/Profile/{id}
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetProfile(string id)
+        public IActionResult GetProfile(string id)
         {
-            var user = await userService.GetByIdAsync(id);
+            var user = userService.GetById(id);
             if (user == null) return NotFound();
 
-            var comments = BuildProfileComments(user.ProfileComments);
+            var comments = BuildProfileComments(user.ProfileComments ?? Enumerable.Empty<ProfileComment>());
             var currentUserId = userManager.GetUserId(User);
 
             var model = new ProfileDto
@@ -55,7 +55,7 @@ namespace Fan_Website.Controllers
                 MemberSince = user.MemberSince.ToString(),
                 Following = user.Following,
                 Followers = user.Followers,
-                Follows = user.Follows.Select(f => new FollowDto
+                Follows = (user.Follows ?? Enumerable.Empty<Follow>()).Select(f => new FollowDto
                 {
                     Id = f.Following?.Id ?? "",
                     UserName = f.Following?.UserName ?? "",
@@ -63,17 +63,18 @@ namespace Fan_Website.Controllers
                     Rating = f.Following?.Rating ?? 0,
                     MemberSince = f.Following?.MemberSince.ToString() ?? ""
                 }),
-                Followings = user.Followings.Select(f => new FollowDto
+                Followings = (user.Followings ?? Enumerable.Empty<Follow>()).Select(f => new FollowDto
                 {
                     Id = f.Follower?.Id ?? "",
                     UserName = f.Follower?.UserName ?? "",
                     ImagePath = f.Follower?.ImagePath,
                     Rating = f.Follower?.Rating ?? 0,
-                    MemberSince = f.Follower?.ToString() ?? ""
+                    MemberSince = f.Follower?.MemberSince.ToString() ?? "" // ✅ fixed: was calling .ToString() on the Follow object itself
                 }),
                 ProfileComments = comments,
                 Bio = user.Bio,
-                IsFollowing = user.Follows.Any(f => f.Follower.Id == currentUserId) 
+                IsFollowing = (user.Follows ?? Enumerable.Empty<Follow>())
+                    .Any(f => f.Follower != null && f.Follower.Id == currentUserId) // ✅ null check added
             };
 
             return Ok(model);
@@ -81,36 +82,35 @@ namespace Fan_Website.Controllers
 
         // POST: api/Profile/UpdateFollows/{id}
         [HttpPost("UpdateFollows/{id}")]
-        public async Task<IActionResult> UpdateFollows(string id)
+        public IActionResult UpdateFollows(string id)
         {
-            var user = await userService.GetByIdAsync(id);
             var currentUserId = userManager.GetUserId(User);
-            var currentUser = await userService.GetByIdAsync(currentUserId);
+            if (currentUserId == null) return Unauthorized();
+
+            var user = userService.GetById(id);
+            var currentUser = userService.GetById(currentUserId);
 
             if (user == null || currentUser == null) return NotFound();
 
-            var follow = new Follow
-            {
-                Following = user,
-                Follower = currentUser
-            };
-
-            var existingFollow = user.Follows
-                .FirstOrDefault(f => f.Follower == currentUser && f.Following == user);
+            var existingFollow = context.Set<Follow>()
+                .FirstOrDefault(f => f.Follower.Id == currentUserId && f.Following.Id == id);
 
             if (existingFollow != null)
             {
                 context.Remove(existingFollow);
-                user.Followers -= 1;
-                currentUser.Following -= 1;
+                user.Followers = Math.Max(0, user.Followers - 1);
+                currentUser.Following = Math.Max(0, currentUser.Following - 1);
             }
             else
             {
+                var follow = new Follow
+                {
+                    Following = user,
+                    Follower = currentUser
+                };
                 context.Add(follow);
                 user.Followers += 1;
                 currentUser.Following += 1;
-                user.Follows.Add(follow);
-                currentUser.Followings.Add(follow);
             }
 
             context.Users.Update(user);
@@ -122,9 +122,9 @@ namespace Fan_Website.Controllers
 
         // GET: api/Profile/Followers/{id}
         [HttpGet("Followers/{id}")]
-        public async Task<IActionResult> GetFollowers(string id)
+        public IActionResult GetFollowers(string id)
         {
-            var user = await userService.GetByIdAsync(id);
+            var user = userService.GetById(id);
             if (user == null) return NotFound();
 
             var follows = user.Follows ?? new List<Follow>();
@@ -135,9 +135,9 @@ namespace Fan_Website.Controllers
                 {
                     Id = f.Follower.Id,
                     UserName = f.Follower.UserName,
-                    ImagePath = f.Follower?.ImagePath,
-                    Rating = f.Follower?.Rating ?? 0,
-                    MemberSince = f.Follower?.MemberSince.ToString()
+                    ImagePath = f.Follower.ImagePath,
+                    Rating = f.Follower.Rating,
+                    MemberSince = f.Follower.MemberSince.ToString()
                 })
                 .ToList();
 
@@ -151,9 +151,9 @@ namespace Fan_Website.Controllers
 
         // GET: api/Profile/Following/{id}
         [HttpGet("Following/{id}")]
-        public async Task<IActionResult> GetFollowing(string id)
+        public IActionResult GetFollowing(string id)
         {
-            var user = await userService.GetByIdAsync(id);
+            var user = userService.GetById(id);
             if (user == null) return NotFound();
 
             var followings = user.Followings ?? new List<Follow>();
@@ -164,9 +164,9 @@ namespace Fan_Website.Controllers
                 {
                     Id = f.Following.Id,
                     UserName = f.Following.UserName,
-                    ImagePath = f.Following?.ImagePath,
-                    Rating = f.Following?.Rating ?? 0,
-                    MemberSince = f.Following?.MemberSince.ToString()
+                    ImagePath = f.Following.ImagePath,
+                    Rating = f.Following.Rating,
+                    MemberSince = f.Following.MemberSince.ToString()
                 })
                 .ToList();
 
@@ -227,20 +227,22 @@ namespace Fan_Website.Controllers
         // Helper method
         private IEnumerable<ProfileCommentDto> BuildProfileComments(IEnumerable<ProfileComment> comments)
         {
-            return comments.Select(c => new ProfileCommentDto
-            {
-                Id = c.Id,
-                ProfileUserId = c.ProfileUser.Id,
-                ProfileUserName = c.ProfileUser.UserName,
-                ProfileUserImageUrl = c.ProfileUser.ImagePath,
-                ProfileUserRating = c.ProfileUser.Rating,
-                Date = c.CreateOn.ToString("yyyy-MM-dd HH:mm"),
-                CommentContent = c.Content,
-                CommentUserId = c.CommentUser.Id,
-                CommentUserName = c.CommentUser?.UserName,
-                CommentUserImagePath = c.CommentUser?.ImagePath,
-                CommentUserRating = c.CommentUser?.Rating
-            });
+            return comments
+                .Where(c => c.ProfileUser != null && c.CommentUser != null) // ✅ skip any broken comments
+                .Select(c => new ProfileCommentDto
+                {
+                    Id = c.Id,
+                    ProfileUserId = c.ProfileUser.Id,
+                    ProfileUserName = c.ProfileUser.UserName,
+                    ProfileUserImageUrl = c.ProfileUser.ImagePath,
+                    ProfileUserRating = c.ProfileUser.Rating,
+                    Date = c.CreateOn.ToString("yyyy-MM-dd HH:mm"),
+                    CommentContent = c.Content,
+                    CommentUserId = c.CommentUser.Id,
+                    CommentUserName = c.CommentUser.UserName ?? "",
+                    CommentUserImagePath = c.CommentUser.ImagePath,
+                    CommentUserRating = c.CommentUser.Rating
+                });
         }
     }
 }

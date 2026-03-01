@@ -3,9 +3,6 @@ using Fan_Website.Models.ProfileComment;
 using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Fan_Website.Controllers
 {
@@ -23,34 +20,30 @@ namespace Fan_Website.Controllers
         }
 
         // GET: api/ProfileComment/{id}
-        // Retrieves a template for creating a comment (optional, can be used to prefill data in frontend)
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCommentTemplate(string id)
         {
             var userId = userManager.GetUserId(User);
             var currentUser = await userManager.FindByIdAsync(userId);
-
             if (currentUser == null)
                 return Unauthorized();
 
-            var user = await userService.GetByIdAsync(id);
-
+            var user = userService.GetById(id);
             if (user == null)
                 return NotFound();
 
             var model = new ProfileCommentDto
             {
-                ProfileUserId = currentUser.Id,
-                ProfileUserName = currentUser.UserName,
-                ProfileUserImageUrl = currentUser.ImagePath,
-                ProfileUserRating = currentUser.Rating,
+                ProfileUserId = user.Id,
+                ProfileUserName = user.UserName,
+                ProfileUserImageUrl = user.ImagePath,
+                ProfileUserRating = user.Rating,
                 Date = DateTime.Now.ToString(),
-                CommentUserId = user.Id,
-                CommentUserImagePath = user.ImagePath,
-                CommentUserName = user.UserName,
-                CommentUserRating = user.Rating
+                CommentUserId = currentUser.Id,
+                CommentUserImagePath = currentUser.ImagePath,
+                CommentUserName = currentUser.UserName,
+                CommentUserRating = currentUser.Rating
             };
-
             return Ok(model);
         }
 
@@ -67,16 +60,54 @@ namespace Fan_Website.Controllers
 
             var comment = new ProfileComment
             {
-                ProfileUser = currentUser,
+                ProfileUser = userService.GetById(dto.ProfileUserId),
                 Content = dto.CommentContent,
                 CreateOn = DateTime.Now,
-                CommentUser = await userService.GetByIdAsync(dto.CommentUserId)
+                CommentUser = currentUser
             };
 
             await userService.AddComment(comment);
             await userService.UpdateUserRating(currentUser.Id, typeof(ProfileComment));
-
             return CreatedAtAction(nameof(GetCommentTemplate), new { id = dto.ProfileUserId }, dto);
+        }
+
+        // PUT: api/ProfileComment/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> EditComment(int id, [FromBody] EditCommentDto dto)
+        {
+            var currentUser = await userManager.GetUserAsync(User);
+            if (currentUser == null)
+                return Unauthorized();
+
+            var comment = await userService.GetCommentById(id);
+            if (comment == null)
+                return NotFound();
+
+            if (comment.CommentUser.Id != currentUser.Id)
+                return Forbid();
+
+            comment.Content = dto.Content;
+            await userService.UpdateComment(comment);
+            return NoContent();
+        }
+
+        // DELETE: api/ProfileComment/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteComment(int id)
+        {
+            var currentUser = await userManager.GetUserAsync(User);
+            if (currentUser == null)
+                return Unauthorized();
+
+            var comment = await userService.GetCommentById(id);
+            if (comment == null)
+                return NotFound();
+
+            if (comment.CommentUser.Id != currentUser.Id)
+                return Forbid();
+
+            await userService.DeleteComment(id);
+            return NoContent();
         }
     }
 }

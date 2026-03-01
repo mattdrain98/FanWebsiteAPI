@@ -18,9 +18,8 @@ namespace Fan_Website
         public int Followers { get; set; }
         public List<Follow>? Follows { get; set; }
         public List<Follow>? Followings { get; set; }
-        public IEnumerable<ProfileComment>? ProfileComments { get; set; }
+        public IEnumerable<ProfileComment>? ProfileComments { get; set; }   // comments ON this profile
+        public IEnumerable<ProfileComment>? CommentsMade { get; set; }      // comments this user has written
         public string? Bio { get; set; }
-       
-
     }
 }
