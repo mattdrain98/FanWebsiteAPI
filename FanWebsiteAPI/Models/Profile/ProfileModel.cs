@@ -1,11 +1,5 @@
 ﻿using Fan_Website.Models.Follow;
-using Fan_Website.Models.ProfileComment;
 using FanWebsiteAPI.DTOs;
-using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Fan_Website
 {

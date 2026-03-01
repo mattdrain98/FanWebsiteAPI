@@ -33,22 +33,22 @@ namespace Fan_Website.Controllers
             if (currentUser == null)
                 return Unauthorized();
 
-            var user = userService.GetById(id);
+            var user = await userService.GetByIdAsync(id);
 
             if (user == null)
                 return NotFound();
 
             var model = new ProfileCommentDto
             {
-                AuthorId = currentUser.Id,
-                AuthorName = currentUser.UserName,
-                AuthorImageUrl = currentUser.ImagePath,
-                AuthorRating = currentUser.Rating,
+                ProfileUserId = currentUser.Id,
+                ProfileUserName = currentUser.UserName,
+                ProfileUserImageUrl = currentUser.ImagePath,
+                ProfileUserRating = currentUser.Rating,
                 Date = DateTime.Now.ToString(),
-                UserId = user.Id,
-                OtherUserImagePath = user.ImagePath,
-                OtherUserName = user.UserName,
-                OtherUserRating = user.Rating
+                CommentUserId = user.Id,
+                CommentUserImagePath = user.ImagePath,
+                CommentUserName = user.UserName,
+                CommentUserRating = user.Rating
             };
 
             return Ok(model);
@@ -67,16 +67,16 @@ namespace Fan_Website.Controllers
 
             var comment = new ProfileComment
             {
-                CurrentUser = currentUser,
+                ProfileUser = currentUser,
                 Content = dto.CommentContent,
                 CreateOn = DateTime.Now,
-                OtherUser = userService.GetById(dto.UserId)
+                CommentUser = await userService.GetByIdAsync(dto.CommentUserId)
             };
 
             await userService.AddComment(comment);
             await userService.UpdateUserRating(currentUser.Id, typeof(ProfileComment));
 
-            return CreatedAtAction(nameof(GetCommentTemplate), new { id = dto.UserId }, dto);
+            return CreatedAtAction(nameof(GetCommentTemplate), new { id = dto.ProfileUserId }, dto);
         }
     }
 }

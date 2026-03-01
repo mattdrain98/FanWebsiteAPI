@@ -7,7 +7,6 @@ using Fan_Website.Models.ProfileComment;
 using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Fan_Website.Controllers
 {
@@ -39,9 +38,9 @@ namespace Fan_Website.Controllers
 
         // GET: api/Profile/{id}
         [HttpGet("{id}")]
-        public IActionResult GetProfile(string id)
+        public async Task<IActionResult> GetProfile(string id)
         {
-            var user = userService.GetById(id);
+            var user = await userService.GetByIdAsync(id);
             if (user == null) return NotFound();
 
             var comments = BuildProfileComments(user.ProfileComments);
@@ -82,11 +81,11 @@ namespace Fan_Website.Controllers
 
         // POST: api/Profile/UpdateFollows/{id}
         [HttpPost("UpdateFollows/{id}")]
-        public IActionResult UpdateFollows(string id)
+        public async Task<IActionResult> UpdateFollows(string id)
         {
-            var user = userService.GetById(id);
+            var user = await userService.GetByIdAsync(id);
             var currentUserId = userManager.GetUserId(User);
-            var currentUser = userService.GetById(currentUserId);
+            var currentUser = await userService.GetByIdAsync(currentUserId);
 
             if (user == null || currentUser == null) return NotFound();
 
@@ -123,9 +122,9 @@ namespace Fan_Website.Controllers
 
         // GET: api/Profile/Followers/{id}
         [HttpGet("Followers/{id}")]
-        public IActionResult GetFollowers(string id)
+        public async Task<IActionResult> GetFollowers(string id)
         {
-            var user = userService.GetById(id);
+            var user = await userService.GetByIdAsync(id);
             if (user == null) return NotFound();
 
             var follows = user.Follows ?? new List<Follow>();
@@ -152,9 +151,9 @@ namespace Fan_Website.Controllers
 
         // GET: api/Profile/Following/{id}
         [HttpGet("Following/{id}")]
-        public IActionResult GetFollowing(string id)
+        public async Task<IActionResult> GetFollowing(string id)
         {
-            var user = userService.GetById(id);
+            var user = await userService.GetByIdAsync(id);
             if (user == null) return NotFound();
 
             var followings = user.Followings ?? new List<Follow>();
@@ -231,16 +230,16 @@ namespace Fan_Website.Controllers
             return comments.Select(c => new ProfileCommentDto
             {
                 Id = c.Id,
-                AuthorId = c.OtherUser.Id,
-                AuthorName = c.OtherUser.UserName,
-                AuthorImageUrl = c.OtherUser.ImagePath,
-                AuthorRating = c.OtherUser.Rating,
+                ProfileUserId = c.ProfileUser.Id,
+                ProfileUserName = c.ProfileUser.UserName,
+                ProfileUserImageUrl = c.ProfileUser.ImagePath,
+                ProfileUserRating = c.ProfileUser.Rating,
                 Date = c.CreateOn.ToString("yyyy-MM-dd HH:mm"),
                 CommentContent = c.Content,
-                UserId = c.CurrentUser.Id,
-                OtherUserName = c.OtherUser?.UserName,
-                OtherUserImagePath = c.OtherUser?.ImagePath,
-                OtherUserRating = c.OtherUser?.Rating
+                CommentUserId = c.CommentUser.Id,
+                CommentUserName = c.CommentUser?.UserName,
+                CommentUserImagePath = c.CommentUser?.ImagePath,
+                CommentUserRating = c.CommentUser?.Rating
             });
         }
     }

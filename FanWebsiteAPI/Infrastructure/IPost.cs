@@ -1,5 +1,4 @@
-﻿
-using Fan_Website.Models;
+﻿using Fan_Website.Models;
 
 namespace Fan_Website.Services
 {

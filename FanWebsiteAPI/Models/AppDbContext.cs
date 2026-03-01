@@ -23,7 +23,7 @@ namespace Fan_Website
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<ApplicationUser>().HasMany(user => user.ProfileComments).WithOne(comment => comment.OtherUser);
+            modelBuilder.Entity<ApplicationUser>().HasMany(user => user.ProfileComments).WithOne(comment => comment.CommentUser);
             modelBuilder.Entity<ApplicationUser>().HasMany(user => user.Follows).WithOne(follow => follow.Following);
              modelBuilder.Entity<ApplicationUser>().HasMany(user => user.Followings).WithOne(follow => follow.Follower);
         }
