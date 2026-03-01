@@ -69,7 +69,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
             "http://localhost:4200",
-            "https://jolly-tree-01ae6701e.azurestaticapps.net"  // replace with your actual URL
+            "https://brave-sand-05fbc5b1e.2.azurestaticapps.net"  // replace with your actual URL
         )
               .AllowAnyHeader()
               .AllowAnyMethod()
