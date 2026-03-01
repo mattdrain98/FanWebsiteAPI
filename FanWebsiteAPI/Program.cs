@@ -53,13 +53,15 @@ builder.Services.AddScoped<IScreenshot, ScreenshotService>();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 // Azure Storage
-builder.Services.AddAzureClients(azureBuilder =>
+var storageConnection = builder.Configuration.GetConnectionString("AzureStorageAccount");
+if (!string.IsNullOrEmpty(storageConnection))
 {
-    azureBuilder.AddBlobServiceClient(
-        builder.Configuration["ConnectionStrings:AzureStorageAccount:blob"]);
-    azureBuilder.AddQueueServiceClient(
-        builder.Configuration["ConnectionStrings:AzureStorageAccount:queue"]);
-});
+    builder.Services.AddAzureClients(azureBuilder =>
+    {
+        azureBuilder.AddBlobServiceClient(storageConnection);
+        azureBuilder.AddQueueServiceClient(storageConnection);
+    });
+}
 
 // Authorization
 builder.Services.AddAuthorization();
