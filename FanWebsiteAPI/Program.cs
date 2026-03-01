@@ -67,10 +67,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")  
+        policy.WithOrigins(
+            "http://localhost:4200",
+            "https://jolly-tree-01ae6701e.azurestaticapps.net"  // replace with your actual URL
+        )
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();  
+              .AllowCredentials();
     });
 });
 
