@@ -89,6 +89,12 @@ else
     app.UseHsts();
 }
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
+
 app.UseHttpsRedirection();
 
 app.UseRouting();
