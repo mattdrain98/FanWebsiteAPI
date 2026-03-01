@@ -1,5 +1,6 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Services;
+using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,7 +28,9 @@ namespace Fan_Website.Controllers
             var post = _postService.GetById(postId);
             if (post == null) return NotFound("Post not found");
 
-            var user = await _userManager.FindByNameAsync(User.Identity?.Name);
+            var userId = _userManager.GetUserId(User);
+            var user = await _userManager.FindByIdAsync(userId);
+
             if (user == null) return Unauthorized("User not found");
 
             var dto = new PostReplyDto
@@ -53,6 +56,7 @@ namespace Fan_Website.Controllers
         {
             var userId = _userManager.GetUserId(User);
             var user = await _userManager.FindByIdAsync(userId);
+
             if (user == null) return Unauthorized("User not found");
 
             var reply = BuildReply(model, user);
@@ -75,21 +79,5 @@ namespace Fan_Website.Controllers
                 User = user
             };
         }
-    }
-
-    // DTO for API use
-    public class PostReplyDto
-    {
-        public int PostId { get; set; }
-        public string PostTitle { get; set; } = null!;
-        public string PostContent { get; set; } = null!;
-        public string ReplyContent { get; set; } = null!; // For POST
-        public string AuthorId { get; set; } = null!;
-        public string AuthorName { get; set; } = null!;
-        public string AuthorImageUrl { get; set; } = null!;
-        public int AuthorRating { get; set; }
-        public DateTime Date { get; set; }
-        public int ForumId { get; set; }
-        public string ForumName { get; set; } = null!;
     }
 }

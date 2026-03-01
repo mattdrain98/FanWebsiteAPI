@@ -8,7 +8,7 @@
         public string? AuthorImageUrl { get; set; }  
         public int AuthorRating { get; set; }       
         public string? Date { get; set; }              
-        public required string CommentContent { get; set; }     
+        public string? CommentContent { get; set; }     
         public required string UserId { get; set; }             
         public string? OtherUserName { get; set; }     
         public string? OtherUserImagePath { get; set; }

@@ -1,5 +1,6 @@
 ﻿using Fan_Website.Models.Follow;
 using Fan_Website.Models.ProfileComment;
+using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
@@ -20,8 +21,9 @@ namespace Fan_Website
         public int? Following { get; set; }
         public List<Follow>? Follows { get; set; }
         public List<Follow>? Followings { get; set; }
-        public IEnumerable<ProfileCommentModel>? ProfileComments { get; set; }
+        public IEnumerable<ProfileCommentDto>? ProfileComments { get; set; }
         public string? Bio { get; set; }
+        public required bool IsFollowing { get; set; }
     }
 
 }

@@ -1,5 +1,6 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Models.ProfileComment;
+using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -26,21 +27,24 @@ namespace Fan_Website.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCommentTemplate(string id)
         {
-            var currentUser = await userManager.FindByNameAsync(User.Identity.Name);
+            var userId = userManager.GetUserId(User);
+            var currentUser = await userManager.FindByIdAsync(userId);
+
             if (currentUser == null)
                 return Unauthorized();
 
             var user = userService.GetById(id);
+
             if (user == null)
                 return NotFound();
 
-            var model = new ProfileCommentModel
+            var model = new ProfileCommentDto
             {
                 AuthorId = currentUser.Id,
                 AuthorName = currentUser.UserName,
                 AuthorImageUrl = currentUser.ImagePath,
                 AuthorRating = currentUser.Rating,
-                Date = DateTime.Now,
+                Date = DateTime.Now.ToString(),
                 UserId = user.Id,
                 OtherUserImagePath = user.ImagePath,
                 OtherUserName = user.UserName,
@@ -52,36 +56,27 @@ namespace Fan_Website.Controllers
 
         // POST: api/ProfileComment
         [HttpPost]
-        public async Task<IActionResult> AddComment([FromBody] ProfileCommentModel model)
+        public async Task<IActionResult> AddComment([FromBody] ProfileCommentDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = userManager.GetUserId(User);
-            var currentUser = await userManager.FindByIdAsync(userId);
+            var currentUser = await userManager.GetUserAsync(User);
             if (currentUser == null)
                 return Unauthorized();
 
-            var comment = BuildComment(model, currentUser);
-
-            await userService.AddComment((ProfileComment)comment);
-            await userService.UpdateUserRating(userId, typeof(ProfileComment));
-
-            return CreatedAtAction(nameof(GetCommentTemplate), new { id = model.UserId }, comment);
-        }
-
-        // Helper method to build a ProfileComment entity from the model
-        private ProfileComment BuildComment(ProfileCommentModel model, ApplicationUser currentUser)
-        {
-            var userProfile = userService.GetById(model.UserId);
-
-            return new ProfileComment
+            var comment = new ProfileComment
             {
                 CurrentUser = currentUser,
-                Content = model.CommentContent,
+                Content = dto.CommentContent,
                 CreateOn = DateTime.Now,
-                OtherUser = userProfile
+                OtherUser = userService.GetById(dto.UserId)
             };
+
+            await userService.AddComment(comment);
+            await userService.UpdateUserRating(currentUser.Id, typeof(ProfileComment));
+
+            return CreatedAtAction(nameof(GetCommentTemplate), new { id = dto.UserId }, dto);
         }
     }
 }

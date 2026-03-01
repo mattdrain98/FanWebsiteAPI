@@ -7,6 +7,7 @@ using Fan_Website.Models.ProfileComment;
 using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Fan_Website.Controllers
 {
@@ -44,6 +45,7 @@ namespace Fan_Website.Controllers
             if (user == null) return NotFound();
 
             var comments = BuildProfileComments(user.ProfileComments);
+            var currentUserId = userManager.GetUserId(User);
 
             var model = new ProfileDto
             {
@@ -71,7 +73,8 @@ namespace Fan_Website.Controllers
                     MemberSince = f.Follower?.ToString() ?? ""
                 }),
                 ProfileComments = comments,
-                Bio = user.Bio
+                Bio = user.Bio,
+                IsFollowing = user.Follows.Any(f => f.Follower.Id == currentUserId) 
             };
 
             return Ok(model);
@@ -131,11 +134,11 @@ namespace Fan_Website.Controllers
                 .Where(f => f.Follower != null)
                 .Select(f => new FollowDto
                 {
-                    Id = f.Follower?.Id ?? "",
-                    UserName = f.Follower?.UserName ?? "",
+                    Id = f.Follower.Id,
+                    UserName = f.Follower.UserName,
                     ImagePath = f.Follower?.ImagePath,
                     Rating = f.Follower?.Rating ?? 0,
-                    MemberSince = f.Follower?.MemberSince.ToString() ?? ""
+                    MemberSince = f.Follower?.MemberSince.ToString()
                 })
                 .ToList();
 
@@ -160,11 +163,11 @@ namespace Fan_Website.Controllers
                 .Where(f => f.Following != null)
                 .Select(f => new FollowDto
                 {
-                    Id = f.Following?.Id ?? "",
-                    UserName = f.Following?.UserName ?? "",
+                    Id = f.Following.Id,
+                    UserName = f.Following.UserName,
                     ImagePath = f.Following?.ImagePath,
                     Rating = f.Following?.Rating ?? 0,
-                    MemberSince = f.Following?.MemberSince.ToString() ?? ""
+                    MemberSince = f.Following?.MemberSince.ToString()
                 })
                 .ToList();
 
