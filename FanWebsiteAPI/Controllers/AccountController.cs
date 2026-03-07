@@ -1,9 +1,11 @@
 ﻿using Fan_Website.DTOs;
 using Fan_Website.Infrastructure;
 using Fan_Website.ViewModel;
+using FanWebsiteAPI.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Reflection; 
+using Microsoft.AspNetCore.WebUtilities;
+using System.Text;
 
 namespace Fan_Website.Controllers
 {
@@ -15,14 +17,17 @@ namespace Fan_Website.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IApplicationUser _userService;
-
+        private readonly IEmailSender _emailSender;
+        private readonly IConfiguration _configuration; 
         public AccountController(UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager, IUnitOfWork unitOfWork, IApplicationUser userService)
+            SignInManager<ApplicationUser> signInManager, IUnitOfWork unitOfWork, IApplicationUser userService, IEmailSender emailSender, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _unitOfWork = unitOfWork;
             _userService = userService;
+            _emailSender = emailSender;
+            _configuration = configuration; 
         }
 
         // GET: api/account/users
@@ -117,13 +122,45 @@ namespace Fan_Website.Controllers
             if (file != null) await _unitOfWork.UploadImageAsync(file);
 
             var result = await _userManager.CreateAsync(user, model.Password);
+
             if (!result.Succeeded)
             {
                 return BadRequest(result.Errors.Select(e => e.Description));
             }
+            
+            // Generate token and send email
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-            await _signInManager.SignInAsync(user, isPersistent: false);
-            return Ok(new { Message = "Registration successful", UserId = user.Id });
+            var clientUrl = _configuration["App:ClientUrl"];
+            var confirmUrl = $"{clientUrl}/confirm-email?userId={user.Id}&token={encodedToken}";
+
+            await _emailSender.SendEmailAsync(user.Email, "Confirm your email",
+                $@"<h2>Welcome to Final Fantasy Fan Site!</h2>
+           <p>Please confirm your email by clicking the link below:</p>
+           <a href='{confirmUrl}' 
+              style='padding:10px 20px;background:#2563eb;color:white;
+                     border-radius:8px;text-decoration:none;'>
+             Confirm Email
+           </a>");
+
+            return Ok("Registration successful. Please check your email.");
+        }
+
+        // GET: api/account/confirm-email
+        [HttpGet("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+            var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
+
+            if (!result.Succeeded)
+                return BadRequest("Invalid or expired confirmation link.");
+
+            return Ok("Email confirmed. You can now log in.");
         }
 
         // POST: api/account/login 
@@ -132,12 +169,15 @@ namespace Fan_Website.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            var user = await _userManager.FindByNameAsync(model.UserName);
+            if (user == null) return Unauthorized("Invalid login attempt");
+
+            if (!await _userManager.IsEmailConfirmedAsync(user))
+                return Unauthorized("Please confirm your email before logging in.");
+
             var result = await _signInManager.PasswordSignInAsync(
                 model.UserName, model.Password, model.RememberMe, false);
-
             if (!result.Succeeded) return Unauthorized("Invalid login attempt");
-
-            var user = await _userManager.FindByNameAsync(model.UserName);
 
             return Ok(new
             {

@@ -2,11 +2,14 @@ using Fan_Website;
 using Fan_Website.Infrastructure;
 using Fan_Website.Service;
 using Fan_Website.Services;
+using FanWebsiteAPI.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<IEmailSender, EmailSender>();
 
 builder.Configuration
     .AddJsonFile("storagesettings.json", optional: true, reloadOnChange: true);
@@ -18,20 +21,20 @@ builder.Services.AddRouting(options =>
     options.AppendTrailingSlash = true;
 });
 
-// Controllers (API only)
 builder.Services.AddControllers();
 
-// DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("Fanwebsite")));
 
-// Identity
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+// Single Identity registration with all options
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.SignIn.RequireConfirmedEmail = true;
+})
+.AddEntityFrameworkStores<AppDbContext>()
+.AddDefaultTokenProviders();
 
-// Cookie config for cross-domain auth
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.SameSite = SameSiteMode.None;
@@ -43,7 +46,6 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>,
     UserClaimsPrincipalFactory<ApplicationUser, IdentityRole>>();
 
-// Application services
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IForum, ForumService>();
 builder.Services.AddScoped<IPost, PostService>();
@@ -52,7 +54,6 @@ builder.Services.AddScoped<IUpload, UploadService>();
 builder.Services.AddScoped<IScreenshot, ScreenshotService>();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
-// Azure Storage
 var storageConnection = builder.Configuration.GetConnectionString("AzureStorageAccount");
 if (!string.IsNullOrEmpty(storageConnection))
 {
@@ -63,14 +64,10 @@ if (!string.IsNullOrEmpty(storageConnection))
     });
 }
 
-// Authorization
 builder.Services.AddAuthorization();
-
-// Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
