@@ -3,6 +3,7 @@ using Fan_Website.Infrastructure;
 using Fan_Website.ViewModel;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection; 
 
 namespace Fan_Website.Controllers
 {
@@ -49,17 +50,23 @@ namespace Fan_Website.Controllers
 
             if (file != null)
             {
-                await _unitOfWork.UploadImageAsync(file);
-                user.ImagePath = file.FileName;
+                try
+                {
+                    await _unitOfWork.UploadImageAsync(file);
+                    user.ImagePath = file.FileName;
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, $"File upload failed: {ex.Message}");
+                }
             }
 
             user.UserName = model.UserName ?? user.UserName;
 
             var result = await _userManager.UpdateAsync(user);
+
             if (!result.Succeeded)
-            {
                 return BadRequest(result.Errors.Select(e => e.Description));
-            }
 
             return Ok(new { Message = "Profile updated successfully" });
         }
@@ -119,6 +126,7 @@ namespace Fan_Website.Controllers
             return Ok(new { Message = "Registration successful", UserId = user.Id });
         }
 
+        // POST: api/account/login 
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginDto model)
         {

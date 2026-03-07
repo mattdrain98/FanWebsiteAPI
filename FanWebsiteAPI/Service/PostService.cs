@@ -2,10 +2,6 @@
 using Fan_Website.Models.Forum;
 using Fan_Website.Services;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Fan_Website.Service
 {
@@ -45,27 +41,39 @@ namespace Fan_Website.Service
         public async Task DeleteReply(int id)
         {
             var reply = GetReplyById(id);
-            context.Remove(reply);
-            await context.SaveChangesAsync();
+
+            if (reply != null)
+            {
+                context.Remove(reply);
+                await context.SaveChangesAsync();
+            }
         }
         public async Task EditPost(int id, string newContent, string newTitle)
         {
             var post = GetById(id);
-            post.Content = newContent;
-            post.Title = newTitle;
-            post.CreatedOn = DateTime.Now;
-            context.Posts.Update(post);
-            await context.SaveChangesAsync();
 
+            if (post != null)
+            {
+                post.Content = newContent;
+                post.Title = newTitle;
+                post.CreatedOn = DateTime.Now;
+                context.Posts.Update(post);
+                await context.SaveChangesAsync();
+            }
         }
 
         public async Task EditReply(int id, string newContent)
         {
             var reply = GetReplyById(id);
-            reply.Content = newContent;
-            reply.CreateOn = DateTime.Now;
-            context.Replies.Update(reply);
-            await context.SaveChangesAsync();
+
+            if (reply != null)
+            {
+                reply.Content = newContent;
+                reply.CreateOn = DateTime.Now;
+                context.Replies.Update(reply);
+                await context.SaveChangesAsync();
+            }
+
         }
 
         public IEnumerable<Post> GetAll()
@@ -77,7 +85,7 @@ namespace Fan_Website.Service
                 .Include(post => post.Likes).ThenInclude(like => like.User);
         }
 
-        public Post GetById(int id)
+        public Post? GetById(int id)
         {
             return context.Posts
                 .Include(post => post.Forum).ThenInclude(forum => forum.User)
@@ -99,28 +107,33 @@ namespace Fan_Website.Service
 
         public async Task<IEnumerable<PostListingModel>> SearchPostsAsync(string query)
         {
+            var lowerQuery = query.ToLower();
             return await context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Replies)
+                .Include(p => p.Likes)
+                .Include(p => p.Forum)
                 .Where(p =>
-                    p.Title.ToLower().Contains(query.ToLower()) ||
-                    p.Content.ToLower().Contains(query.ToLower()))
+                    (p.Title != null && p.Title.ToLower().Contains(lowerQuery)) ||
+                    (p.Content != null && p.Content.ToLower().Contains(lowerQuery)))
                 .Select(p => new PostListingModel
                 {
                     Id = p.PostId,
                     Title = p.Title,
 
                     AuthorId = p.User.Id,
-                    AuthorName = p.User.UserName,
-                    AuthorRating = p.User.Rating,
+                    AuthorName = p.User != null ? p.User.UserName ?? "Unknown" : "Unknown",
+                    AuthorRating = p.User != null ? p.User.Rating : 0,
 
                     DatePosted = p.CreatedOn.ToString(),
-                    RepliesCount = p.Replies.Count(),
-                    TotalLikes = p.Likes.Count,
+                    RepliesCount = p.Replies != null ? p.Replies.Count() : 0,
+                    TotalLikes = p.Likes.Count(),
 
-                    Forum = new ForumListingModel
+                    Forum = p.Forum != null ? new ForumListingModel
                     {
                         Id = p.Forum.ForumId,
-                        Name = p.Forum.PostTitle
-                    }
+                        Name = p.Forum.PostTitle ?? string.Empty
+                    } : null
                 })
                 .ToListAsync();
         }
@@ -135,7 +148,7 @@ namespace Fan_Website.Service
             return context.Forums.Where(forum => forum.ForumId == id).First().Posts;
         }
 
-        public PostReply GetReplyById(int id)
+        public PostReply? GetReplyById(int id)
         {
             return context.Replies
                 .Include(reply => reply.User)
@@ -151,8 +164,12 @@ namespace Fan_Website.Service
         public async Task UpdatePostLikes(int id)
         {
             var post = GetById(id);
-            post.TotalLikes = CalculatePostLikes(post.TotalLikes);
-            await context.SaveChangesAsync();
+
+            if (post != null)
+            {
+                post.TotalLikes = CalculatePostLikes(post.TotalLikes);
+                await context.SaveChangesAsync();
+            }
         }
 
         public int CalculatePostLikes(int likes)
@@ -161,19 +178,21 @@ namespace Fan_Website.Service
             return likes + inc;
         }
 
-        public Like GetLikeById(int id)
+        public Like? GetLikeById(int id)
         {
             return context.Likes.Where(like => like.Id == id)
                 .Include(like => like.User)
                 .FirstOrDefault();
         }
 
-        public Post GetAllLikes(int id)
+        public IEnumerable<Like> GetAllLikes(int id)
         {
-            return context.Posts.Where(post => post.PostId == id)
-                .Include(post => post.Likes).ThenInclude(like => like.User)
-                .FirstOrDefault();
-
+            return context.Posts
+                .Where(post => post.PostId == id)
+                .Include(post => post.Likes)
+                .ThenInclude(like => like.User)
+                .FirstOrDefault()
+                ?.Likes ?? Enumerable.Empty<Like>();
         }
     }
 }

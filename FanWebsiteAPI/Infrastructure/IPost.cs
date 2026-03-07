@@ -4,7 +4,7 @@ namespace Fan_Website.Services
 {
     public interface IPost
     {
-        Post GetById(int id);
+        Post? GetById(int id);
         IEnumerable<Post> GetAll();
         IEnumerable<Post> GetFilteredPosts(Forum forum, string searchQuery);
         IEnumerable<Post> GetFilteredPosts(string searchQuery);
@@ -19,9 +19,8 @@ namespace Fan_Website.Services
         Task EditReply(int id, string newContent); 
         Task DeleteReply(int id);
         Task UpdatePostLikes(int likes); 
-        PostReply GetReplyById(int id);
-        Like GetLikeById(int id);
-        Post GetAllLikes(int id);
-
+        PostReply? GetReplyById(int id);
+        Like? GetLikeById(int id);
+        IEnumerable<Like> GetAllLikes(int id);
     }
 }

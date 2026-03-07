@@ -1,8 +1,4 @@
 ﻿using Fan_Website.Infrastructure;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using System.IO;
-using System.Threading.Tasks;
 
 public class UnitOfWork : IUnitOfWork
 {
@@ -25,6 +21,7 @@ public class UnitOfWork : IUnitOfWork
         await file.CopyToAsync(stream);
     }
 
+    // Get the file path and file name
     private string GetPathAndFileName(string filename)
     {
         string path = Path.Combine(_env.WebRootPath, "images");

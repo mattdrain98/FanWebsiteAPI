@@ -21,8 +21,12 @@ namespace Fan_Website.Service
         public async Task Delete(int id)
         {
             var screenshot = GetById(id);
-            context.Remove(screenshot);
-            await context.SaveChangesAsync();
+
+            if (screenshot != null)
+            {
+                context.Remove(screenshot);
+                await context.SaveChangesAsync();
+            }
         }
 
         public Task EditScreenshotContext(int id, string newContent)
@@ -40,7 +44,7 @@ namespace Fan_Website.Service
             return context.ApplicationUsers;
         }
 
-        public Screenshot GetById(int id)
+        public Screenshot? GetById(int id)
         {
             return context.Screenshots
                 .Include(screenshot => screenshot.User)
@@ -53,7 +57,7 @@ namespace Fan_Website.Service
 
         }
 
-        public ApplicationUser GetUserById(string id)
+        public ApplicationUser? GetUserById(string id)
         {
             return GetAllUsers().FirstOrDefault(user => user.Id == id);
         }
@@ -61,9 +65,14 @@ namespace Fan_Website.Service
         public async Task SetScreenshotImage(int id, Uri uri)
         {
             var screenshot = GetById(id);
-            screenshot.ImagePath = uri.AbsoluteUri;
-            context.Update(screenshot);
-            await context.SaveChangesAsync();
+
+            if (screenshot != null)
+            {
+                screenshot.ImagePath = uri.AbsoluteUri;
+                context.Update(screenshot);
+                await context.SaveChangesAsync();
+            }
+
         }
     }
 }

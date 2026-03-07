@@ -71,6 +71,7 @@ namespace Fan_Website.Controllers
         public ActionResult<IEnumerable<PostListingModel>> GetUserPosts()
         {
             var username = User.Identity.Name;
+            
             var posts = postService.GetAll()
                 .Where(p => p.User.UserName == username)
                 .Select(post => new PostListingModel
@@ -189,6 +190,8 @@ namespace Fan_Website.Controllers
                 CreatedOn = DateTime.Now,
                 User = user,
                 Forum = forum,
+                Replies = new List<PostReply>(),
+                Likes = new List<Like>(), 
                 TotalLikes = 0
             };
         }

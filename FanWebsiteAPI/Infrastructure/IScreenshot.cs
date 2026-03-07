@@ -2,7 +2,7 @@
 {
     public interface IScreenshot
     {
-        Screenshot GetById(int id);
+        Screenshot? GetById(int id);
         Task SetScreenshotImage(int id, Uri uri);
         Task Add(Screenshot screenshot);
         IEnumerable<Screenshot> GetAll(); 
@@ -10,6 +10,6 @@
         IEnumerable<ApplicationUser> GetAllUsers();
         Task Delete(int id);
         Task EditScreenshotContext(int id, string newContent);
-        public ApplicationUser GetUserById(string id); 
+        public ApplicationUser? GetUserById(string id); //Technically can be null, but chances are there will always be a user 
     }
 }
