@@ -161,14 +161,6 @@ namespace Fan_Website.Controllers
                   <div style='background:rgba(255,255,255,0.15); border-radius:50%; 
                                width:64px; height:64px; display:inline-flex; 
                                align-items:center; justify-content:center; margin-bottom:16px;'>
-                    <!-- Crystal / FF inspired icon -->
-                    <svg width='32' height='32' viewBox='0 0 32 32' fill='none'>
-                      <polygon points='16,2 28,10 28,22 16,30 4,22 4,10' 
-                               fill='none' stroke='white' stroke-width='2'/>
-                      <polygon points='16,8 22,12 22,20 16,24 10,20 10,12' 
-                               fill='rgba(255,255,255,0.3)' stroke='white' stroke-width='1.5'/>
-                      <circle cx='16' cy='16' r='3' fill='white'/>
-                    </svg>
                   </div>
                   <h1 style='margin:0; color:#ffffff; font-size:22px; 
                              font-weight:700; letter-spacing:-0.5px;'>
@@ -184,7 +176,7 @@ namespace Fan_Website.Controllers
               <tr>
                 <td style='padding: 36px 32px 24px;'>
                   <h2 style='margin:0 0 8px; color:#0f172a; font-size:20px; font-weight:700;'>
-                    Welcome, {user.UserName}! 👋
+                    Welcome, {user.UserName}!
                   </h2>
                   <p style='margin:0 0 24px; color:#64748b; font-size:15px; line-height:1.6;'>
                     Thanks for joining the community. You're one step away — 
@@ -263,6 +255,127 @@ namespace Fan_Website.Controllers
                 return BadRequest("Invalid or expired confirmation link.");
 
             return Ok("Email confirmed. You can now log in.");
+        }
+
+        // POST: api/account/resend-confirmation
+        [HttpPost("resend-confirmation")]
+        public async Task<ActionResult> ResendConfirmation([FromBody] string email)
+        {
+            var user = await _userManager.FindByNameAsync(email);
+            if (user == null) return Ok("If that email exists, a confirmation link has been sent.");
+
+            if (await _userManager.IsEmailConfirmedAsync(user))
+                return BadRequest("This email is already confirmed.");
+
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            var clientUrl = _configuration["App:ClientUrl"];
+            var confirmUrl = $"{clientUrl}/confirm-email?userId={user.Id}&token={encodedToken}";
+
+            await _emailSender.SendEmailAsync(user.Email, "Confirm your email",
+                $@"<!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset='utf-8'>
+      <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    </head>
+    <body style='margin:0; padding:0; background-color:#f1f5f9; font-family: DM Sans, Segoe UI, sans-serif;'>
+
+      <table width='100%' cellpadding='0' cellspacing='0' style='padding: 40px 16px;'>
+        <tr>
+          <td align='center'>
+
+            <!-- Card -->
+            <table width='100%' cellpadding='0' cellspacing='0' 
+                   style='max-width:520px; background:#ffffff; border-radius:20px; 
+                          overflow:hidden; box-shadow: 0 4px 24px rgba(37,99,235,0.10);'>
+
+              <!-- Header -->
+              <tr>
+                <td align='center'
+                    style='background: linear-gradient(135deg, #3b82f6, #1d4ed8); 
+                           padding: 40px 32px 32px;'>
+                  <div style='background:rgba(255,255,255,0.15); border-radius:50%; 
+                               width:64px; height:64px; display:inline-flex; 
+                               align-items:center; justify-content:center; margin-bottom:16px;'>
+                  </div>
+                  <h1 style='margin:0; color:#ffffff; font-size:22px; 
+                             font-weight:700; letter-spacing:-0.5px;'>
+                    Final Fantasy Fan Site
+                  </h1>
+                  <p style='margin:8px 0 0; color:rgba(255,255,255,0.8); font-size:14px;'>
+                    Your adventure begins here
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Body -->
+              <tr>
+                <td style='padding: 36px 32px 24px;'>
+                  <h2 style='margin:0 0 8px; color:#0f172a; font-size:20px; font-weight:700;'>
+                    Welcome, {user.UserName}!
+                  </h2>
+                  <p style='margin:0 0 24px; color:#64748b; font-size:15px; line-height:1.6;'>
+                    Thanks for joining the community. You're one step away — 
+                    just confirm your email address to activate your account.
+                  </p>
+
+                  <!-- Button -->
+                  <table width='100%' cellpadding='0' cellspacing='0'>
+                    <tr>
+                      <td align='center' style='padding: 8px 0 28px;'>
+                        <a href='{confirmUrl}'
+                           style='display:inline-block; padding:14px 36px;
+                                  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                                  color:#ffffff; font-size:15px; font-weight:600;
+                                  text-decoration:none; border-radius:12px;
+                                  box-shadow: 0 4px 14px rgba(37,99,235,0.4);
+                                  letter-spacing:0.01em;'>
+                          Confirm Email →
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Divider -->
+                  <hr style='border:none; border-top:1px solid #e2e8f0; margin: 0 0 24px;'/>
+
+                  <!-- Fallback link -->
+                  <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
+                    Button not working? Copy and paste this link into your browser:
+                    <br/>
+                    <a href='{confirmUrl}' 
+                       style='color:#3b82f6; word-break:break-all; font-size:11px;'>
+                      {confirmUrl}
+                    </a>
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td align='center'
+                    style='background:#f8fafc; border-top:1px solid #e2e8f0;
+                           padding: 20px 32px;'>
+                  <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
+                    This link expires in 24 hours. If you didn't create an account, 
+                    you can safely ignore this email.
+                  </p>
+                  <p style='margin:8px 0 0; color:#cbd5e1; font-size:11px;'>
+                    © 2026 Final Fantasy Fan Site
+                  </p>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+
+    </body>
+    </html>");
+
+            return Ok("Confirmation email sent.");
         }
 
         // POST: api/account/login 
