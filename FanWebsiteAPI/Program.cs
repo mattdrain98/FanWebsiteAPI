@@ -31,6 +31,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.SignIn.RequireConfirmedEmail = true;
+    options.User.RequireUniqueEmail = true;  
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
