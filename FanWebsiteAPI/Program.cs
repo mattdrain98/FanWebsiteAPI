@@ -22,8 +22,6 @@ builder.Services.AddRouting(options =>
     options.AppendTrailingSlash = false;
 });
 
-builder.Services.AddControllers();
-
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("Fanwebsite")));
@@ -73,7 +71,10 @@ if (!string.IsNullOrEmpty(storageConnection))
 
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.UseAllOfToExtendReferenceSchemas();
+});
 
 builder.Services.AddCors(options =>
 {
@@ -106,12 +107,7 @@ app.UseRouting();
 app.UseCors("AllowAngular");
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.MapGet("/api", context =>
-{
-    context.Response.Redirect("/api/home");
-    return Task.CompletedTask;
-});
+app.MapControllers();
 
 app.MapControllers();
 app.Run();

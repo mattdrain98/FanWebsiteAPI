@@ -48,6 +48,7 @@ namespace Fan_Website.Controllers
 
         // POST: api/account/edit-profile
         [HttpPost("edit-profile")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<ActionResult> EditProfile([FromForm] IFormFile file, [FromForm] EditProfileDto model)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -105,6 +106,7 @@ namespace Fan_Website.Controllers
 
         // POST: api/account/register
         [HttpPost("register")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<ActionResult> Register([FromForm] RegisterDto model, [FromForm] IFormFile? file)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -259,6 +261,7 @@ namespace Fan_Website.Controllers
 
         // POST: api/account/resend-confirmation
         [HttpPost("resend-confirmation")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<ActionResult> ResendConfirmation([FromBody] string email)
         {
             var user = await _userManager.FindByNameAsync(email);
@@ -380,6 +383,7 @@ namespace Fan_Website.Controllers
 
         // POST: api/account/login 
         [HttpPost("login")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<ActionResult> Login([FromBody] LoginDto model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

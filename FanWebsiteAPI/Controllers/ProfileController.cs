@@ -205,6 +205,7 @@ namespace Fan_Website.Controllers
 
         // POST: api/Profile/UploadProfileImage
         [HttpPost("UploadProfileImage")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<IActionResult> UploadProfileImage([FromForm] IFormFile file)
         {
             if (file == null || file.Length == 0)

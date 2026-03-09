@@ -1,4 +1,5 @@
 ﻿using Fan_Website.Infrastructure;
+using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -128,26 +129,5 @@ namespace Fan_Website.Controllers
 
             return Ok(new { Message = "Screenshot deleted successfully" });
         }
-    }
-
-    // DTOs for API
-    public class ScreenshotDto
-    {
-        public int Id { get; set; }
-        public string Title { get; set; } = null!;
-        public string Content { get; set; } = null!;
-        public string AuthorId { get; set; } = null!;
-        public string AuthorName { get; set; } = null!;
-        public int AuthorRating { get; set; }
-        public DateTime DatePosted { get; set; }
-        public string ImageUrl { get; set; } = null!;
-        public string Slug { get; set; } = null!;
-    }
-
-    public class NewScreenshotDto
-    {
-        public string Title { get; set; } = null!;
-        public string Content { get; set; } = null!;
-        public IFormFile? ImageFile { get; set; }
     }
 }

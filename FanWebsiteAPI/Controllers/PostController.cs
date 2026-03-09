@@ -159,12 +159,12 @@ namespace Fan_Website.Controllers
 
         // PUT api/post/{id}
         [HttpPut("{id}")]
-        public async Task<ActionResult> EditPost(int id, [FromBody] PostEditModel model)
+        public async Task<ActionResult> EditPost(int id, [FromBody] EditPostDto dto)
         {
             var post = postService.GetById(id);
             if (post == null) return NotFound();
 
-            await postService.EditPost(id, model.Content, model.Title);
+            await postService.EditPost(id, dto.Content!, dto.Title);
             return NoContent();
         }
 
