@@ -42,12 +42,10 @@ builder.Services.AddControllers().AddNewtonsoftJson(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SameSite = SameSiteMode.Lax; 
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.HttpOnly = true;
     options.Cookie.Name = ".AspNetCore.Identity.Application";
-    options.Cookie.Domain = ".azurewebsites.net";  
-    options.ExpireTimeSpan = TimeSpan.FromDays(14);  
 });
 
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>,
