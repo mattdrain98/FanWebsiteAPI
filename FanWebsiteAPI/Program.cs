@@ -83,7 +83,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
             "http://localhost:4200",
             "https://brave-sand-05fbc5b1e.2.azurestaticapps.net",
-            "https://fanwebsiteapi20260228180319-hsfjg3dtchcgebe9.canadacentral-01.azurewebsites.net/"
+            "https://fanwebsiteapi20260228180319-hsfjg3dtchcgebe9.canadacentral-01.azurewebsites.net"
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
