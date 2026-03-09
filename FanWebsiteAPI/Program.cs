@@ -109,7 +109,8 @@ builder.Services.AddCors(options =>
             "http://localhost:4200",
             "https://brave-sand-05fbc5b1e.2.azurestaticapps.net",
             "https://fanwebsiteapi20260228180319-hsfjg3dtchcgebe9.canadacentral-01.azurewebsites.net",
-            "https://www.dismino.com"
+            "https://www.dismino.com",
+            "https://dismino.com"
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
