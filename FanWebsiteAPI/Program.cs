@@ -42,7 +42,7 @@ builder.Services.AddControllers().AddNewtonsoftJson(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.HttpOnly = true;
     options.Cookie.Name = ".AspNetCore.Identity.Application";
@@ -82,7 +82,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
             "http://localhost:4200",
-            "https://brave-sand-05fbc5b1e.2.azurestaticapps.net"
+            "https://brave-sand-05fbc5b1e.2.azurestaticapps.net",
+            "https://fanwebsiteapi20260228180319-hsfjg3dtchcgebe9.canadacentral-01.azurewebsites.net/"
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
@@ -103,16 +104,6 @@ else
 }
 
 app.UseHttpsRedirection();
-app.Use(async (context, next) =>  
-{
-    if (context.Request.Method == "OPTIONS")
-    {
-        context.Response.StatusCode = 200;
-        await context.Response.CompleteAsync();
-        return;
-    }
-    await next();
-});
 app.UseRouting();
 app.UseCors("AllowAngular");
 app.UseAuthentication();
