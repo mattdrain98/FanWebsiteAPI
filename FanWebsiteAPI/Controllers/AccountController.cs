@@ -2,6 +2,7 @@
 using Fan_Website.Infrastructure;
 using Fan_Website.ViewModel;
 using FanWebsiteAPI.Infrastructure;
+using FanWebsiteAPI.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -383,7 +384,6 @@ namespace Fan_Website.Controllers
 
         // POST: api/account/login 
         [HttpPost("login")]
-        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<ActionResult> Login([FromBody] LoginDto model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -396,11 +396,16 @@ namespace Fan_Website.Controllers
 
             var result = await _signInManager.PasswordSignInAsync(
                 model.UserName, model.Password, model.RememberMe, false);
+
             if (!result.Succeeded) return Unauthorized("Invalid login attempt");
+
+            var jwtTokenService = HttpContext.RequestServices.GetRequiredService<JwtTokenService>();
+            var token = jwtTokenService.GenerateToken(user);
 
             return Ok(new
             {
                 message = "Login successful",
+                token = token,  
                 user = new
                 {
                     userId = user.Id,
