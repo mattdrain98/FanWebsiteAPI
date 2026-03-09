@@ -6,6 +6,7 @@ using FanWebsiteAPI.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
+using Newtonsoft.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +19,7 @@ builder.Configuration
 builder.Services.AddRouting(options =>
 {
     options.LowercaseUrls = true;
-    options.AppendTrailingSlash = true;
+    options.AppendTrailingSlash = false;
 });
 
 builder.Services.AddControllers();
@@ -35,6 +36,11 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
+
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+});
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
