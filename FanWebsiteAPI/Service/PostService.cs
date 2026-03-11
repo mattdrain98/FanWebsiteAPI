@@ -97,6 +97,8 @@ namespace Fan_Website.Service
         }
         public IEnumerable<Post> GetFilteredPosts(Forum forum, string searchQuery)
         {
+            if (forum.Posts == null) throw new NullReferenceException("There are no posts"); 
+
             if (string.IsNullOrEmpty(searchQuery))
                 return forum.Posts;
 
@@ -141,7 +143,7 @@ namespace Fan_Website.Service
                         Name = p.Forum.PostTitle ?? string.Empty,
                         Description = p.Forum.Description,
                         AuthorId = p.Forum.User.Id,
-                        AuthorName = p.Forum.User.UserName,
+                        AuthorName = p.Forum.User.UserName ?? "Unknown",
                         AuthorRating = p.Forum.User.Rating
                     } : null
                 })
@@ -155,7 +157,7 @@ namespace Fan_Website.Service
 
         public IEnumerable<Post> GetPostsByForum(int id)
         {
-            return context.Forums.Where(forum => forum.ForumId == id).First().Posts;
+            return context.Forums.Where(forum => forum.ForumId == id).First().Posts ?? throw new NullReferenceException("Forum is null.");
         }
 
         public PostReply? GetReplyById(int id)

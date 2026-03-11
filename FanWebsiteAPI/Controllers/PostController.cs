@@ -79,7 +79,7 @@ namespace Fan_Website.Controllers
                     Id = post.PostId,
                     Title = post.Title,
                     AuthorId = post.User.Id,
-                    AuthorName = post.User.UserName,
+                    AuthorName = post.User.UserName ?? "Unkown",
                     AuthorRating = post.User.Rating,
                     DatePosted = post.CreatedOn.ToString(),
                     ForumId = post.Forum.ForumId,
@@ -105,7 +105,7 @@ namespace Fan_Website.Controllers
             {
                 Id = post.PostId,
                 Title = post.Title,
-                AuthorName = user.UserName,
+                AuthorName = user.UserName ?? "Unkown",
                 AuthorId = user.Id,
                 AuthorRating = user.Rating,
                 AuthorImageUrl = user.ImagePath,
@@ -122,6 +122,8 @@ namespace Fan_Website.Controllers
         [HttpPost("search")]
         public async Task<ActionResult<IEnumerable<PostListingModel>>> Search([FromBody] PostTopicModel model)
         {
+            var search = model.SearchQuery ?? throw new NullReferenceException("Search Query was null."); 
+
             model.Posts = await postService.SearchPostsAsync(model.SearchQuery);
             return Ok(model.Posts);
         }
@@ -133,8 +135,10 @@ namespace Fan_Website.Controllers
             var post = postService.GetById(id);
             if (post == null) return NotFound();
 
-            var userId = userManager.GetUserId(User);
+            var userId = userManager.GetUserId(User) ?? throw new KeyNotFoundException("User Id was not found.");
             var user = userService.GetById(userId);
+
+            if (user == null) throw new NullReferenceException($"{nameof(user)} was returned as null.");
 
             var like = new Like { User = user, Post = post };
             var likes = post.Likes.ToList();
@@ -186,7 +190,7 @@ namespace Fan_Website.Controllers
             return new Post
             {
                 Title = model.Title,
-                Content = model.Content,
+                Content = model.Content ?? "",
                 CreatedOn = DateTime.Now,
                 User = user,
                 Forum = forum,
@@ -202,7 +206,7 @@ namespace Fan_Website.Controllers
             {
                 Id = reply.Id,
                 AuthorImageUrl = reply.User.ImagePath ?? null,
-                AuthorName = reply.User.UserName,
+                AuthorName = reply.User.UserName ?? "Unkown",
                 AuthorId = reply.User.Id,
                 AuthorRating = reply.User.Rating,
                 Date = reply.CreateOn,
@@ -215,6 +219,7 @@ namespace Fan_Website.Controllers
             });
         }
 
+        // GET api/post/top
         [HttpGet("top")]
         public ActionResult<IEnumerable<PostListingModel>> GetTopPosts(int count = 10)
         {
@@ -227,7 +232,7 @@ namespace Fan_Website.Controllers
                     Id = post.PostId,
                     Title = post.Title,
                     AuthorId = post.User.Id,
-                    AuthorName = post.User.UserName,
+                    AuthorName = post.User.UserName ?? "Unkown",
                     AuthorRating = post.User.Rating,
                     DatePosted = post.CreatedOn.ToString(),
                     ForumId = post.Forum.ForumId,
@@ -239,6 +244,7 @@ namespace Fan_Website.Controllers
             return Ok(posts);
         }
 
+        // GET api/post/latest
         [HttpGet("latest")]
         public ActionResult<IEnumerable<PostListingModel>> GetLatestPosts(int count = 10)
         {
@@ -250,7 +256,34 @@ namespace Fan_Website.Controllers
                     Id = post.PostId,
                     Title = post.Title,
                     AuthorId = post.User.Id,
-                    AuthorName = post.User.UserName,
+                    AuthorName = post.User.UserName ?? "Unkown",
+                    AuthorRating = post.User.Rating,
+                    DatePosted = post.CreatedOn.ToString(),
+                    ForumId = post.Forum.ForumId,
+                    ForumName = post.Forum.PostTitle,
+                    TotalLikes = post.Likes.Count(),
+                    RepliesCount = post.Replies.Count()
+                });
+
+            return Ok(posts);
+        }
+
+        // GET api/post/liked
+        [HttpGet("liked")]
+        public ActionResult<IEnumerable<PostListingModel>> GetLikedPosts(int count = 10)
+        {
+            var userId = userManager.GetUserId(User) ?? throw new KeyNotFoundException("User Id was not found.");
+            var user = userService.GetById(userId);
+
+            var posts = postService.GetAll()
+                    .Where(p => p.Likes.Any(l => l.User.Id == userId))
+                .Take(count)
+                .Select(post => new PostListingModel
+                {
+                    Id = post.PostId,
+                    Title = post.Title,
+                    AuthorId = post.User.Id,
+                    AuthorName = post.User.UserName ?? "Unkown",
                     AuthorRating = post.User.Rating,
                     DatePosted = post.CreatedOn.ToString(),
                     ForumId = post.Forum.ForumId,

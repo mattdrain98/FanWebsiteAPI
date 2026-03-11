@@ -1,9 +1,11 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Models;
 using Fan_Website.Models.Forum;
+using Fan_Website.Service;
 using Fan_Website.Services;
 using Fan_Website.ViewModel;
 using FanWebsiteAPI.DTOs;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
