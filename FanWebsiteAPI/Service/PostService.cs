@@ -1,6 +1,7 @@
 ﻿using Fan_Website.Models;
 using Fan_Website.Models.Forum;
 using Fan_Website.Services;
+using MailKit.Search;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Service
@@ -96,8 +97,14 @@ namespace Fan_Website.Service
         }
         public IEnumerable<Post> GetFilteredPosts(Forum forum, string searchQuery)
         {
-            return string.IsNullOrEmpty(searchQuery) ? forum.Posts :
-                forum.Posts.Where(post => post.Title.ToLower().Contains(searchQuery) || post.Content.ToLower().Contains(searchQuery) || post.Content.Contains(searchQuery) || post.Title.Contains(searchQuery));
+            if (string.IsNullOrEmpty(searchQuery))
+                return forum.Posts;
+
+            var lowerQuery = searchQuery.ToLower();
+
+            return forum.Posts.Where(post =>
+                (post.Title != null && post.Title.ToLower().Contains(lowerQuery)) ||
+                (post.Content != null && post.Content.ToLower().Contains(lowerQuery)));
         }
 
         public IEnumerable<Post> GetFilteredPosts(string searchQuery)
@@ -107,15 +114,14 @@ namespace Fan_Website.Service
 
         public async Task<IEnumerable<PostListingModel>> SearchPostsAsync(string query)
         {
-            var lowerQuery = query.ToLower();
             return await context.Posts
                 .Include(p => p.User)
                 .Include(p => p.Replies)
                 .Include(p => p.Likes)
-                .Include(p => p.Forum)
+                .Include(p => p.Forum).ThenInclude(f => f.User) 
                 .Where(p =>
-                    (p.Title != null && p.Title.ToLower().Contains(lowerQuery)) ||
-                    (p.Content != null && p.Content.ToLower().Contains(lowerQuery)))
+                    (p.Title != null && p.Title.ToLower().Contains(query)) ||
+                    (p.Content != null && p.Content.ToLower().Contains(query)))
                 .Select(p => new PostListingModel
                 {
                     Id = p.PostId,
@@ -135,8 +141,8 @@ namespace Fan_Website.Service
                         Name = p.Forum.PostTitle ?? string.Empty,
                         Description = p.Forum.Description,
                         AuthorId = p.Forum.User.Id,
-                        AuthorName = p.Forum.User.UserName, 
-                        AuthorRating = p.Forum.User.Rating 
+                        AuthorName = p.Forum.User.UserName,
+                        AuthorRating = p.Forum.User.Rating
                     } : null
                 })
                 .ToListAsync();

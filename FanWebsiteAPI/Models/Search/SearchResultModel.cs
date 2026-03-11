@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-
-
-namespace Fan_Website.Models.Search
+﻿namespace Fan_Website.Models.Search
 {
     public class SearchResultModel
     {

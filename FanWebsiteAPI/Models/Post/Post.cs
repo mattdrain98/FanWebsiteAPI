@@ -15,7 +15,7 @@ namespace Fan_Website
         public required ApplicationUser User { get; set; }
         public int ForumId { get; set; }
         public required Forum Forum { get; set; }
-        public required IEnumerable<PostReply> Replies { get; set; }
+        public required List<PostReply> Replies { get; set; }
         public int TotalLikes { get; set; }
         public required List<Like> Likes { get; set; }
         public string? Slug =>
