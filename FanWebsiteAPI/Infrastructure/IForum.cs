@@ -8,5 +8,6 @@
         Task Delete(int id);
         Task UpdateForumTitle(int id, string newTitle);
         Task UpdateForumDescription(int id, string newDescription);
+        IEnumerable<Forum> GetTopForums(int n); 
     }
 }

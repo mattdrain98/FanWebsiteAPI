@@ -36,7 +36,7 @@ namespace Fan_Website.Controllers
                     Description = forum.Description,
                     AuthorId = forum.User.Id,
                     AuthorName = forum.User.UserName,
-                    AuthorRating = forum.User.Rating.ToString()
+                    AuthorRating = forum.User.Rating
                 });
 
             return Ok(forums);
@@ -125,7 +125,7 @@ namespace Fan_Website.Controllers
                 Description = forum.Description,
                 AuthorId = forum.User.Id,
                 AuthorName = forum.User.UserName,
-                AuthorRating = forum.User.Rating.ToString()
+                AuthorRating = forum.User.Rating
             };
         }
     }

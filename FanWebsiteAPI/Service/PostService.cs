@@ -132,7 +132,11 @@ namespace Fan_Website.Service
                     Forum = p.Forum != null ? new ForumListingModel
                     {
                         Id = p.Forum.ForumId,
-                        Name = p.Forum.PostTitle ?? string.Empty
+                        Name = p.Forum.PostTitle ?? string.Empty,
+                        Description = p.Forum.Description,
+                        AuthorId = p.Forum.User.Id,
+                        AuthorName = p.Forum.User.UserName, 
+                        AuthorRating = p.Forum.User.Rating 
                     } : null
                 })
                 .ToListAsync();

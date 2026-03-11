@@ -1,9 +1,5 @@
 ﻿using Fan_Website.Models;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Fan_Website.ViewModel
 {
@@ -11,14 +7,16 @@ namespace Fan_Website.ViewModel
     {
         public int ForumId { get; set; }
         [Required(ErrorMessage = "Please enter a title.")]
-        public string PostTitle { get; set; }
+        public required string ForumTitle { get; set; }
         [Required(ErrorMessage = "Please enter a description.")]
-        public string Description { get; set; }
+        public required string Description { get; set; }
         public DateTime CreatedOn { get; set; }
-        public string UserName { get; set; }
-        public IEnumerable<Post> Posts { get; set; }
+        public required string UserId { get; set; }
+        public required string UserName { get; set; }
+        public int UserRating { get; set;  }
+        public int PostsCount { get; set; }
 
-        public string Slug =>
-            PostTitle?.Replace(' ', '-').ToLower();
+        public string? Slug =>
+            ForumTitle?.Replace(' ', '-').ToLower();
     }
 }

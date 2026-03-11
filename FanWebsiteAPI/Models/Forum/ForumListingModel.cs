@@ -8,10 +8,10 @@ namespace Fan_Website.Models.Forum
     public class ForumListingModel
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string AuthorName { get; set; }
-        public string AuthorId { get; set; }
-        public string AuthorRating { get; set; }    
+        public required string Name { get; set; }
+        public required string Description { get; set; }
+        public required string AuthorName { get; set; }
+        public required string AuthorId { get; set; }
+        public int AuthorRating { get; set; }    
     }
 }

@@ -90,7 +90,10 @@ namespace Fan_Website.Controllers
             {
                 Id = forum.ForumId,
                 Name = forum.PostTitle,
-                Description = forum.Description
+                Description = forum.Description,
+                AuthorId = forum.User.Id,
+                AuthorName = forum.User.UserName, 
+                AuthorRating = forum.User.Rating
             };
         }
     }

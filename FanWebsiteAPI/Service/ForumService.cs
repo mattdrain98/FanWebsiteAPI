@@ -50,6 +50,11 @@ namespace Fan_Website.Service
             return forum;
         }
 
+        public IEnumerable<Forum> GetTopForums(int n)
+        {
+            return GetAll().OrderByDescending(forum => forum.Posts.Count()).Take(n);
+        }
+
         public async Task UpdateForumDescription(int id, string newDescription)
         {
             var forum = GetById(id);
