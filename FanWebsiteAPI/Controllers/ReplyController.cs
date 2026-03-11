@@ -74,19 +74,6 @@ namespace Fan_Website.Controllers
             return Ok(new { Message = "Reply added successfully", PostId = model.PostId });
         }
 
-        private PostReply BuildReply(PostReplyDto model, ApplicationUser user)
-        {
-            var post = _postService.GetById(model.PostId);
-
-            return new PostReply
-            {
-                Post = post,
-                Content = model.ReplyContent,
-                CreateOn = DateTime.Now,
-                User = user
-            };
-        }
-
         // PUT: api/reply/{id}
         [HttpPut("{id}")]
         public async Task<ActionResult> EditReply(int id, [FromBody] EditReplyDto model)

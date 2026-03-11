@@ -1,7 +1,6 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Models;
 using Fan_Website.Models.Forum;
-using Fan_Website.Models.Home;
 using Fan_Website.Services;
 using Fan_Website.ViewModel;
 using FanWebsiteAPI.DTOs;
@@ -26,13 +25,6 @@ namespace Fan_Website.Controllers
             _screenshotService = screenshotService;
             _forumService = forumService;
             _userManager = userManager; 
-        }
-
-        // GET: api/home
-        [HttpGet]
-        public ActionResult<HomeIndexModel> GetHomeIndex()
-        {
-            return Ok();
         }
 
         // GET: api/home/stats
