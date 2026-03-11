@@ -13,7 +13,7 @@ namespace Fan_Website
         public required  string ScreenshotDescription { get; set; }
         public required DateTime CreatedOn { get; set; }
         public required ApplicationUser User { get; set; }
-        public string? Slug =>
-            ScreenshotTitle?.Replace(' ', '-').ToLower();
+        public string Slug =>
+            ScreenshotTitle.Replace(' ', '-').ToLower();
     }
 }

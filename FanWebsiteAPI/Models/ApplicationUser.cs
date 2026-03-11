@@ -12,10 +12,10 @@ namespace Fan_Website
         public bool IsActive { get; set; }
         public int Following { get; set; }
         public int Followers { get; set; }
-        public List<Follow>? Follows { get; set; }
-        public List<Follow>? Followings { get; set; }
-        public IEnumerable<ProfileComment>? ProfileComments { get; set; }   // comments ON this profile
-        public IEnumerable<ProfileComment>? CommentsMade { get; set; }      // comments this user has written
+        public List<Follow> Follows { get; set; } = new List<Follow>(); 
+        public List<Follow> Followings { get; set; } = new List<Follow>();
+        public List<ProfileComment> ProfileComments { get; set; } = new List<ProfileComment>(); // comments ON this profile
+        public List<ProfileComment> CommentsMade { get; set; } = new List<ProfileComment>();      // comments this user has written
         public string? Bio { get; set; }
     }
 }

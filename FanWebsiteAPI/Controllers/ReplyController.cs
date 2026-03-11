@@ -28,7 +28,7 @@ namespace Fan_Website.Controllers
             var post = _postService.GetById(postId);
             if (post == null) return NotFound("Post not found");
 
-            var userId = _userManager.GetUserId(User);
+            var userId = _userManager.GetUserId(User) ?? throw new MissingFieldException("Missing User Id");
             var user = await _userManager.FindByIdAsync(userId);
 
             if (user == null) return Unauthorized("User not found");
@@ -39,7 +39,7 @@ namespace Fan_Website.Controllers
                 PostTitle = post.Title,
                 PostContent = post.Content,
                 AuthorId = user.Id,
-                AuthorName = user.UserName,
+                AuthorName = user.UserName ?? "Unknown",
                 AuthorImageUrl = user.ImagePath,
                 AuthorRating = user.Rating,
                 Date = DateTime.Now,
@@ -54,8 +54,8 @@ namespace Fan_Website.Controllers
         [HttpPost("add")]
         public async Task<ActionResult> AddReply([FromBody] AddReplyDto model)
         {
-            var userId = _userManager.GetUserId(User);
-            var user = await _userManager.FindByIdAsync(userId);
+            var userId = _userManager.GetUserId(User) ?? throw new KeyNotFoundException($"Missing User Id");
+            var user = await _userManager.FindByIdAsync(userId); 
             if (user == null) return Unauthorized("User not found");
 
             var post = _postService.GetById(model.PostId);
@@ -64,7 +64,7 @@ namespace Fan_Website.Controllers
             var reply = new PostReply
             {
                 Post = post,
-                Content = model.ReplyContent,
+                Content = model.ReplyContent ?? "Uknown",
                 CreateOn = DateTime.Now,
                 User = user
             };

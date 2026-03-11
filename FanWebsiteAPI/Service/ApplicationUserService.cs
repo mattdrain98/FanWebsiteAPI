@@ -79,7 +79,7 @@ namespace Fan_Website.Service
             return GetAll().OrderByDescending(user => user.MemberSince).Take(n);
         }
 
-        public async Task<ProfileComment> GetCommentById(int id)
+        public async Task<ProfileComment?> GetCommentById(int id)
         {
             return await context.ProfileComments
                 .Include(c => c.CommentUser)
@@ -103,10 +103,10 @@ namespace Fan_Website.Service
             await context.SaveChangesAsync();
         }
 
-        public IEnumerable<Follow> GetFollowing(string id)
+        public IEnumerable<Follow?> GetFollowing(string id)
         { 
             var user = GetById(id);
-            var following = context.Follows.Where(follow => follow.Following == user) ?? null;
+            var following = context.Follows.Where(follow => follow.Following == user);
             return following; 
         }
         public async Task AddComment(ProfileComment comment)

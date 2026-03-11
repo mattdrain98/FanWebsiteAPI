@@ -37,7 +37,7 @@ namespace Fan_Website.Tests
             string id = "user-1",
             string name = "Matthew",
             int rating = 0,
-            string imagePath = null) =>
+            string imagePath = "") =>
             new ApplicationUser
             {
                 Id = id,

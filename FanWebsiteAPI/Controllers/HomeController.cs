@@ -57,7 +57,7 @@ namespace Fan_Website.Controllers
                 {
                     Id = post.PostId,
                     Title = post.Title,
-                    AuthorName = post.User.UserName,
+                    AuthorName = post.User.UserName ?? "Unkown",
                     AuthorId = post.User.Id,
                     AuthorRating = post.User.Rating,
                     TotalLikes = post.TotalLikes,
@@ -82,10 +82,10 @@ namespace Fan_Website.Controllers
                     ForumId = forum.ForumId,
                     ForumTitle = forum.PostTitle,
                     Description = forum.Description,
-                    UserName = forum.User.UserName,
+                    UserName = forum.User.UserName ?? "Unkown",
                     UserId = forum.User.Id,
                     UserRating = forum.User.Rating,
-                    PostsCount = forum.Posts.Count()
+                    PostsCount = forum.Posts?.Count() ?? 0
                 });
 
             return Ok(forums);
@@ -111,7 +111,7 @@ namespace Fan_Website.Controllers
                 {
                     Id = post.PostId,
                     Title = post.Title,
-                    AuthorName = post.User.UserName,
+                    AuthorName = post.User.UserName ?? "Unkown",
                     AuthorId = post.User.Id,
                     AuthorRating = post.User.Rating,
                     TotalLikes = post.TotalLikes,
@@ -139,7 +139,7 @@ namespace Fan_Website.Controllers
                     Title = s.ScreenshotTitle,
                     Content = s.ScreenshotDescription,
                     AuthorId = s.User.Id,
-                    AuthorName = s.User.UserName,
+                    AuthorName = s.User.UserName ?? "Unkown",
                     AuthorRating = s.User.Rating,
                     DatePosted = s.CreatedOn,
                     ImageUrl = s.ImagePath,
@@ -158,7 +158,7 @@ namespace Fan_Website.Controllers
                 Name = forum.PostTitle,
                 Description = forum.Description, 
                 AuthorId = forum.User.Id,
-                AuthorName = forum.User.UserName, 
+                AuthorName = forum.User.UserName ?? "Unkown", 
                 AuthorRating = forum.User.Rating
             };
         }

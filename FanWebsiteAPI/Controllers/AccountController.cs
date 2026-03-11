@@ -276,6 +276,8 @@ namespace Fan_Website.Controllers
             var clientUrl = _configuration["App:ClientUrl"];
             var confirmUrl = $"{clientUrl}/confirm-email?userId={user.Id}&token={encodedToken}";
 
+            var userEmail = user.Email ?? throw new MissingFieldException("Email is missing");
+
             await _emailSender.SendEmailAsync(user.Email, "Confirm your email",
                 $@"<!DOCTYPE html>
     <html>
