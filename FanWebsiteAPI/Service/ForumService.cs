@@ -1,10 +1,5 @@
-﻿using Fan_Website.Models;
-using Fan_Website.Services;
+﻿using Fan_Website.Services;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Fan_Website.Service
 {
@@ -43,8 +38,7 @@ namespace Fan_Website.Service
                 .Include(f => f.Posts)
                     .ThenInclude(p => p.User)
                 .Include(f => f.Posts)
-                    .ThenInclude(p => p.Replies)
-                        .ThenInclude(r => r.User)
+                    .ThenInclude(p => p.Replies).ThenInclude(r => r.User)
                 .FirstOrDefault(f => f.ForumId == id);
 
             return forum;

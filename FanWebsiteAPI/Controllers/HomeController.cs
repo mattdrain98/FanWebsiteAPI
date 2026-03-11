@@ -5,7 +5,6 @@ using Fan_Website.Models.Home;
 using Fan_Website.Services;
 using Fan_Website.ViewModel;
 using FanWebsiteAPI.DTOs;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -33,8 +32,7 @@ namespace Fan_Website.Controllers
         [HttpGet]
         public ActionResult<HomeIndexModel> GetHomeIndex()
         {
-            var model = BuildHomeIndexModel();
-            return Ok(model);
+            return Ok();
         }
 
         // GET: api/home/stats
@@ -159,6 +157,20 @@ namespace Fan_Website.Controllers
             return Ok(screenshots);
         }
 
+        private ForumListingModel GetForumListingForPost(Post post)
+        {
+            var forum = post.Forum;
+            return new ForumListingModel
+            {
+                Id = forum.ForumId,
+                Name = forum.PostTitle,
+                Description = forum.Description, 
+                AuthorId = forum.User.Id,
+                AuthorName = forum.User.UserName, 
+                AuthorRating = forum.User.Rating
+            };
+        }
+
         // GET: api/home/privacy
         [HttpGet("privacy")]
         public ActionResult<string> Privacy()
@@ -174,44 +186,6 @@ namespace Fan_Website.Controllers
             {
                 RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
             });
-        }
-
-        private HomeIndexModel BuildHomeIndexModel()
-        {
-            var latestPosts = _postService.GetLatestPosts(10);
-            var posts = latestPosts.Select(post => new PostListingModel
-            {
-                Id = post.PostId,
-                Title = post.Title,
-                AuthorName = post.User.UserName,
-                AuthorId = post.User.Id,
-                AuthorRating = post.User.Rating,
-                TotalLikes = post.TotalLikes,
-                DatePosted = post.CreatedOn.ToString("yyyy-MM-dd HH:mm"),
-                RepliesCount = post.Replies.Count(),
-                Forum = GetForumListingForPost(post),
-                ForumName = post.Forum.PostTitle
-            }).ToList();
-
-            return new HomeIndexModel
-            {
-                LatestPosts = posts,
-                SearchQuery = ""
-            };
-        }
-
-        private ForumListingModel GetForumListingForPost(Post post)
-        {
-            var forum = post.Forum;
-            return new ForumListingModel
-            {
-                Id = forum.ForumId,
-                Name = forum.PostTitle,
-                Description = forum.Description, 
-                AuthorId = forum.User.Id,
-                AuthorName = forum.User.UserName, 
-                AuthorRating = forum.User.Rating
-            };
         }
     }
 }
