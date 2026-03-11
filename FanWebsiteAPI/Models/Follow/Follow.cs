@@ -8,7 +8,7 @@ namespace Fan_Website.Models.Follow
     public class Follow
     {
         public int Id { get; set; }
-        public ApplicationUser Follower { get; set; }
-        public ApplicationUser Following { get; set; }
+        public required ApplicationUser Follower { get; set; }
+        public required ApplicationUser Following { get; set; }
     }
 }
