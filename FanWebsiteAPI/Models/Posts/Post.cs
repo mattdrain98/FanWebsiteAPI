@@ -1,4 +1,4 @@
-﻿using System;
+﻿using FanWebsiteAPI.Models.Posts;
 using System.ComponentModel.DataAnnotations;
 
 namespace Fan_Website
@@ -18,6 +18,7 @@ namespace Fan_Website
         public required List<PostReply> Replies { get; set; }
         public int TotalLikes { get; set; }
         public required List<Like> Likes { get; set; }
+        public List<PostImage>? PostImages { get; set; }
         public string? Slug =>
             Title?.Replace(' ', '-').ToLower();
 

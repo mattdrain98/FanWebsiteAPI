@@ -1,4 +1,4 @@
-﻿namespace Fan_Website.Models.Post
+﻿namespace Fan_Website.Models.Posts
 {
     public class NewPostModel
     {

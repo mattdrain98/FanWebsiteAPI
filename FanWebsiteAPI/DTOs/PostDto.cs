@@ -1,24 +1,30 @@
-﻿using Fan_Website.Models;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Fan_Website.ViewModel
+﻿namespace Fan_Website.ViewModel
 {
-    public class PostDto
+    public class CreatePostRequest
     {
         public required string Title { get; set; }
         public required string Content { get; set; }
-        public DateTime CreatedOn { get; set; }
-        public required ApplicationUser User { get; set; }
         public int ForumId { get; set; }
-        public required Forum Forum { get; set; }
-        public IEnumerable<PostReply>? Replies { get; set; }
+        public List<string>? ImageUrls { get; set; } = new();
+    }
+
+    public class PostImageDto
+    {
+        public int Id { get; set; }
+        public required string Url { get; set; }
+    }
+
+    public class PostDto
+    {
+        public int PostId { get; set; }
+        public required string Title { get; set; }
+        public required string Content { get; set; }
+        public DateTime CreatedOn { get; set; }
+        public required string AuthorId { get; set; }
+        public required string AuthorName { get; set; }
+        public int ForumId { get; set; }
         public int TotalLikes { get; set; }
-        public List<Like>? Likes { get; set; }
-        public string? Slug =>
-            Title?.Replace(' ', '-').ToLower();
+        public int RepliesCount { get; set; }
+        public List<PostImageDto>? PostImages { get; set; }
     }
 }

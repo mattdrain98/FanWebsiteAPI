@@ -4,6 +4,7 @@ using Fan_Website.Models.Forum;
 using Fan_Website.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Controllers
 {
@@ -15,13 +16,15 @@ namespace Fan_Website.Controllers
         private readonly IPost postService;
         private readonly IApplicationUser userService;
         private readonly UserManager<ApplicationUser> userManager;
+        private readonly AppDbContext _context;
 
-        public ForumController(IForum _forumService, IPost _postService, IApplicationUser _userService, UserManager<ApplicationUser> _userManager)
+        public ForumController(IForum _forumService, IPost _postService, IApplicationUser _userService, UserManager<ApplicationUser> _userManager, AppDbContext context)
         {
             forumService = _forumService;
             postService = _postService;
             userService = _userService;
             userManager = _userManager;
+            _context = context;
         }
 
         // GET: api/forum
@@ -35,7 +38,7 @@ namespace Fan_Website.Controllers
                     Name = forum.PostTitle,
                     Description = forum.Description,
                     AuthorId = forum.User.Id,
-                    AuthorName = forum.User.UserName,
+                    AuthorName = forum.User.UserName ?? "Unkown",
                     AuthorRating = forum.User.Rating
                 });
 
@@ -44,30 +47,42 @@ namespace Fan_Website.Controllers
 
         // GET: api/forum/{id}?searchQuery=xyz
         [HttpGet("{id}")]
-        public IActionResult GetForumById(int id, [FromQuery] string? searchQuery)
+        public async Task<IActionResult> GetForumById(int id, [FromQuery] string? searchQuery, [FromQuery] int limit = 6)
         {
             var forum = forumService.GetById(id);
+
             if (forum == null)
                 return NotFound();
 
-            var posts = postService.GetFilteredPosts(forum, searchQuery).ToList();
+            //var posts = postService.GetFilteredPosts(forum, searchQuery ?? "").ToList();
 
-            var postListings = posts.Select(post => new PostListingModel
-            {
-                Id = post.PostId,
-                AuthorId = post.User.Id,
-                AuthorRating = post.User.Rating,
-                AuthorName = post.User.UserName,
-                Title = post.Title,
-                TotalLikes = post.TotalLikes,
-                DatePosted = post.CreatedOn.ToString(),
-                RepliesCount = post.Replies.Count(),
-                Forum = BuildForumListing(post)
-            });
+            var postListing = await _context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Forum)
+                .Include(p => p.PostImages)
+                .Include(p => p.Likes)
+                .Include(p => p.Replies)
+                .OrderByDescending(p => p.CreatedOn)
+                .Take(limit).Where(p => p.Forum == forum)
+                .Select(post => new PostListingModel
+                {
+                    Id = post.PostId,
+                    Title = post.Title,
+                    AuthorId = post.User.Id,
+                    AuthorName = post.User.UserName ?? "Unknown",
+                    AuthorRating = post.User.Rating,
+                    TotalLikes = post.TotalLikes,
+                    DatePosted = post.CreatedOn.ToString(),
+                    RepliesCount = post.Replies.Count,
+                    ForumId = post.ForumId,
+                    ForumName = post.Forum.PostTitle,
+                    PostImages = post.PostImages
+                })
+                .ToListAsync();
 
             var result = new ForumTopicModel
             {
-                Posts = postListings,
+                Posts = postListing,
                 Forum = BuildForumListing(forum)
             };
 
@@ -82,7 +97,12 @@ namespace Fan_Website.Controllers
                 return BadRequest(ModelState);
 
             var userId = userManager.GetUserId(User);
+
+            if (userId == null) throw new KeyNotFoundException("User Id not found."); 
+
             var user = await userManager.FindByIdAsync(userId);
+
+            if (user == null) throw new NullReferenceException(nameof(user) + ": User was found as null.");
 
             var forum = new Forum
             {
@@ -124,7 +144,7 @@ namespace Fan_Website.Controllers
                 Name = forum.PostTitle,
                 Description = forum.Description,
                 AuthorId = forum.User.Id,
-                AuthorName = forum.User.UserName,
+                AuthorName = forum.User.UserName ?? "Unkown",
                 AuthorRating = forum.User.Rating
             };
         }

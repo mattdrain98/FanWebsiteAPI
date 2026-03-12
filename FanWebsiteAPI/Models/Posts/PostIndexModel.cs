@@ -1,14 +1,12 @@
 ﻿using Fan_Website.Models.Reply;
+using Fan_Website.ViewModel;
 using FanWebsiteAPI.DTOs;
-using System;
-using System.Collections.Generic;
 
-
-namespace Fan_Website.Models.Post
+namespace Fan_Website.Models.Posts
 {
     public class PostIndexModel
     {
-        public int Id { get; set; }
+        public int PostId { get; set; }
         public required string Title { get; set; }
 
         public required string AuthorName { get; set; }
@@ -29,5 +27,7 @@ namespace Fan_Website.Models.Post
         public required string ForumName { get; set; }
 
         public bool UserHasLiked { get; set; }
+
+        public IEnumerable<PostImageDto>? PostImages { get; set; }
     }
 }

@@ -100,7 +100,7 @@ namespace Fan_Website.Service
             if (forum.Posts == null) throw new NullReferenceException("There are no posts"); 
 
             if (string.IsNullOrEmpty(searchQuery))
-                return forum.Posts;
+                return forum.Posts.OrderByDescending(p => p.CreatedOn);
 
             var lowerQuery = searchQuery.ToLower();
 
@@ -130,7 +130,7 @@ namespace Fan_Website.Service
                     Title = p.Title,
 
                     AuthorId = p.User.Id,
-                    AuthorName = p.User != null ? p.User.UserName ?? "Unknown" : "Unknown",
+                    AuthorName = p.User.UserName ?? "Unknown",
                     AuthorRating = p.User != null ? p.User.Rating : 0,
 
                     DatePosted = p.CreatedOn.ToString(),

@@ -4,12 +4,12 @@
     {
         public int Id { get; set; }
 
-        public LikeUserDto User { get; set; }
+        public required LikeUserDto User { get; set; }
     }
 
     public class LikeUserDto
     {
-        public string Id { get; set; }
-        public string UserName { get; set; }
+        public required string Id { get; set; }
+        public required string UserName { get; set; }
     }
 }

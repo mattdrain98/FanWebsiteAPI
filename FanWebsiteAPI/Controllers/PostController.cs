@@ -1,298 +1,606 @@
-﻿using Fan_Website.Infrastructure;
+﻿using Fan_Website;
 using Fan_Website.Models;
-using Fan_Website.Models.Post;
+using Fan_Website.Models.Posts;
 using Fan_Website.Models.Reply;
-using Fan_Website.Services;
+using Fan_Website.ViewModel;
 using FanWebsiteAPI.DTOs;
-using Microsoft.AspNetCore.Identity;
+using FanWebsiteAPI.Models.Posts;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text.RegularExpressions;
 
-namespace Fan_Website.Controllers
+namespace FanWebsiteAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PostController : ControllerBase
+    public class PostsController : ControllerBase
     {
-        private readonly IPost postService;
-        private readonly IForum forumService;
-        private readonly IApplicationUser userService;
-        private readonly UserManager<ApplicationUser> userManager;
-        private readonly AppDbContext context;
+        private readonly AppDbContext _context;
+        private readonly ILogger<PostsController> _logger;
 
-        public PostController(IPost _postService, IForum _forumService, IApplicationUser _userService, UserManager<ApplicationUser> _userManager, AppDbContext ctx)
+        public PostsController(AppDbContext context, ILogger<PostsController> logger)
         {
-            postService = _postService;
-            forumService = _forumService;
-            userService = _userService;
-            userManager = _userManager;
-            context = ctx;
+            _context = context;
+            _logger = logger;
         }
 
-        // GET api/post/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<PostIndexModel>> GetPost(int id)
+        /// <summary>
+        /// Create a new post with images
+        /// </summary>
+        [HttpPost("create")]
+        [Authorize]
+        public async Task<IActionResult> CreatePost([FromBody] CreatePostRequest request)
         {
-            var post = postService.GetById(id);
-            if (post == null) return NotFound();
-
-            var replies = BuildPostReplies(post.Replies);
-            var userId = userManager.GetUserId(User);
-
-            var model = new PostIndexModel
+            if (!ModelState.IsValid)
             {
-                Id = post.PostId,
-                Title = post.Title,
-                AuthorName = post.User.UserName,
-                AuthorId = post.User.Id,
-                AuthorRating = post.User.Rating,
-                AuthorImageUrl = post.User.ImagePath,
-                Date = post.CreatedOn,
-                PostContent = post.Content,
-                Replies = replies,
-                TotalLikes = post.Likes.Count(),
-                Likes = post.Likes.Select(l => new LikeDto
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                // Get current user
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
                 {
-                    Id = l.Id,
-                    User = new LikeUserDto
+                    return Unauthorized(new { message = "User not found" });
+                }
+
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    return Unauthorized(new { message = "User not found" });
+                }
+
+                // Verify forum exists
+                var forum = await _context.Forums.FindAsync(request.ForumId);
+                if (forum == null)
+                {
+                    return BadRequest(new { message = "Forum not found" });
+                }
+
+                // Create post
+                var post = new Post
+                {
+                    Title = request.Title,
+                    Content = request.Content,
+                    CreatedOn = DateTime.UtcNow,
+                    User = user,
+                    Forum = forum,
+                    TotalLikes = 0,
+                    Likes = new List<Like>(),
+                    Replies = new List<PostReply>(),
+                    PostImages = new List<PostImage>()
+                };
+
+                // Add images if provided
+                if (request.ImageUrls != null && request.ImageUrls.Count > 0)
+                {
+                    foreach (var imageUrl in request.ImageUrls)
                     {
-                        Id = l.User.Id,
-                        UserName = l.User.UserName
+                        post.PostImages.Add(new PostImage
+                        {
+                            Url = imageUrl,
+                            CreatedOn = DateTime.UtcNow,
+                            Post = post
+                        });
                     }
-                }),
-                ForumId = post.Forum.ForumId,
-                ForumName = post.Forum.PostTitle,
-                UserHasLiked = post.Likes.Any(l => l.User.Id == userId)
-            };
-            return Ok(model);
-        }
+                }
 
-        // GET api/post/user
-        [HttpGet("user")]
-        public ActionResult<IEnumerable<PostListingModel>> GetUserPosts()
-        {
-            var username = User.Identity.Name;
-            
-            var posts = postService.GetAll()
-                .Where(p => p.User.UserName == username)
-                .Select(post => new PostListingModel
+                _context.Posts.Add(post);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Post {post.PostId} created with {post.PostImages.Count} images");
+                _logger.LogInformation($"Original content: {post.Content}");
+
+                // Now replace temp placeholders with real image IDs in order
+                var updatedContent = post.Content;
+                var regex = new Regex(@"\[Image-[^\]]+\]");
+
+                // Sort images by ID to ensure consistent order
+                var sortedImages = post.PostImages.OrderBy(img => img.Id).ToList();
+
+                foreach (var image in sortedImages.Select((img, idx) => new { img, idx }))
                 {
-                    Id = post.PostId,
-                    Title = post.Title,
-                    AuthorId = post.User.Id,
-                    AuthorName = post.User.UserName ?? "Unkown",
-                    AuthorRating = post.User.Rating,
-                    DatePosted = post.CreatedOn.ToString(),
-                    ForumId = post.Forum.ForumId,
-                    ForumName = post.Forum.PostTitle,
-                    TotalLikes = post.Likes.Count(),
-                    RepliesCount = post.Replies.Count()
-                }); 
-            return Ok(posts);
-        }
+                    var pattern = $@"\[Image-{image.idx}-[^\]]+\]";
+                    updatedContent = Regex.Replace(updatedContent, pattern, $"[Image-{image.idx}-{image.img.Id}]");
+                }
 
-        // POST api/post
-        [HttpPost]
-        public async Task<ActionResult<PostIndexModel>> AddPost([FromBody] NewPostModel model)
-        {
-            var userId = userManager.GetUserId(User);
-            var user = await userManager.FindByIdAsync(userId);
+                _logger.LogInformation($"Updated content: {updatedContent}");
 
-            var post = BuildPost(model, user);
-            await postService.Add(post);
-            await userService.UpdateUserRating(userId, typeof(Post));
+                if (updatedContent != post.Content)
+                {
+                    _logger.LogInformation("Content changed, updating post");
+                    post.Content = updatedContent;
+                    _context.Posts.Update(post);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    _logger.LogInformation("Content unchanged");
+                }
 
-            var response = new PostIndexModel
-            {
-                Id = post.PostId,
-                Title = post.Title,
-                AuthorName = user.UserName ?? "Unkown",
-                AuthorId = user.Id,
-                AuthorRating = user.Rating,
-                AuthorImageUrl = user.ImagePath,
-                Date = post.CreatedOn,
-                PostContent = post.Content,
-                TotalLikes = post.TotalLikes,
-                ForumId = post.Forum.ForumId,
-                ForumName = post.Forum.PostTitle
-            };
-            return CreatedAtAction(nameof(GetPost), new { id = post.PostId }, response);
-        }
+                _logger.LogInformation($"Post {post.PostId} created by user {userId}");
 
-        // POST api/post/search
-        [HttpPost("search")]
-        public async Task<ActionResult<IEnumerable<PostListingModel>>> Search([FromBody] PostTopicModel model)
-        {
-            var search = model.SearchQuery ?? throw new NullReferenceException("Search Query was null."); 
-
-            model.Posts = await postService.SearchPostsAsync(model.SearchQuery);
-            return Ok(model.Posts);
-        }
-
-        // POST api/post/{id}/likes
-        [HttpPost("{id}/likes")]
-        public ActionResult<int> UpdateLikes(int id)
-        {
-            var post = postService.GetById(id);
-            if (post == null) return NotFound();
-
-            var userId = userManager.GetUserId(User) ?? throw new KeyNotFoundException("User Id was not found.");
-            var user = userService.GetById(userId);
-
-            if (user == null) throw new NullReferenceException($"{nameof(user)} was returned as null.");
-
-            var like = new Like { User = user, Post = post };
-            var likes = post.Likes.ToList();
-
-            var userLike = likes.FirstOrDefault(l => l.User.Id == user.Id);
-            if (userLike != null)
-            {
-                context.Likes.Remove(userLike);
+                return Ok(new
+                {
+                    message = "Post created successfully",
+                    postId = post.PostId,
+                    imageCount = post.PostImages?.Count ?? 0
+                });
             }
-            else
+            catch (Exception ex)
             {
-                context.Likes.Add(like);
+                _logger.LogError(ex, "Error creating post");
+                return StatusCode(500, new { message = "Error creating post", error = ex.Message });
             }
-
-            context.SaveChanges();
-            post.TotalLikes = post.Likes.Count();
-            context.Posts.Update(post);
-            context.SaveChanges();
-
-            return Ok(post.TotalLikes);
         }
 
-        // PUT api/post/{id}
+        /// <summary>
+        /// Edit a post (owner only) — supports adding new images
+        /// </summary>
         [HttpPut("{id}")]
-        public async Task<ActionResult> EditPost(int id, [FromBody] EditPostDto dto)
+        [Authorize]
+        public async Task<IActionResult> EditPost(int id, [FromBody] EditPostDto request)
         {
-            var post = postService.GetById(id);
-            if (post == null) return NotFound();
-
-            await postService.EditPost(id, dto.Content!, dto.Title);
-            return NoContent();
-        }
-
-        // DELETE api/post/{id}
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> DeletePost(int id)
-        {
-            var post = postService.GetById(id);
-            if (post == null) return NotFound();
-
-            await postService.Delete(id);
-            return NoContent();
-        }
-
-        // Helpers
-        private Post BuildPost(NewPostModel model, ApplicationUser user)
-        {
-            var forum = forumService.GetById(model.ForumId);
-            return new Post
+            try
             {
-                Title = model.Title,
-                Content = model.Content ?? "",
-                CreatedOn = DateTime.Now,
-                User = user,
-                Forum = forum,
-                Replies = new List<PostReply>(),
-                Likes = new List<Like>(), 
-                TotalLikes = 0
-            };
-        }
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { message = "User not found" });
 
-        private IEnumerable<PostReplyModel> BuildPostReplies(IEnumerable<PostReply> replies)
-        {
-            return replies.Select(reply => new PostReplyModel
+                var post = await _context.Posts
+                    .Include(p => p.User)
+                    .Include(p => p.PostImages)
+                    .FirstOrDefaultAsync(p => p.PostId == id);
+
+                if (post == null)
+                    return NotFound(new { message = "Post not found" });
+
+                if (post.User?.Id != userId)
+                    return Forbid();
+
+                post.Title = request.Title;
+                post.Content = request.Content ?? "";
+                post.CreatedOn = DateTime.UtcNow;
+
+                // Add new images if provided
+                if (request.NewImageUrls != null && request.NewImageUrls.Count > 0)
+                {
+                    foreach (var imageUrl in request.NewImageUrls)
+                    {
+                        post.PostImages?.Add(new PostImage
+                        {
+                            Url = imageUrl,
+                            CreatedOn = DateTime.UtcNow,
+                            Post = post
+                        });
+                    }
+
+                    await _context.SaveChangesAsync();
+
+                    // Replace temp placeholders with real image IDs
+                    var updatedContent = post.Content;
+                    var sortedImages = post.PostImages?.OrderBy(img => img.Id).ToList();
+
+                    for (int i = 0; i < sortedImages?.Count; i++)
+                    {
+                        // Replace any temp placeholder for this index
+                        var tempPattern = $@"\[Image-{i}-temp\]";
+                        updatedContent = Regex.Replace(updatedContent, tempPattern, $"[Image-{i}-{sortedImages[i].Id}]");
+
+                        // Also fix any existing placeholders that may have shifted
+                        var existingPattern = $@"\[Image-{i}-\d+\]";
+                        updatedContent = Regex.Replace(updatedContent, existingPattern, $"[Image-{i}-{sortedImages[i].Id}]");
+                    }
+
+                    post.Content = updatedContent;
+                }
+
+                _context.Posts.Update(post);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Post {id} edited by user {userId}, {request.NewImageUrls?.Count ?? 0} new images added");
+
+                return Ok(new { message = "Post updated successfully" });
+            }
+            catch (Exception ex)
             {
-                Id = reply.Id,
-                AuthorImageUrl = reply.User.ImagePath ?? null,
-                AuthorName = reply.User.UserName ?? "Unkown",
-                AuthorId = reply.User.Id,
-                AuthorRating = reply.User.Rating,
-                Date = reply.CreateOn,
-                ReplyContent = reply.Content,
-                PostId = reply.Post.PostId,
-                PostContent = reply.Post.Content,
-                PostTitle = reply.Post.Title,
-                ForumId = reply.Post.Forum.ForumId,
-                ForumName = reply.Post.Forum.PostTitle
-            });
+                _logger.LogError(ex, "Error editing post");
+                return StatusCode(500, new { message = "Error editing post", error = ex.Message });
+            }
         }
 
-        // GET api/post/top
+        /// <summary>
+        /// Get a post by ID with all images
+        /// </summary>
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetPost(int id)
+        {
+            try
+            {
+                var post = await _context.Posts
+                    .Include(p => p.User)
+                    .Include(p => p.Forum)
+                    .Include(p => p.PostImages)
+                    .Include(p => p.Likes)
+                    .ThenInclude(l => l.User)
+                    .Include(p => p.Replies)
+                    .ThenInclude(r => r.User)
+                    .FirstOrDefaultAsync(p => p.PostId == id);
+
+                if (post == null)
+                {
+                    return NotFound(new { message = "Post not found" });
+                }
+
+                // Get current user ID
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                bool userHasLiked = false; 
+
+                if (post.Likes.Count > 0)
+                    userHasLiked = userId != null && post.Likes?.Any(l => l.User.Id == userId) == true;
+
+                var dto = new PostIndexModel
+                {
+                    PostId = post.PostId,
+                    Title = post.Title,
+                    PostContent = post.Content,
+                    Date = post.CreatedOn,
+                    AuthorId = post.User.Id,
+                    AuthorName = post.User.UserName ?? "Unknown",
+                    AuthorRating = post.User.Rating,
+                    AuthorImageUrl = post.User.ImagePath,
+                    ForumId = post.ForumId,
+                    ForumName = post.Forum.PostTitle,
+                    TotalLikes = post.TotalLikes,
+                    Likes = post.Likes?.Select(l => new LikeDto
+                    {
+                        Id = l.Id,
+                        User = new LikeUserDto
+                        {
+                            Id = post.User.Id,
+                            UserName = post.User.UserName ?? "Unknown"
+                        }
+                    }).ToList(),
+                    UserHasLiked = userHasLiked,
+                    Replies = post.Replies?.Select(r => new PostReplyModel
+                    {
+                        Id = r.Id,
+                        PostTitle = r.Post.Title,
+                        PostId = r.Post.PostId,
+                        PostContent = r.Post.Content,
+                        ForumName = r.Post.Forum.PostTitle,
+                        ForumId = r.Post.ForumId,
+                        AuthorId = r.User.Id,
+                        AuthorName = r.User.UserName ?? "Unknown",
+                        AuthorRating = r.User.Rating,
+                        AuthorImageUrl = r.User.ImagePath,
+                        Date = r.CreateOn,
+                        ReplyContent = r.Content
+                    }).ToList(),
+                    PostImages = post.PostImages?.Select(img => new PostImageDto
+                    {
+                        Id = img.Id,
+                        Url = img.Url
+                    }).ToList()
+                };
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving post");
+                return StatusCode(500, new { message = "Error retrieving post", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get top posts by likes
+        /// </summary>
         [HttpGet("top")]
-        public ActionResult<IEnumerable<PostListingModel>> GetTopPosts(int count = 10)
+        public async Task<IActionResult> GetTopPosts([FromQuery] int page = 1, [FromQuery] int pageSize = 6)
         {
-            var posts = postService.GetAll()
-                .OrderByDescending(p => p.Likes.Count())
-                .ThenByDescending(p => p.CreatedOn)
-                .Take(count)
-                .Select(post => new PostListingModel
-                {
-                    Id = post.PostId,
-                    Title = post.Title,
-                    AuthorId = post.User.Id,
-                    AuthorName = post.User.UserName ?? "Unkown",
-                    AuthorRating = post.User.Rating,
-                    DatePosted = post.CreatedOn.ToString(),
-                    ForumId = post.Forum.ForumId,
-                    ForumName = post.Forum.PostTitle,
-                    TotalLikes = post.Likes.Count(),
-                    RepliesCount = post.Replies.Count()
-                });
+            try
+            {
+                var totalPosts = await _context.Posts.CountAsync();
+                var totalPages = Math.Min((int)Math.Ceiling(totalPosts / (double)pageSize), 100);
 
-            return Ok(posts);
+                var posts = await _context.Posts
+                    .Include(p => p.User)
+                    .Include(p => p.Forum)
+                    .Include(p => p.PostImages)
+                    .Include(p => p.Likes)
+                    .Include(p => p.Replies)
+                    .OrderByDescending(p => p.TotalLikes)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(post => new PostListingModel
+                    {
+                        Id = post.PostId,
+                        Title = post.Title,
+                        AuthorId = post.User.Id,
+                        AuthorName = post.User.UserName ?? "Unknown",
+                        AuthorRating = post.User.Rating,
+                        TotalLikes = post.TotalLikes,
+                        DatePosted = post.CreatedOn.ToString(),
+                        RepliesCount = post.Replies.Count,
+                        ForumId = post.ForumId,
+                        ForumName = post.Forum.PostTitle,
+                        PostImages = post.PostImages
+                    })
+                    .ToListAsync();
+
+                return Ok(new { posts, page, totalPages, totalPosts });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving top posts");
+                return StatusCode(500, new { message = "Error retrieving top posts", error = ex.Message });
+            }
         }
 
-        // GET api/post/latest
         [HttpGet("latest")]
-        public ActionResult<IEnumerable<PostListingModel>> GetLatestPosts(int count = 10)
+        public async Task<IActionResult> GetLatestPosts([FromQuery] int page = 1, [FromQuery] int pageSize = 6)
         {
-            var posts = postService.GetAll()
-                .OrderByDescending(p => p.CreatedOn)
-                .Take(count)
-                .Select(post => new PostListingModel
-                {
-                    Id = post.PostId,
-                    Title = post.Title,
-                    AuthorId = post.User.Id,
-                    AuthorName = post.User.UserName ?? "Unkown",
-                    AuthorRating = post.User.Rating,
-                    DatePosted = post.CreatedOn.ToString(),
-                    ForumId = post.Forum.ForumId,
-                    ForumName = post.Forum.PostTitle,
-                    TotalLikes = post.Likes.Count(),
-                    RepliesCount = post.Replies.Count()
-                });
+            try
+            {
+                page = Math.Clamp(page, 1, 100);
 
-            return Ok(posts);
+                var totalPosts = await _context.Posts.CountAsync();
+                var totalPages = Math.Min((int)Math.Ceiling(totalPosts / (double)pageSize), 100);
+
+                var posts = await _context.Posts
+                    .Include(p => p.User)
+                    .Include(p => p.Forum)
+                    .Include(p => p.PostImages)
+                    .Include(p => p.Likes)
+                    .Include(p => p.Replies)
+                    .OrderByDescending(p => p.CreatedOn)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(post => new PostListingModel
+                    {
+                        Id = post.PostId,
+                        Title = post.Title,
+                        AuthorId = post.User.Id,
+                        AuthorName = post.User.UserName ?? "Unknown",
+                        AuthorRating = post.User.Rating,
+                        TotalLikes = post.TotalLikes,
+                        DatePosted = post.CreatedOn.ToString(),
+                        RepliesCount = post.Replies.Count,
+                        ForumId = post.ForumId,
+                        ForumName = post.Forum.PostTitle,
+                        PostImages = post.PostImages
+                    })
+                    .ToListAsync();
+
+                return Ok(new { posts, page, totalPages, totalPosts});
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving latest posts");
+                return StatusCode(500, new { message = "Error retrieving latest posts", error = ex.Message });
+            }
         }
 
-        // GET api/post/liked
-        [HttpGet("liked")]
-        public ActionResult<IEnumerable<PostListingModel>> GetLikedPosts(int count = 10)
+        /// <summary>
+        /// Delete a post by ID (owner only)
+        /// </summary>
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<IActionResult> DeletePost(int id)
         {
-            var userId = userManager.GetUserId(User) ?? throw new KeyNotFoundException("User Id was not found.");
-            var user = userService.GetById(userId);
-
-            var posts = postService.GetAll()
-                    .Where(p => p.Likes.Any(l => l.User.Id == userId))
-                .Take(count)
-                .Select(post => new PostListingModel
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
                 {
-                    Id = post.PostId,
-                    Title = post.Title,
-                    AuthorId = post.User.Id,
-                    AuthorName = post.User.UserName ?? "Unkown",
-                    AuthorRating = post.User.Rating,
-                    DatePosted = post.CreatedOn.ToString(),
-                    ForumId = post.Forum.ForumId,
-                    ForumName = post.Forum.PostTitle,
-                    TotalLikes = post.Likes.Count(),
-                    RepliesCount = post.Replies.Count()
-                });
+                    return Unauthorized(new { message = "User not found" });
+                }
 
-            return Ok(posts);
+                var post = await _context.Posts
+                    .Include(p => p.PostImages)
+                    .Include(p => p.Likes)
+                    .Include(p => p.Replies)
+                    .FirstOrDefaultAsync(p => p.PostId == id);
+
+                if (post == null)
+                {
+                    return NotFound(new { message = "Post not found" });
+                }
+
+                // Check ownership using the FK directly
+                var postUser = await _context.Users.FirstOrDefaultAsync(u =>
+                    _context.Posts.Any(p => p.PostId == id && p.User.Id == u.Id) && u.Id == userId);
+
+                if (postUser == null)
+                {
+                    return Forbid();
+                }
+
+                if (post.PostImages?.Any() == true)
+                    _context.PostImages.RemoveRange(post.PostImages);
+
+                if (post.Likes?.Any() == true)
+                    _context.Likes.RemoveRange(post.Likes);
+
+                if (post.Replies?.Any() == true)
+                    _context.Replies.RemoveRange(post.Replies);
+
+                _context.Posts.Remove(post);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Post {id} deleted by user {userId}");
+
+                return Ok(new { message = "Post deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting post");
+                return StatusCode(500, new { message = "Error deleting post", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Toggle like on a post (add if not liked, remove if already liked)
+        /// </summary>
+        [HttpPost("{id}/likes")]
+        [Authorize]
+        public async Task<IActionResult> ToggleLike(int id)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { message = "User not found" });
+
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                    return Unauthorized(new { message = "User not found" });
+
+                var post = await _context.Posts
+                    .Include(p => p.Likes)
+                    .ThenInclude(l => l.User)
+                    .FirstOrDefaultAsync(p => p.PostId == id);
+
+                if (post == null)
+                    return NotFound(new { message = "Post not found" });
+
+                var existingLike = post.Likes?.FirstOrDefault(l => l.User.Id == userId);
+
+                if (existingLike != null)
+                {
+                    // Remove like
+                    _context.Likes.Remove(existingLike);
+                    post.TotalLikes = Math.Max(0, post.TotalLikes - 1);
+                }
+                else
+                {
+                    // Add like
+                    var like = new Like
+                    {
+                        User = user,
+                        Post = post
+                    };
+                    _context.Likes.Add(like);
+                    post.TotalLikes += 1;
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Like toggled on post {id} by user {userId}. Total: {post.TotalLikes}");
+
+                return Ok(post.TotalLikes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling like");
+                return StatusCode(500, new { message = "Error toggling like", error = ex.Message });
+            }
+        }
+
+
+        [HttpGet("liked")]
+        [Authorize]
+        public async Task<IActionResult> GetLikedPosts([FromQuery] int page = 1, [FromQuery] int pageSize = 6)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { message = "User not found" });
+
+                page = Math.Clamp(page, 1, 100);
+
+                var totalLikedPosts = await _context.Likes.CountAsync(l => l.User.Id == userId);
+                var totalPages = Math.Min((int)Math.Ceiling(totalLikedPosts / (double)pageSize), 100);
+
+                var posts = await _context.Likes
+                    .Where(l => l.User.Id == userId)
+                    .Include(l => l.Post)
+                        .ThenInclude(p => p.User)
+                    .Include(l => l.Post)
+                        .ThenInclude(p => p.Forum)
+                    .Include(l => l.Post)
+                        .ThenInclude(p => p.PostImages)
+                    .Include(l => l.Post)
+                        .ThenInclude(p => p.Replies)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(l => new PostListingModel
+                    {
+                        Id = l.Post.PostId,
+                        Title = l.Post.Title,
+                        AuthorId = l.Post.User.Id,
+                        AuthorName = l.Post.User.UserName ?? "Unknown",
+                        AuthorRating = l.Post.User.Rating,
+                        TotalLikes = l.Post.TotalLikes,
+                        DatePosted = l.Post.CreatedOn.ToString(),
+                        RepliesCount = l.Post.Replies.Count,
+                        ForumId = l.Post.ForumId,
+                        ForumName = l.Post.Forum.PostTitle,
+                        PostImages = l.Post.PostImages
+                    })
+                    .ToListAsync();
+
+                return Ok(new { posts, page, totalPages, totalLikedPosts });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving liked posts");
+                return StatusCode(500, new { message = "Error retrieving liked posts", error = ex.Message });
+            }
+        }
+
+        [HttpGet("user")]
+        [Authorize]
+        public async Task<IActionResult> GetUserPosts([FromQuery] int page = 1, [FromQuery] int pageSize = 6)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { message = "User not found" });
+
+                page = Math.Clamp(page, 1, 100);
+
+                var totalUserPosts = await _context.Posts.CountAsync(p => p.User.Id == userId);
+                var totalPages = Math.Min((int)Math.Ceiling(totalUserPosts / (double)pageSize), 100);
+
+                var posts = await _context.Posts
+                    .Where(p => p.User.Id == userId)
+                    .Include(p => p.User)
+                    .Include(p => p.Forum)
+                    .Include(p => p.PostImages)
+                    .Include(p => p.Replies)
+                    .OrderByDescending(p => p.CreatedOn)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(p => new PostListingModel
+                    {
+                        Id = p.PostId,
+                        Title = p.Title,
+                        AuthorId = p.User.Id,
+                        AuthorName = p.User.UserName ?? "Unknown",
+                        AuthorRating = p.User.Rating,
+                        TotalLikes = p.TotalLikes,
+                        DatePosted = p.CreatedOn.ToString(),
+                        RepliesCount = p.Replies.Count,
+                        ForumId = p.ForumId,
+                        ForumName = p.Forum.PostTitle,
+                        PostImages = p.PostImages
+                    })
+                    .ToListAsync();
+
+                return Ok(new { posts, page, totalPages, totalUserPosts });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user posts");
+                return StatusCode(500, new { message = "Error retrieving user posts", error = ex.Message });
+            }
         }
     }
 }

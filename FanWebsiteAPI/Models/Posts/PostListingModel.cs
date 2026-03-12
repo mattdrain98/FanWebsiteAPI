@@ -1,4 +1,5 @@
 ﻿using Fan_Website.Models.Forum;
+using FanWebsiteAPI.Models.Posts;
 
 namespace Fan_Website.Models
 {
@@ -17,5 +18,6 @@ namespace Fan_Website.Models
         public string? ForumName { get; set; }
 
         public int RepliesCount { get; set; }
+        public List<PostImage>? PostImages { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Fan_Website.Models;
 using Fan_Website.Models.Follow;
 using Fan_Website.Models.ProfileComment;
+using FanWebsiteAPI.Models.Posts;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,7 @@ namespace Fan_Website
         public DbSet<ApplicationUser> ApplicationUsers { get; set;  }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Post> Posts { get; set; }
+        public DbSet<PostImage> PostImages { get; set; }
         public DbSet<Forum> Forums { get; set; }
         public DbSet<Screenshot> Screenshots { get; set; }
         public DbSet<PostReply> Replies { get; set; }
@@ -58,7 +60,12 @@ namespace Fan_Website
             modelBuilder.Entity<PostReply>()
             .HasOne(r => r.Post)
             .WithMany(p => p.Replies)
-            .OnDelete(DeleteBehavior.Restrict); 
+            .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PostImage>()
+                .HasOne(i => i.Post)
+                .WithMany(p => p.PostImages)
+                .OnDelete(DeleteBehavior.Cascade); 
         }
     }
 }
