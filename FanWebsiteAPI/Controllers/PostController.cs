@@ -265,7 +265,7 @@ namespace FanWebsiteAPI.Controllers
                         }
                     }).ToList(),
                     UserHasLiked = userHasLiked,
-                    Replies = post.Replies?.Select(r => new PostReplyModel
+                    Replies = post.Replies?.OrderByDescending(r => r.CreateOn).Select(r => new PostReplyModel
                     {
                         Id = r.Id,
                         PostTitle = r.Post.Title,
@@ -323,6 +323,7 @@ namespace FanWebsiteAPI.Controllers
                         AuthorId = post.User.Id,
                         AuthorName = post.User.UserName ?? "Unknown",
                         AuthorRating = post.User.Rating,
+                        AuthorUrl = post.User.ImagePath,
                         TotalLikes = post.TotalLikes,
                         DatePosted = post.CreatedOn.ToString(),
                         RepliesCount = post.Replies.Count,
@@ -367,6 +368,7 @@ namespace FanWebsiteAPI.Controllers
                         AuthorId = post.User.Id,
                         AuthorName = post.User.UserName ?? "Unknown",
                         AuthorRating = post.User.Rating,
+                        AuthorUrl = post.User.ImagePath,
                         TotalLikes = post.TotalLikes,
                         DatePosted = post.CreatedOn.ToString(),
                         RepliesCount = post.Replies.Count,
@@ -536,6 +538,7 @@ namespace FanWebsiteAPI.Controllers
                         AuthorId = l.Post.User.Id,
                         AuthorName = l.Post.User.UserName ?? "Unknown",
                         AuthorRating = l.Post.User.Rating,
+                        AuthorUrl = l.Post.User.ImagePath,
                         TotalLikes = l.Post.TotalLikes,
                         DatePosted = l.Post.CreatedOn.ToString(),
                         RepliesCount = l.Post.Replies.Count,
@@ -585,12 +588,14 @@ namespace FanWebsiteAPI.Controllers
                         AuthorId = p.User.Id,
                         AuthorName = p.User.UserName ?? "Unknown",
                         AuthorRating = p.User.Rating,
+                        AuthorUrl = p.User.ImagePath,
                         TotalLikes = p.TotalLikes,
                         DatePosted = p.CreatedOn.ToString(),
                         RepliesCount = p.Replies.Count,
                         ForumId = p.ForumId,
                         ForumName = p.Forum.PostTitle,
-                        PostImages = p.PostImages
+                        PostImages = p.PostImages,
+
                     })
                     .ToListAsync();
 

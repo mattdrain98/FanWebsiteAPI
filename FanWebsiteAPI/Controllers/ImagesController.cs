@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Fan_Website.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FanWebsiteAPI.Controllers
 {
@@ -7,15 +10,27 @@ namespace FanWebsiteAPI.Controllers
     [Route("api/[controller]")]
     public class ImagesController : ControllerBase
     {
-        private readonly IWebHostEnvironment _env;
+        private readonly IUpload _uploadService;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<ImagesController> _logger;
-        private readonly string _uploadFolder = "uploads/posts";
         private readonly long _maxFileSize = 5 * 1024 * 1024; // 5MB
         private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-
-        public ImagesController(IWebHostEnvironment env, ILogger<ImagesController> logger)
+        private readonly Dictionary<string, string> _contentTypes = new()
         {
-            _env = env;
+            { ".jpg", "image/jpeg" },
+            { ".jpeg", "image/jpeg" },
+            { ".png", "image/png" },
+            { ".gif", "image/gif" },
+            { ".webp", "image/webp" }
+        };
+
+        public ImagesController(
+            IUpload uploadService,
+            IConfiguration configuration,
+            ILogger<ImagesController> logger)
+        {
+            _uploadService = uploadService;
+            _configuration = configuration;
             _logger = logger;
         }
 
@@ -25,59 +40,37 @@ namespace FanWebsiteAPI.Controllers
         {
             try
             {
-                _logger.LogInformation("Upload request received");
-
-                // Validate file
                 if (file == null || file.Length == 0)
-                {
-                    _logger.LogWarning("No file provided");
                     return BadRequest(new { message = "No file provided" });
-                }
 
-                _logger.LogInformation($"File: {file.FileName}, Size: {file.Length}");
-
-                // Validate file size
                 if (file.Length > _maxFileSize)
-                {
-                    _logger.LogWarning($"File too large: {file.Length} bytes");
                     return BadRequest(new { message = "File is too large. Maximum size is 5MB." });
-                }
 
-                // Validate file extension
                 var extension = Path.GetExtension(file.FileName).ToLower();
                 if (!Array.Exists(_allowedExtensions, ext => ext == extension))
-                {
-                    _logger.LogWarning($"Invalid file extension: {extension}");
                     return BadRequest(new { message = "Invalid file type. Only JPG, PNG, GIF, and WebP are allowed." });
-                }
 
-                // Create upload folder if it doesn't exist
-                var uploadPath = Path.Combine(_env.WebRootPath ?? "wwwroot", _uploadFolder);
-                _logger.LogInformation($"Upload path: {uploadPath}");
+                var connectionString = _configuration.GetConnectionString("AzureStorageAccount");
+                var container = _uploadService.GetBlobContainer(connectionString, "post-images");
 
-                if (!Directory.Exists(uploadPath))
+                var blobName = $"{Guid.NewGuid()}{extension}";
+                var blobClient = container.GetBlobClient(blobName);
+
+                var headers = new BlobHttpHeaders
                 {
-                    Directory.CreateDirectory(uploadPath);
-                    _logger.LogInformation("Upload folder created");
-                }
+                    ContentType = _contentTypes.GetValueOrDefault(extension, "application/octet-stream")
+                };
 
-                // Generate unique filename
-                var fileName = $"{Guid.NewGuid()}{extension}";
-                var filePath = Path.Combine(uploadPath, fileName);
-
-                _logger.LogInformation($"Saving file to: {filePath}");
-
-                // Save file
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                using var stream = file.OpenReadStream();
+                await blobClient.UploadAsync(stream, new BlobUploadOptions
                 {
-                    await file.CopyToAsync(stream);
-                }
+                    HttpHeaders = headers
+                });
 
-                _logger.LogInformation($"File saved successfully: {fileName}");
+                var url = blobClient.Uri.ToString();
+                _logger.LogInformation($"File uploaded to blob: {url}");
 
-                // Return URL for the uploaded file
-                var fileUrl = $"/uploads/posts/{fileName}";
-                return Ok(new { url = fileUrl });
+                return Ok(new { url });
             }
             catch (Exception ex)
             {
@@ -88,29 +81,27 @@ namespace FanWebsiteAPI.Controllers
 
         [HttpDelete("delete")]
         [Authorize]
-        public IActionResult DeleteImage([FromBody] DeleteImageRequest request)
+        public async Task<IActionResult> DeleteImage([FromBody] DeleteImageRequest request)
         {
             try
             {
                 if (string.IsNullOrEmpty(request?.Url))
-                {
                     return BadRequest(new { message = "No URL provided" });
-                }
 
-                // Extract filename from URL
-                var fileName = Path.GetFileName(request.Url);
-                var filePath = Path.Combine(_env.WebRootPath ?? "wwwroot", _uploadFolder, fileName);
+                var uri = new Uri(request.Url);
+                var blobName = Path.GetFileName(uri.LocalPath);
 
-                // Check if file exists
-                if (!System.IO.File.Exists(filePath))
-                {
-                    _logger.LogWarning($"File not found: {filePath}");
+                var connectionString = _configuration.GetConnectionString("AzureStorageAccount");
+                var container = _uploadService.GetBlobContainer(connectionString, "post-images"); 
+
+                var blobClient = container.GetBlobClient(blobName);
+
+                var exists = await blobClient.ExistsAsync();
+                if (!exists)
                     return NotFound(new { message = "File not found" });
-                }
 
-                // Delete file
-                System.IO.File.Delete(filePath);
-                _logger.LogInformation($"File deleted: {fileName}");
+                await blobClient.DeleteAsync();
+                _logger.LogInformation($"Blob deleted: {blobName}");
 
                 return Ok(new { message = "Image deleted successfully" });
             }
