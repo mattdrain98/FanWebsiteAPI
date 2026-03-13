@@ -71,6 +71,8 @@ namespace Fan_Website.Controllers
                     AuthorId = post.User.Id,
                     AuthorName = post.User.UserName ?? "Unknown",
                     AuthorRating = post.User.Rating,
+                    AuthorUrl = post.User.ImagePath, 
+                    Content = post.Content, 
                     TotalLikes = post.TotalLikes,
                     DatePosted = post.CreatedOn.ToString(),
                     RepliesCount = post.Replies.Count,

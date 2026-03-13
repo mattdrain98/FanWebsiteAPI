@@ -320,6 +320,7 @@ namespace FanWebsiteAPI.Controllers
                     {
                         Id = post.PostId,
                         Title = post.Title,
+                        Content = post.Content, 
                         AuthorId = post.User.Id,
                         AuthorName = post.User.UserName ?? "Unknown",
                         AuthorRating = post.User.Rating,
@@ -365,6 +366,7 @@ namespace FanWebsiteAPI.Controllers
                     {
                         Id = post.PostId,
                         Title = post.Title,
+                        Content = post.Content,
                         AuthorId = post.User.Id,
                         AuthorName = post.User.UserName ?? "Unknown",
                         AuthorRating = post.User.Rating,
@@ -535,6 +537,7 @@ namespace FanWebsiteAPI.Controllers
                     {
                         Id = l.Post.PostId,
                         Title = l.Post.Title,
+                        Content = l.Post.Content, 
                         AuthorId = l.Post.User.Id,
                         AuthorName = l.Post.User.UserName ?? "Unknown",
                         AuthorRating = l.Post.User.Rating,
@@ -585,6 +588,7 @@ namespace FanWebsiteAPI.Controllers
                     {
                         Id = p.PostId,
                         Title = p.Title,
+                        Content = p.Content, 
                         AuthorId = p.User.Id,
                         AuthorName = p.User.UserName ?? "Unknown",
                         AuthorRating = p.User.Rating,

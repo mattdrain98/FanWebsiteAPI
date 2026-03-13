@@ -9,6 +9,7 @@ namespace Fan_Website.Models
 
         public int Id { get; set; }
         public required string Title { get; set; }
+        public string? Content { get; set; }    
         public required string AuthorName { get; set; }
         public string? AuthorUrl { get; set; }
         public int AuthorRating { get; set; }
