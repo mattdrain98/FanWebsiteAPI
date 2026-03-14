@@ -92,7 +92,7 @@ namespace Fan_Website.Tests
 
             var reply = new PostReply
             {
-                Content = "Nice post!",
+                ReplyContent = "Nice post!",
                 CreateOn = DateTime.UtcNow,
                 User = user,
                 Post = post
@@ -114,7 +114,7 @@ namespace Fan_Website.Tests
             var forum = MakeForum(user);
             var post = MakePost(user, forum);
 
-            var reply = new PostReply { Content = "reply", CreateOn = DateTime.UtcNow, User = user, Post = post };
+            var reply = new PostReply { ReplyContent = "reply", CreateOn = DateTime.UtcNow, User = user, Post = post };
             var like = new Like { User = user, Post = post };
 
             ctx.Users.Add(user);
@@ -150,7 +150,7 @@ namespace Fan_Website.Tests
             var user = MakeUser();
             var forum = MakeForum(user);
             var post = MakePost(user, forum);
-            var reply = new PostReply { Content = "bye", CreateOn = DateTime.UtcNow, User = user, Post = post };
+            var reply = new PostReply { ReplyContent = "bye", CreateOn = DateTime.UtcNow, User = user, Post = post };
 
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
@@ -213,7 +213,7 @@ namespace Fan_Website.Tests
             var user = MakeUser();
             var forum = MakeForum(user);
             var post = MakePost(user, forum);
-            var reply = new PostReply { Content = "old", CreateOn = DateTime.UtcNow, User = user, Post = post };
+            var reply = new PostReply { ReplyContent = "old", CreateOn = DateTime.UtcNow, User = user, Post = post };
 
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
@@ -224,7 +224,7 @@ namespace Fan_Website.Tests
             await svc.EditReply(reply.Id, "updated content");
 
             var updated = await ctx.Replies.FindAsync(reply.Id);
-            Assert.Equal("updated content", updated!.Content);
+            Assert.Equal("updated content", updated!.ReplyContent);
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -603,7 +603,7 @@ namespace Fan_Website.Tests
             var user = MakeUser();
             var forum = MakeForum(user);
             var post = MakePost(user, forum);
-            var reply = new PostReply { Content = "hi", CreateOn = DateTime.UtcNow, User = user, Post = post };
+            var reply = new PostReply { ReplyContent = "hi", CreateOn = DateTime.UtcNow, User = user, Post = post };
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.Add(post);
@@ -613,7 +613,7 @@ namespace Fan_Website.Tests
             var result = svc.GetReplyById(reply.Id);
 
             Assert.NotNull(result);
-            Assert.Equal("hi", result!.Content);
+            Assert.Equal("hi", result!.ReplyContent);
         }
 
         [Fact]

@@ -278,7 +278,7 @@ namespace FanWebsiteAPI.Controllers
                         AuthorRating = r.User.Rating,
                         AuthorImageUrl = r.User.ImagePath,
                         Date = r.CreateOn,
-                        ReplyContent = r.Content
+                        ReplyContent = r.ReplyContent
                     }).ToList(),
                     PostImages = post.PostImages?.Select(img => new PostImageDto
                     {

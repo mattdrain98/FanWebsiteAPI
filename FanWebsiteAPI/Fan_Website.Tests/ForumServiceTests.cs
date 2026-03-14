@@ -215,7 +215,7 @@ namespace Fan_Website.Tests
             var post = MakePost(user, forum);
             var reply = new PostReply
             {
-                Content = "Nice!",
+                ReplyContent = "Nice!",
                 CreateOn = DateTime.UtcNow,
                 User = user,
                 Post = post

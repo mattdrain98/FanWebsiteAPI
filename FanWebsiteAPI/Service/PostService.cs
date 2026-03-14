@@ -69,7 +69,7 @@ namespace Fan_Website.Service
 
             if (reply != null)
             {
-                reply.Content = newContent;
+                reply.ReplyContent = newContent;
                 reply.CreateOn = DateTime.Now;
                 context.Replies.Update(reply);
                 await context.SaveChangesAsync();
