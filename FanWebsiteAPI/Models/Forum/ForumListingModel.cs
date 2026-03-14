@@ -8,7 +8,7 @@ namespace Fan_Website.Models.Forum
     public class ForumListingModel
     {
         public int ForumId { get; set; }
-        public required string Name { get; set; }
+        public required string ForumTitle { get; set; }
         public required string Description { get; set; }
         public required string AuthorName { get; set; }
         public required string AuthorId { get; set; }

@@ -35,7 +35,7 @@ namespace Fan_Website.Controllers
                 .Select(forum => new ForumListingModel
                 {
                     ForumId = forum.ForumId,
-                    Name = forum.PostTitle,
+                    ForumTitle = forum.PostTitle,
                     Description = forum.Description,
                     AuthorId = forum.User.Id,
                     AuthorName = forum.User.UserName ?? "Unkown",
@@ -143,7 +143,7 @@ namespace Fan_Website.Controllers
             return new ForumListingModel
             {
                 ForumId = forum.ForumId,
-                Name = forum.PostTitle,
+                ForumTitle = forum.PostTitle,
                 Description = forum.Description,
                 AuthorId = forum.User.Id,
                 AuthorName = forum.User.UserName ?? "Unkown",
