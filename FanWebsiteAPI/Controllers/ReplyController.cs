@@ -64,7 +64,7 @@ namespace Fan_Website.Controllers
             var reply = new PostReply
             {
                 Post = post,
-                ReplyContent = model.ReplyContent ?? "Uknown",
+                ReplyContent = model.ReplyContent ?? "Unknown",
                 CreateOn = DateTime.Now,
                 User = user
             };
