@@ -13,5 +13,6 @@ namespace Fan_Website.Models.Forum
         public required string AuthorName { get; set; }
         public required string AuthorId { get; set; }
         public int AuthorRating { get; set; }    
+        public string? AuthorUrl { get; set; } 
     }
 }

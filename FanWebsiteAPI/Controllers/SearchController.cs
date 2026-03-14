@@ -32,8 +32,9 @@ namespace Fan_Website.Controllers
                 Id = post.PostId,
                 Title = post.Title,
                 AuthorId = post.User.Id,
-                AuthorName = post.User.UserName,
+                AuthorName = post.User.UserName ?? "Unknown",
                 AuthorRating = post.User.Rating,
+                AuthorUrl = post.User.ImagePath,
                 DatePosted = post.CreatedOn.ToString(),
                 RepliesCount = post.Replies?.Count() ?? 0,
                 Forum = BuildForumListing(post)
@@ -50,7 +51,6 @@ namespace Fan_Website.Controllers
         }
 
         // POST: api/Search
-        // Optional: if front-end prefers POST requests
         [HttpPost]
         public IActionResult Search([FromBody] SearchRequestModel request)
         {
@@ -65,8 +65,9 @@ namespace Fan_Website.Controllers
                 Id = post.PostId,
                 Title = post.Title,
                 AuthorId = post.User.Id,
-                AuthorName = post.User.UserName,
+                AuthorName = post.User.UserName ?? "Unknown",
                 AuthorRating = post.User.Rating,
+                AuthorUrl = post.User.ImagePath, 
                 DatePosted = post.CreatedOn.ToString(),
                 RepliesCount = post.Replies?.Count() ?? 0,
                 Forum = BuildForumListing(post)
@@ -92,8 +93,9 @@ namespace Fan_Website.Controllers
                 ForumTitle = forum.PostTitle,
                 Description = forum.Description,
                 AuthorId = forum.User.Id,
-                AuthorName = forum.User.UserName, 
-                AuthorRating = forum.User.Rating
+                AuthorName = forum.User.UserName ?? "Unknown", 
+                AuthorRating = forum.User.Rating,
+                AuthorUrl = post.User.ImagePath,
             };
         }
     }
@@ -101,6 +103,6 @@ namespace Fan_Website.Controllers
     // Model for POST search request
     public class SearchRequestModel
     {
-        public string Query { get; set; }
+        public string? Query { get; set; }
     }
 }
