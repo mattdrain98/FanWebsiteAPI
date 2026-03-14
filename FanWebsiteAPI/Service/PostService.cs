@@ -139,7 +139,7 @@ namespace Fan_Website.Service
 
                     Forum = p.Forum != null ? new ForumListingModel
                     {
-                        Id = p.Forum.ForumId,
+                        ForumId = p.Forum.ForumId,
                         Name = p.Forum.PostTitle ?? string.Empty,
                         Description = p.Forum.Description,
                         AuthorId = p.Forum.User.Id,

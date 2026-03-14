@@ -156,7 +156,7 @@ namespace Fan_Website.Controllers
             var forum = post.Forum;
             return new ForumListingModel
             {
-                Id = forum.ForumId,
+                ForumId = forum.ForumId,
                 Name = forum.PostTitle,
                 Description = forum.Description, 
                 AuthorId = forum.User.Id,

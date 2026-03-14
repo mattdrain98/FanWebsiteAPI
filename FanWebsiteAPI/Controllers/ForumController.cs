@@ -34,7 +34,7 @@ namespace Fan_Website.Controllers
             var forums = forumService.GetAll()
                 .Select(forum => new ForumListingModel
                 {
-                    Id = forum.ForumId,
+                    ForumId = forum.ForumId,
                     Name = forum.PostTitle,
                     Description = forum.Description,
                     AuthorId = forum.User.Id,
@@ -142,7 +142,7 @@ namespace Fan_Website.Controllers
         {
             return new ForumListingModel
             {
-                Id = forum.ForumId,
+                ForumId = forum.ForumId,
                 Name = forum.PostTitle,
                 Description = forum.Description,
                 AuthorId = forum.User.Id,
