@@ -159,12 +159,8 @@ namespace Fan_Website.Controllers
               <!-- Header -->
               <tr>
                 <td align='center'
-                    style='background: linear-gradient(135deg, #3b82f6, #1d4ed8); 
+                    style='background: linear-gradient(135deg, skyblue, #00AECC); 
                            padding: 40px 32px 32px;'>
-                  <div style='background:rgba(255,255,255,0.15); border-radius:50%; 
-                               width:64px; height:64px; display:inline-flex; 
-                               align-items:center; justify-content:center; margin-bottom:16px;'>
-                  </div>
                   <h1 style='margin:0; color:#ffffff; font-size:22px; 
                              font-weight:700; letter-spacing:-0.5px;'>
                     Dismino
@@ -192,7 +188,7 @@ namespace Fan_Website.Controllers
                       <td align='center' style='padding: 8px 0 28px;'>
                         <a href='{confirmUrl}'
                            style='display:inline-block; padding:14px 36px;
-                                  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                                  background: linear-gradient(135deg, skyblue, #00AECC);
                                   color:#ffffff; font-size:15px; font-weight:600;
                                   text-decoration:none; border-radius:12px;
                                   box-shadow: 0 4px 14px rgba(37,99,235,0.4);
@@ -228,7 +224,7 @@ namespace Fan_Website.Controllers
                     you can safely ignore this email.
                   </p>
                   <p style='margin:8px 0 0; color:#cbd5e1; font-size:11px;'>
-                    © 2026 Final Fantasy Fan Site
+                    © 2026 Dismino
                   </p>
                 </td>
               </tr>
