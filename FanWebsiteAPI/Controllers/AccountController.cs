@@ -138,104 +138,106 @@ namespace Fan_Website.Controllers
             var clientUrl = _configuration["App:ClientUrl"];
             var confirmUrl = $"{clientUrl}/confirm-email?userId={user.Id}&token={encodedToken}";
 
-            await _emailSender.SendEmailAsync(user.Email, "Confirm your email",
+            var userEmail = user.Email ?? throw new MissingFieldException("Email is missing");
+
+            await _emailSender.SendEmailAsync(userEmail, "Confirm your email",
                 $@"<!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset='utf-8'>
-      <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    </head>
-    <body style='margin:0; padding:0; background-color:#f1f5f9; font-family: DM Sans, Segoe UI, sans-serif;'>
+                    <html>
+                    <head>
+                      <meta charset='utf-8'>
+                      <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                    </head>
+                    <body style='margin:0; padding:0; background-color:#f1f5f9; font-family: DM Sans, Segoe UI, sans-serif;'>
 
-      <table width='100%' cellpadding='0' cellspacing='0' style='padding: 40px 16px;'>
-        <tr>
-          <td align='center'>
+                      <table width='100%' cellpadding='0' cellspacing='0' style='padding: 40px 16px;'>
+                        <tr>
+                          <td align='center'>
 
-            <!-- Card -->
-            <table width='100%' cellpadding='0' cellspacing='0' 
-                   style='max-width:520px; background:#ffffff; border-radius:20px; 
-                          overflow:hidden; box-shadow: 0 4px 24px rgba(37,99,235,0.10);'>
+                            <!-- Card -->
+                            <table width='100%' cellpadding='0' cellspacing='0' 
+                                   style='max-width:520px; background:#ffffff; border-radius:20px; 
+                                          overflow:hidden; box-shadow: 0 4px 24px rgba(37,99,235,0.10);'>
 
-              <!-- Header -->
-              <tr>
-                <td align='center'
-                    style='background: linear-gradient(135deg, skyblue, #00AECC); 
-                           padding: 40px 32px 32px;'>
-                  <h1 style='margin:0; color:#ffffff; font-size:22px; 
-                             font-weight:700; letter-spacing:-0.5px;'>
-                    Dismino
-                  </h1>
-                  <p style='margin:8px 0 0; color:rgba(255,255,255,0.8); font-size:14px;'>
-                    Your adventure begins here
-                  </p>
-                </td>
-              </tr>
+                              <!-- Header -->
+                              <tr>
+                                <td align='center'
+                                    style='background: linear-gradient(135deg, skyblue, #00AECC); 
+                                           padding: 40px 32px 32px;'>
+                                  <h1 style='margin:0; color:#ffffff; font-size:22px; 
+                                             font-weight:700; letter-spacing:-0.5px;'>
+                                    Dismino
+                                  </h1>
+                                  <p style='margin:8px 0 0; color:rgba(255,255,255,0.8); font-size:14px;'>
+                                    Your adventure begins here
+                                  </p>
+                                </td>
+                              </tr>
 
-              <!-- Body -->
-              <tr>
-                <td style='padding: 36px 32px 24px;'>
-                  <h2 style='margin:0 0 8px; color:#0f172a; font-size:20px; font-weight:700;'>
-                    Welcome, {user.UserName}!
-                  </h2>
-                  <p style='margin:0 0 24px; color:#64748b; font-size:15px; line-height:1.6;'>
-                    Thanks for joining the community. You're one step away — 
-                    just confirm your email address to activate your account.
-                  </p>
+                              <!-- Body -->
+                              <tr>
+                                <td style='padding: 36px 32px 24px;'>
+                                  <h2 style='margin:0 0 8px; color:#0f172a; font-size:20px; font-weight:700;'>
+                                    Welcome, {user.UserName}!
+                                  </h2>
+                                  <p style='margin:0 0 24px; color:#64748b; font-size:15px; line-height:1.6;'>
+                                    Thanks for joining the community. You're one step away — 
+                                    just confirm your email address to activate your account.
+                                  </p>
 
-                  <!-- Button -->
-                  <table width='100%' cellpadding='0' cellspacing='0'>
-                    <tr>
-                      <td align='center' style='padding: 8px 0 28px;'>
-                        <a href='{confirmUrl}'
-                           style='display:inline-block; padding:14px 36px;
-                                  background: linear-gradient(135deg, skyblue, #00AECC);
-                                  color:#ffffff; font-size:15px; font-weight:600;
-                                  text-decoration:none; border-radius:12px;
-                                  box-shadow: 0 4px 14px rgba(37,99,235,0.4);
-                                  letter-spacing:0.01em;'>
-                          Confirm Email →
-                        </a>
-                      </td>
-                    </tr>
-                  </table>
+                                  <!-- Button -->
+                                  <table width='100%' cellpadding='0' cellspacing='0'>
+                                    <tr>
+                                      <td align='center' style='padding: 8px 0 28px;'>
+                                        <a href='{confirmUrl}'
+                                           style='display:inline-block; padding:14px 36px;
+                                                  background: linear-gradient(135deg, skyblue, #00AECC);
+                                                  color:#ffffff; font-size:15px; font-weight:600;
+                                                  text-decoration:none; border-radius:12px;
+                                                  box-shadow: 0 4px 14px rgba(37,99,235,0.4);
+                                                  letter-spacing:0.01em;'>
+                                          Confirm Email →
+                                        </a>
+                                      </td>
+                                    </tr>
+                                  </table>
 
-                  <!-- Divider -->
-                  <hr style='border:none; border-top:1px solid #e2e8f0; margin: 0 0 24px;'/>
+                                  <!-- Divider -->
+                                  <hr style='border:none; border-top:1px solid #e2e8f0; margin: 0 0 24px;'/>
 
-                  <!-- Fallback link -->
-                  <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
-                    Button not working? Copy and paste this link into your browser:
-                    <br/>
-                    <a href='{confirmUrl}' 
-                       style='color:#3b82f6; word-break:break-all; font-size:11px;'>
-                      {confirmUrl}
-                    </a>
-                  </p>
-                </td>
-              </tr>
+                                  <!-- Fallback link -->
+                                  <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
+                                    Button not working? Copy and paste this link into your browser:
+                                    <br/>
+                                    <a href='{confirmUrl}' 
+                                       style='color:#3b82f6; word-break:break-all; font-size:11px;'>
+                                      {confirmUrl}
+                                    </a>
+                                  </p>
+                                </td>
+                              </tr>
 
-              <!-- Footer -->
-              <tr>
-                <td align='center'
-                    style='background:#f8fafc; border-top:1px solid #e2e8f0;
-                           padding: 20px 32px;'>
-                  <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
-                    This link expires in 24 hours. If you didn't create an account, 
-                    you can safely ignore this email.
-                  </p>
-                  <p style='margin:8px 0 0; color:#cbd5e1; font-size:11px;'>
-                    © 2026 Dismino
-                  </p>
-                </td>
-              </tr>
+                              <!-- Footer -->
+                              <tr>
+                                <td align='center'
+                                    style='background:#f8fafc; border-top:1px solid #e2e8f0;
+                                           padding: 20px 32px;'>
+                                  <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
+                                    This link expires in 24 hours. If you didn't create an account, 
+                                    you can safely ignore this email.
+                                  </p>
+                                  <p style='margin:8px 0 0; color:#cbd5e1; font-size:11px;'>
+                                    © 2026 Dismino
+                                  </p>
+                                </td>
+                              </tr>
 
-            </table>
-          </td>
-        </tr>
-      </table>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
 
-    </body>
-    </html>");
+                    </body>
+                    </html>");
 
             return Ok("Registration successful. Please check your email.");
         }
@@ -274,106 +276,109 @@ namespace Fan_Website.Controllers
 
             var userEmail = user.Email ?? throw new MissingFieldException("Email is missing");
 
-            await _emailSender.SendEmailAsync(user.Email, "Confirm your email",
-    $@"<!DOCTYPE html>
-<html>
-<head>
-  <meta charset='utf-8'>
-  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-</head>
-<body style='margin:0; padding:0; background-color:#e0f2fe; font-family: Segoe UI, sans-serif;'>
 
-  <table width='100%' cellpadding='0' cellspacing='0' style='padding: 40px 16px;'>
-    <tr>
-      <td align='center'>
+            await _emailSender.SendEmailAsync(userEmail, "Confirm your email",
+                $@"<!DOCTYPE html>
+                   <html>
+                   <head>
+                     <meta charset='utf-8'>
+                     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                   </head>
+                   <body style='margin:0; padding:0; background-color:#f1f5f9; font-family: DM Sans, Segoe UI, sans-serif;'>
 
-        <table width='100%' cellpadding='0' cellspacing='0'
-               style='max-width:520px; background:#ffffff; border-radius:20px;
-                      overflow:hidden; box-shadow: 0 4px 24px rgba(14,165,233,0.15);'>
+                     <table width='100%' cellpadding='0' cellspacing='0' style='padding: 40px 16px;'>
+                       <tr>
+                         <td align='center'>
 
-          <!-- Header -->
-          <tr>
-            <td align='center'
-                style='background: linear-gradient(135deg, #38bdf8, #0284c7);
-                       padding: 40px 32px 32px;'>
-              <h1 style='margin:0; color:#ffffff; font-size:22px;
-                         font-weight:700; letter-spacing:-0.5px;'>
-                Final Fantasy Fan Site
-              </h1>
-              <p style='margin:8px 0 0; color:rgba(255,255,255,0.85); font-size:14px;'>
-                Your adventure begins here
-              </p>
-            </td>
-          </tr>
+                           <!-- Card -->
+                           <table width='100%' cellpadding='0' cellspacing='0' 
+                                  style='max-width:520px; background:#ffffff; border-radius:20px; 
+                                         overflow:hidden; box-shadow: 0 4px 24px rgba(37,99,235,0.10);'>
 
-          <!-- Body -->
-          <tr>
-            <td style='padding: 36px 32px 24px;'>
-              <h2 style='margin:0 0 8px; color:#0f172a; font-size:20px; font-weight:700;'>
-                Welcome, {user.UserName}!
-              </h2>
-              <p style='margin:0 0 24px; color:#64748b; font-size:15px; line-height:1.6;'>
-                Thanks for joining the community. You're one step away —
-                just confirm your email address to activate your account.
-              </p>
+                             <!-- Header -->
+                             <tr>
+                               <td align='center'
+                                   style='background: linear-gradient(135deg, skyblue, #00AECC); 
+                                          padding: 40px 32px 32px;'>
+                                 <h1 style='margin:0; color:#ffffff; font-size:22px; 
+                                            font-weight:700; letter-spacing:-0.5px;'>
+                                   Dismino
+                                 </h1>
+                                 <p style='margin:8px 0 0; color:rgba(255,255,255,0.8); font-size:14px;'>
+                                   Your adventure begins here
+                                 </p>
+                               </td>
+                             </tr>
 
-              <!-- Button -->
-              <table width='100%' cellpadding='0' cellspacing='0'>
-                <tr>
-                  <td align='center' style='padding: 8px 0 28px;'>
-                    <a href='{confirmUrl}'
-                       style='display:inline-block; padding:14px 36px;
-                              background: linear-gradient(135deg, #38bdf8, #0284c7);
-                              color:#ffffff; font-size:15px; font-weight:600;
-                              text-decoration:none; border-radius:12px;
-                              box-shadow: 0 4px 14px rgba(14,165,233,0.4);
-                              letter-spacing:0.01em;'>
-                      Confirm Email →
-                    </a>
-                  </td>
-                </tr>
-              </table>
+                             <!-- Body -->
+                             <tr>
+                               <td style='padding: 36px 32px 24px;'>
+                                 <h2 style='margin:0 0 8px; color:#0f172a; font-size:20px; font-weight:700;'>
+                                   Welcome, {user.UserName}!
+                                 </h2>
+                                 <p style='margin:0 0 24px; color:#64748b; font-size:15px; line-height:1.6;'>
+                                   Thanks for joining the community. You're one step away — 
+                                   just confirm your email address to activate your account.
+                                 </p>
 
-              <!-- Divider -->
-              <hr style='border:none; border-top:1px solid #e2e8f0; margin: 0 0 24px;'/>
+                                 <!-- Button -->
+                                 <table width='100%' cellpadding='0' cellspacing='0'>
+                                   <tr>
+                                     <td align='center' style='padding: 8px 0 28px;'>
+                                       <a href='{confirmUrl}'
+                                          style='display:inline-block; padding:14px 36px;
+                                                 background: linear-gradient(135deg, skyblue, #00AECC);
+                                                 color:#ffffff; font-size:15px; font-weight:600;
+                                                 text-decoration:none; border-radius:12px;
+                                                 box-shadow: 0 4px 14px rgba(37,99,235,0.4);
+                                                 letter-spacing:0.01em;'>
+                                         Confirm Email →
+                                       </a>
+                                     </td>
+                                   </tr>
+                                 </table>
 
-              <!-- Fallback link -->
-              <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
-                Button not working? Copy and paste this link into your browser:
-                <br/>
-                <a href='{confirmUrl}'
-                   style='color:#0284c7; word-break:break-all; font-size:11px;'>
-                  {confirmUrl}
-                </a>
-              </p>
-            </td>
-          </tr>
+                                 <!-- Divider -->
+                                 <hr style='border:none; border-top:1px solid #e2e8f0; margin: 0 0 24px;'/>
 
-          <!-- Footer -->
-          <tr>
-            <td align='center'
-                style='background:#f0f9ff; border-top:1px solid #bae6fd;
-                       padding: 20px 32px;'>
-              <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
-                This link expires in 24 hours. If you didn't create an account,
-                you can safely ignore this email.
-              </p>
-              <p style='margin:8px 0 0; color:#cbd5e1; font-size:11px;'>
-                © 2026 Final Fantasy Fan Site
-              </p>
-            </td>
-          </tr>
+                                 <!-- Fallback link -->
+                                 <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
+                                   Button not working? Copy and paste this link into your browser:
+                                   <br/>
+                                   <a href='{confirmUrl}' 
+                                      style='color:#3b82f6; word-break:break-all; font-size:11px;'>
+                                     {confirmUrl}
+                                   </a>
+                                 </p>
+                               </td>
+                             </tr>
 
-        </table>
-      </td>
-    </tr>
-  </table>
+                             <!-- Footer -->
+                             <tr>
+                               <td align='center'
+                                   style='background:#f8fafc; border-top:1px solid #e2e8f0;
+                                          padding: 20px 32px;'>
+                                 <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
+                                   This link expires in 24 hours. If you didn't create an account, 
+                                   you can safely ignore this email.
+                                 </p>
+                                 <p style='margin:8px 0 0; color:#cbd5e1; font-size:11px;'>
+                                   © 2026 Dismino
+                                 </p>
+                               </td>
+                             </tr>
 
-</body>
-</html>");
+                           </table>
+                         </td>
+                       </tr>
+                     </table>
 
-            return Ok("Confirmation email sent.");
+                   </body>
+                   </html>");
+
+            return Ok("Confirmation email sent."); 
         }
+        
 
         // POST: api/account/login 
         [HttpPost("login")]

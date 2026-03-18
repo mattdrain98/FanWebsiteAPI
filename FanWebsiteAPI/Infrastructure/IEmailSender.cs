@@ -33,7 +33,7 @@ namespace FanWebsiteAPI.Infrastructure
                 throw new ArgumentException($"Invalid recipient email address: '{to}'", nameof(to));
 
             var message = new MimeMessage();
-            message.From.Add(fromAddress);
+            message.From.Add(new MailboxAddress("Dismino", fromAddress.Address));
             message.To.Add(toAddress);
             message.Subject = subject;
             message.Body = new TextPart("html") { Text = body };
