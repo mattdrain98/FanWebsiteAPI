@@ -83,6 +83,7 @@ builder.Services.AddScoped<IApplicationUser, ApplicationUserService>();
 builder.Services.AddScoped<IUpload, UploadService>();
 builder.Services.AddScoped<IScreenshot, ScreenshotService>();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+builder.Services.AddHttpClient();
 
 var storageConnection = builder.Configuration.GetConnectionString("AzureStorageAccount");
 if (!string.IsNullOrEmpty(storageConnection))

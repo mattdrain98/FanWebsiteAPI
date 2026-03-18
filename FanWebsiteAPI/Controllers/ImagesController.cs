@@ -23,15 +23,75 @@ namespace FanWebsiteAPI.Controllers
             { ".gif", "image/gif" },
             { ".webp", "image/webp" }
         };
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public ImagesController(
             IUpload uploadService,
             IConfiguration configuration,
-            ILogger<ImagesController> logger)
+            ILogger<ImagesController> logger,
+            IHttpClientFactory httpClientFactory)
         {
             _uploadService = uploadService;
             _configuration = configuration;
             _logger = logger;
+            _httpClientFactory = httpClientFactory;
+        }
+
+        [HttpPost("fetch-url")]
+        [Authorize]
+        public async Task<IActionResult> FetchFromUrl([FromBody] FetchImageUrlRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Url) || !Uri.TryCreate(request.Url, UriKind.Absolute, out var uri))
+                return BadRequest(new { message = "Invalid URL" });
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            httpClient.DefaultRequestHeaders.Add("Referer", uri.Host);
+
+            using var response = await httpClient.GetAsync(uri);
+            if (!response.IsSuccessStatusCode)
+                return BadRequest(new { message = "Failed to fetch image" });
+
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
+            var extension = contentType switch
+            {
+                "image/jpeg" => ".jpg",
+                "image/png" => ".png",
+                "image/gif" => ".gif",
+                "image/webp" => ".webp",
+                _ => ".jpg"
+            };
+
+            if (!Array.Exists(_allowedExtensions, ext => ext == extension))
+                return BadRequest(new { message = "Invalid file type." });
+
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            if (bytes.Length > _maxFileSize)
+                return BadRequest(new { message = "File is too large. Maximum size is 5MB." });
+
+            var connectionString = _configuration.GetConnectionString("AzureStorageAccount");
+            var container = _uploadService.GetBlobContainer(connectionString, "post-images");
+
+            var blobName = $"{Guid.NewGuid()}{extension}";
+            var blobClient = container.GetBlobClient(blobName);
+
+            var blobHeaders = new BlobHttpHeaders
+            {
+                ContentType = _contentTypes.GetValueOrDefault(extension, "application/octet-stream")
+            };
+
+            using var stream = new MemoryStream(bytes);
+            await blobClient.UploadAsync(stream, new BlobUploadOptions { HttpHeaders = blobHeaders });
+
+            var url = blobClient.Uri.ToString();
+            _logger.LogInformation($"File fetched from URL and uploaded to blob: {url}");
+
+            return Ok(new { url });
+        }
+
+        public class FetchImageUrlRequest
+        {
+            public string Url { get; set; } = string.Empty;
         }
 
         [HttpPost("upload")]
