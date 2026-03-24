@@ -9,7 +9,6 @@
         Task<IEnumerable<Screenshot>> GetLatestScreenshots(int n);
         Task<IEnumerable<ApplicationUser>> GetAllUsers();
         Task Delete(int id);
-        Task EditScreenshotContext(int id, string newContent);
         Task<ApplicationUser?> GetUserById(string id); //Technically can be null, but chances are there will always be a user 
     }
 }

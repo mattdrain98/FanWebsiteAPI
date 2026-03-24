@@ -138,18 +138,6 @@ namespace Fan_Website.Tests
         }
 
         // ──────────────────────────────────────────────────────────────
-        // EditScreenshotContext
-        // ──────────────────────────────────────────────────────────────
-
-        [Fact]
-        public async Task EditScreenshotContext_ThrowsNotImplementedException()
-        {
-            var (_, svc) = Build(nameof(EditScreenshotContext_ThrowsNotImplementedException));
-
-            await Assert.ThrowsAsync<NotImplementedException>(() => svc.EditScreenshotContext(1, "new content"));
-        }
-
-        // ──────────────────────────────────────────────────────────────
         // GetAll
         // ──────────────────────────────────────────────────────────────
 

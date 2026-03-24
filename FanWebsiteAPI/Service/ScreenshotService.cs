@@ -29,11 +29,6 @@ namespace Fan_Website.Service
             }
         }
 
-        public Task EditScreenshotContext(int id, string newContent)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<IEnumerable<Screenshot>> GetAll()
         {
             return await context.Screenshots.Include(screenshot => screenshot.User).ToListAsync(); 
