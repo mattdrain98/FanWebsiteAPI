@@ -11,13 +11,6 @@ using Xunit;
 
 namespace Fan_Website.Tests
 {
-    /// <summary>
-    /// Unit tests for ApplicationUserService using EF Core InMemory provider.
-    /// NuGet packages required:
-    ///   - Microsoft.EntityFrameworkCore.InMemory
-    ///   - xunit
-    ///   - xunit.runner.visualstudio
-    /// </summary>
     public class ApplicationUserServiceTests
     {
         // ──────────────────────────────────────────────────────────────
@@ -68,20 +61,20 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetAll_ReturnsAllUsers()
+        public async Task GetAll_ReturnsAllUsers()
         {
             var (ctx, svc) = Build(nameof(GetAll_ReturnsAllUsers));
             ctx.Users.AddRange(MakeUser("1", "Matthew"), MakeUser("2", "Bob"));
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            Assert.Equal(2, svc.GetAll().Count());
+            Assert.Equal(2, (await svc.GetAll()).Count());
         }
 
         [Fact]
-        public void GetAll_EmptyDatabase_ReturnsEmpty()
+        public async Task GetAll_EmptyDatabase_ReturnsEmpty()
         {
             var (_, svc) = Build(nameof(GetAll_EmptyDatabase_ReturnsEmpty));
-            Assert.Empty(svc.GetAll());
+            Assert.Empty(await svc.GetAll());
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -89,29 +82,29 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetById_ExistingId_ReturnsUser()
+        public async Task GetById_ExistingId_ReturnsUser()
         {
             var (ctx, svc) = Build(nameof(GetById_ExistingId_ReturnsUser));
             var user = MakeUser();
             ctx.Users.Add(user);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetById(user.Id);
+            var result = await svc.GetById(user.Id);
 
             Assert.NotNull(result);
             Assert.Equal(user.Id, result.Id);
         }
 
         [Fact]
-        public void GetById_NonExistentId_ThrowsKeyNotFoundException()
+        public async Task GetById_NonExistentId_ThrowsKeyNotFoundException()
         {
             var (_, svc) = Build(nameof(GetById_NonExistentId_ThrowsKeyNotFoundException));
 
-            Assert.Throws<KeyNotFoundException>(() => svc.GetById("nonexistent"));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.GetById("nonexistent"));
         }
 
         [Fact]
-        public void GetById_IncludesFollowsAndProfileComments()
+        public async Task GetById_IncludesFollowsAndProfileComments()
         {
             var (ctx, svc) = Build(nameof(GetById_IncludesFollowsAndProfileComments));
             var user = MakeUser("1", "Matthew");
@@ -120,9 +113,9 @@ namespace Fan_Website.Tests
 
             ctx.Users.AddRange(user, commenter);
             ctx.ProfileComments.Add(comment);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetById(user.Id);
+            var result = await svc.GetById(user.Id);
 
             Assert.NotNull(result.ProfileComments);
             Assert.Single(result.ProfileComments);
@@ -161,10 +154,10 @@ namespace Fan_Website.Tests
             ctx.Users.Add(user);
             await ctx.SaveChangesAsync();
 
-            await svc.UpdateUserRating(user.Id, typeof(string)); // unknown type
+            await svc.UpdateUserRating(user.Id, typeof(string));
 
             var updated = await ctx.Users.FindAsync(user.Id);
-            Assert.Equal(5, updated!.Rating); // unchanged
+            Assert.Equal(5, updated!.Rating);
         }
 
         [Fact]
@@ -221,7 +214,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetLatestUsers_ReturnsNewestFirst()
+        public async Task GetLatestUsers_ReturnsNewestFirst()
         {
             var (ctx, svc) = Build(nameof(GetLatestUsers_ReturnsNewestFirst));
             var older = MakeUser("1", "Matthew");
@@ -230,25 +223,25 @@ namespace Fan_Website.Tests
             newer.MemberSince = DateTime.UtcNow;
 
             ctx.Users.AddRange(older, newer);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetLatestUsers(1).ToList();
+            var result = (await svc.GetLatestUsers(1)).ToList();
 
             Assert.Single(result);
             Assert.Equal("Bob", result[0].UserName);
         }
 
         [Fact]
-        public void GetLatestUsers_RespectsNLimit()
+        public async Task GetLatestUsers_RespectsNLimit()
         {
             var (ctx, svc) = Build(nameof(GetLatestUsers_RespectsNLimit));
             ctx.Users.AddRange(
                 MakeUser("1", "A"),
                 MakeUser("2", "B"),
                 MakeUser("3", "C"));
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetLatestUsers(2).ToList();
+            var result = (await svc.GetLatestUsers(2)).ToList();
 
             Assert.Equal(2, result.Count);
         }
@@ -403,7 +396,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetFollowing_ReturnsFollowsForUser()
+        public async Task GetFollowing_ReturnsFollowsForUser()
         {
             var (ctx, svc) = Build(nameof(GetFollowing_ReturnsFollowsForUser));
             var user = MakeUser("1", "Matthew");
@@ -412,22 +405,22 @@ namespace Fan_Website.Tests
 
             ctx.Users.AddRange(user, follower);
             ctx.Follows.Add(follow);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetFollowing(user.Id).ToList();
+            var result = (await svc.GetFollowing(user.Id)).ToList();
 
             Assert.Single(result);
         }
 
         [Fact]
-        public void GetFollowing_NoFollowers_ReturnsEmpty()
+        public async Task GetFollowing_NoFollowers_ReturnsEmpty()
         {
             var (ctx, svc) = Build(nameof(GetFollowing_NoFollowers_ReturnsEmpty));
             var user = MakeUser();
             ctx.Users.Add(user);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetFollowing(user.Id).ToList();
+            var result = (await svc.GetFollowing(user.Id)).ToList();
 
             Assert.Empty(result);
         }

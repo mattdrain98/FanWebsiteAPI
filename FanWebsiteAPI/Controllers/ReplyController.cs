@@ -25,7 +25,7 @@ namespace Fan_Website.Controllers
         [HttpGet("create/{postId}")]
         public async Task<ActionResult<PostReplyDto>> GetReplyModel(int postId)
         {
-            var post = _postService.GetById(postId);
+            var post = await _postService.GetById(postId);
             if (post == null) return NotFound("Post not found");
 
             var userId = _userManager.GetUserId(User) ?? throw new MissingFieldException("Missing User Id");
@@ -58,7 +58,7 @@ namespace Fan_Website.Controllers
             var user = await _userManager.FindByIdAsync(userId); 
             if (user == null) return Unauthorized("User not found");
 
-            var post = _postService.GetById(model.PostId);
+            var post = await _postService.GetById(model.PostId);
             if (post == null) return NotFound("Post not found");
 
             var reply = new PostReply
@@ -79,7 +79,7 @@ namespace Fan_Website.Controllers
         public async Task<ActionResult> EditReply(int id, [FromBody] EditReplyDto model)
         {
             var userId = _userManager.GetUserId(User);
-            var reply = _postService.GetReplyById(id);
+            var reply = await _postService.GetReplyByIdAsync(id);
             if (reply == null) return NotFound("Reply not found");
             if (reply.User.Id != userId) return Forbid();
             await _postService.EditReply(id, model.Content);
@@ -91,7 +91,7 @@ namespace Fan_Website.Controllers
         public async Task<ActionResult> DeleteReply(int id)
         {
             var userId = _userManager.GetUserId(User);
-            var reply = _postService.GetReplyById(id);
+            var reply = await _postService.GetReplyByIdAsync(id);
             if (reply == null) return NotFound("Reply not found");
             if (reply.User.Id != userId) return Forbid();
             await _postService.DeleteReply(id);

@@ -20,7 +20,7 @@ namespace Fan_Website.Service
 
         public async Task Delete(int id)
         {
-            var screenshot = GetById(id);
+            var screenshot = await GetById(id);
 
             if (screenshot != null)
             {
@@ -34,37 +34,37 @@ namespace Fan_Website.Service
             throw new NotImplementedException();
         }
 
-        public IEnumerable<Screenshot> GetAll()
+        public async Task<IEnumerable<Screenshot>> GetAll()
         {
-            return context.Screenshots.Include(screenshot => screenshot.User); 
+            return await context.Screenshots.Include(screenshot => screenshot.User).ToListAsync(); 
         }
 
-        public IEnumerable<ApplicationUser> GetAllUsers()
+        public async Task<IEnumerable<ApplicationUser>> GetAllUsers()
         {
-            return context.ApplicationUsers;
+            return await context.ApplicationUsers.ToListAsync();
         }
 
-        public Screenshot? GetById(int id)
+        public async Task<Screenshot?> GetById(int id)
         {
-            return context.Screenshots
+            return await context.Screenshots
                 .Include(screenshot => screenshot.User)
-                .FirstOrDefault(screenshot => screenshot.ScreenshotId == id);
+                .FirstOrDefaultAsync(screenshot => screenshot.ScreenshotId == id);
         }
 
-        public IEnumerable<Screenshot> GetLatestScreenshots(int n)
+        public async Task<IEnumerable<Screenshot>> GetLatestScreenshots(int n)
         {
-            return GetAll().OrderByDescending(screenshot => screenshot.CreatedOn).Take(n);
+            return await context.Screenshots.OrderByDescending(screenshot => screenshot.CreatedOn).Take(n).ToListAsync();
 
         }
 
-        public ApplicationUser? GetUserById(string id)
+        public async Task<ApplicationUser?> GetUserById(string id)
         {
-            return GetAllUsers().FirstOrDefault(user => user.Id == id);
+            return await context.Users.FirstOrDefaultAsync(user => user.Id == id);
         }
 
         public async Task SetScreenshotImage(int id, Uri uri)
         {
-            var screenshot = GetById(id);
+            var screenshot = await GetById(id);
 
             if (screenshot != null)
             {

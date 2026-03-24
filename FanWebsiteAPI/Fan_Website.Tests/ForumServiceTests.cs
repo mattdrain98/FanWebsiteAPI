@@ -123,45 +123,47 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetAll_ReturnsAllForums()
+        public async Task GetAll_ReturnsAllForums()
         {
             var (ctx, svc) = Build(nameof(GetAll_ReturnsAllForums));
             var user = MakeUser();
             ctx.Users.Add(user);
             ctx.Forums.AddRange(MakeForum(user, 1), MakeForum(user, 2), MakeForum(user, 3));
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var results = svc.GetAll().ToList();
+            var results = (await svc.GetAll()).ToList();
 
             Assert.Equal(3, results.Count);
         }
 
         [Fact]
-        public void GetAll_EmptyDatabase_ReturnsEmpty()
+        public async Task GetAll_EmptyDatabase_ReturnsEmpty()
         {
             var (_, svc) = Build(nameof(GetAll_EmptyDatabase_ReturnsEmpty));
 
-            Assert.Empty(svc.GetAll());
+            Assert.Empty(await svc.GetAll());
         }
 
         [Fact]
-        public void GetAll_IncludesUser()
+        public async Task GetAll_IncludesUser()
         {
             var (ctx, svc) = Build(nameof(GetAll_IncludesUser));
             var user = MakeUser();
             var forum = MakeForum(user);
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetAll().First();
+            var result = await svc.GetAll();
 
-            Assert.NotNull(result.User);
-            Assert.Equal("Matthew", result.User.UserName);
+            var userResult = result.First();
+
+            Assert.NotNull(userResult.User);
+            Assert.Equal("Matthew", userResult.User.UserName);
         }
 
         [Fact]
-        public void GetAll_IncludesPosts()
+        public async Task GetAll_IncludesPosts()
         {
             var (ctx, svc) = Build(nameof(GetAll_IncludesPosts));
             var user = MakeUser();
@@ -170,9 +172,9 @@ namespace Fan_Website.Tests
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.Add(post);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetAll().First();
+            var result = (await svc.GetAll()).First();
 
             Assert.NotNull(result.Posts);
             Assert.Single(result.Posts);
@@ -183,31 +185,31 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetById_ExistingId_ReturnsForum()
+        public async Task GetByIdAsync_ExistingId_ReturnsForum()
         {
-            var (ctx, svc) = Build(nameof(GetById_ExistingId_ReturnsForum));
+            var (ctx, svc) = Build(nameof(GetByIdAsync_ExistingId_ReturnsForum));
             var user = MakeUser();
             var forum = MakeForum(user);
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetById(forum.ForumId);
+            var result = await svc.GetByIdAsync(forum.ForumId);
 
             Assert.NotNull(result);
             Assert.Equal(forum.ForumId, result.ForumId);
         }
 
         [Fact]
-        public void GetById_NonExistentId_ReturnsNull()
+        public async Task GetById_NonExistentId_ReturnsNull()
         {
             var (_, svc) = Build(nameof(GetById_NonExistentId_ReturnsNull));
 
-            Assert.Null(svc.GetById(999));
+            Assert.Null(await svc.GetByIdAsync(999));
         }
 
         [Fact]
-        public void GetById_IncludesPostsWithReplies()
+        public async Task GetById_IncludesPostsWithReplies()
         {
             var (ctx, svc) = Build(nameof(GetById_IncludesPostsWithReplies));
             var user = MakeUser();
@@ -224,9 +226,9 @@ namespace Fan_Website.Tests
             ctx.Forums.Add(forum);
             ctx.Posts.Add(post);
             ctx.Replies.Add(reply);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetById(forum.ForumId);
+            var result = await svc.GetByIdAsync(forum.ForumId);
 
             Assert.Single(result.Posts);
             Assert.Single(result.Posts.First().Replies);
@@ -237,14 +239,13 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetTopForums_ReturnsMostPostsFirst()
+        public async Task GetTopForums_ReturnsMostPostsFirst()
         {
             var (ctx, svc) = Build(nameof(GetTopForums_ReturnsMostPostsFirst));
             var user = MakeUser();
             var forum1 = MakeForum(user, 1, "Low");
             var forum2 = MakeForum(user, 2, "High");
 
-            // forum2 gets more posts
             var posts = Enumerable.Range(1, 5)
                 .Select(i => MakePost(user, forum2, i))
                 .ToList();
@@ -253,16 +254,16 @@ namespace Fan_Website.Tests
             ctx.Users.Add(user);
             ctx.Forums.AddRange(forum1, forum2);
             ctx.Posts.AddRange(posts);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetTopForums(1).ToList();
+            var result = (await svc.GetTopForums(1)).ToList();
 
             Assert.Single(result);
             Assert.Equal("High", result[0].PostTitle);
         }
 
         [Fact]
-        public void GetTopForums_RespectsNLimit()
+        public async Task GetTopForums_RespectsNLimit()
         {
             var (ctx, svc) = Build(nameof(GetTopForums_RespectsNLimit));
             var user = MakeUser();
@@ -271,19 +272,19 @@ namespace Fan_Website.Tests
                 MakeForum(user, 1, "A"),
                 MakeForum(user, 2, "B"),
                 MakeForum(user, 3, "C"));
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetTopForums(2).ToList();
+            var result = (await svc.GetTopForums(2)).ToList();
 
             Assert.Equal(2, result.Count);
         }
 
         [Fact]
-        public void GetTopForums_EmptyDatabase_ReturnsEmpty()
+        public async Task GetTopForums_EmptyDatabase_ReturnsEmpty()
         {
             var (_, svc) = Build(nameof(GetTopForums_EmptyDatabase_ReturnsEmpty));
 
-            Assert.Empty(svc.GetTopForums(5));
+            Assert.Empty(await svc.GetTopForums(5));
         }
 
         // ──────────────────────────────────────────────────────────────

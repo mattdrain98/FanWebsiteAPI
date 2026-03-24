@@ -9,13 +9,6 @@ using Xunit;
 
 namespace Fan_Website.Tests
 {
-    /// <summary>
-    /// Unit tests for ScreenshotService using EF Core InMemory provider.
-    /// NuGet packages required:
-    ///   - Microsoft.EntityFrameworkCore.InMemory
-    ///   - xunit
-    ///   - xunit.runner.visualstudio
-    /// </summary>
     public class ScreenshotServiceTests
     {
         // ──────────────────────────────────────────────────────────────
@@ -161,7 +154,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetAll_ReturnsAllScreenshots()
+        public async Task GetAll_ReturnsAllScreenshots()
         {
             var (ctx, svc) = Build(nameof(GetAll_ReturnsAllScreenshots));
             var user = MakeUser();
@@ -170,29 +163,29 @@ namespace Fan_Website.Tests
                 MakeScreenshot(user, 1),
                 MakeScreenshot(user, 2),
                 MakeScreenshot(user, 3));
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            Assert.Equal(3, svc.GetAll().Count());
+            Assert.Equal(3, (await svc.GetAll()).Count());
         }
 
         [Fact]
-        public void GetAll_EmptyDatabase_ReturnsEmpty()
+        public async Task GetAll_EmptyDatabase_ReturnsEmpty()
         {
             var (_, svc) = Build(nameof(GetAll_EmptyDatabase_ReturnsEmpty));
 
-            Assert.Empty(svc.GetAll());
+            Assert.Empty(await svc.GetAll());
         }
 
         [Fact]
-        public void GetAll_IncludesUser()
+        public async Task GetAll_IncludesUser()
         {
             var (ctx, svc) = Build(nameof(GetAll_IncludesUser));
             var user = MakeUser();
             ctx.Users.Add(user);
             ctx.Screenshots.Add(MakeScreenshot(user));
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetAll().First();
+            var result = (await svc.GetAll()).First();
 
             Assert.NotNull(result.User);
             Assert.Equal("Alice", result.User.UserName);
@@ -203,40 +196,40 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetById_ExistingId_ReturnsScreenshot()
+        public async Task GetById_ExistingId_ReturnsScreenshot()
         {
             var (ctx, svc) = Build(nameof(GetById_ExistingId_ReturnsScreenshot));
             var user = MakeUser();
             var screenshot = MakeScreenshot(user);
             ctx.Users.Add(user);
             ctx.Screenshots.Add(screenshot);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetById(screenshot.ScreenshotId);
+            var result = await svc.GetById(screenshot.ScreenshotId);
 
             Assert.NotNull(result);
             Assert.Equal(screenshot.ScreenshotId, result!.ScreenshotId);
         }
 
         [Fact]
-        public void GetById_NonExistentId_ReturnsNull()
+        public async Task GetById_NonExistentId_ReturnsNull()
         {
             var (_, svc) = Build(nameof(GetById_NonExistentId_ReturnsNull));
 
-            Assert.Null(svc.GetById(999));
+            Assert.Null(await svc.GetById(999));
         }
 
         [Fact]
-        public void GetById_IncludesUser()
+        public async Task GetById_IncludesUser()
         {
             var (ctx, svc) = Build(nameof(GetById_IncludesUser));
             var user = MakeUser();
             var screenshot = MakeScreenshot(user);
             ctx.Users.Add(user);
             ctx.Screenshots.Add(screenshot);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetById(screenshot.ScreenshotId);
+            var result = await svc.GetById(screenshot.ScreenshotId);
 
             Assert.NotNull(result!.User);
             Assert.Equal("Alice", result.User.UserName);
@@ -247,7 +240,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetLatestScreenshots_ReturnsNewestFirst()
+        public async Task GetLatestScreenshots_ReturnsNewestFirst()
         {
             var (ctx, svc) = Build(nameof(GetLatestScreenshots_ReturnsNewestFirst));
             var user = MakeUser();
@@ -258,16 +251,16 @@ namespace Fan_Website.Tests
 
             ctx.Users.Add(user);
             ctx.Screenshots.AddRange(older, newer);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetLatestScreenshots(1).ToList();
+            var result = (await svc.GetLatestScreenshots(1)).ToList();
 
             Assert.Single(result);
             Assert.Equal("Newer", result[0].ScreenshotTitle);
         }
 
         [Fact]
-        public void GetLatestScreenshots_RespectsNLimit()
+        public async Task GetLatestScreenshots_RespectsNLimit()
         {
             var (ctx, svc) = Build(nameof(GetLatestScreenshots_RespectsNLimit));
             var user = MakeUser();
@@ -277,19 +270,19 @@ namespace Fan_Website.Tests
                 MakeScreenshot(user, 2),
                 MakeScreenshot(user, 3),
                 MakeScreenshot(user, 4));
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetLatestScreenshots(2).ToList();
+            var result = (await svc.GetLatestScreenshots(2)).ToList();
 
             Assert.Equal(2, result.Count);
         }
 
         [Fact]
-        public void GetLatestScreenshots_EmptyDatabase_ReturnsEmpty()
+        public async Task GetLatestScreenshots_EmptyDatabase_ReturnsEmpty()
         {
             var (_, svc) = Build(nameof(GetLatestScreenshots_EmptyDatabase_ReturnsEmpty));
 
-            Assert.Empty(svc.GetLatestScreenshots(5));
+            Assert.Empty(await svc.GetLatestScreenshots(5));
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -297,35 +290,35 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetAllUsers_ReturnsAllUsers()
+        public async Task GetAllUsers_ReturnsAllUsers()
         {
             var (ctx, svc) = Build(nameof(GetAllUsers_ReturnsAllUsers));
             ctx.Users.AddRange(MakeUser("1", "Alice"), MakeUser("2", "Bob"));
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            Assert.Equal(2, svc.GetAllUsers().Count());
+            Assert.Equal(2, (await svc.GetAllUsers()).Count());
         }
 
         [Fact]
-        public void GetUserById_ExistingId_ReturnsUser()
+        public async Task GetUserById_ExistingId_ReturnsUser()
         {
             var (ctx, svc) = Build(nameof(GetUserById_ExistingId_ReturnsUser));
             var user = MakeUser();
             ctx.Users.Add(user);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetUserById(user.Id);
+            var result = await svc.GetUserById(user.Id);
 
             Assert.NotNull(result);
             Assert.Equal(user.Id, result!.Id);
         }
 
         [Fact]
-        public void GetUserById_NonExistentId_ReturnsNull()
+        public async Task GetUserById_NonExistentId_ReturnsNull()
         {
             var (_, svc) = Build(nameof(GetUserById_NonExistentId_ReturnsNull));
 
-            Assert.Null(svc.GetUserById("nonexistent"));
+            Assert.Null(await svc.GetUserById("nonexistent"));
         }
 
         // ──────────────────────────────────────────────────────────────

@@ -2,12 +2,12 @@
 {
     public interface IForum
     {
-        Forum GetById(int id);
-        IEnumerable<Forum> GetAll();
+        Task<Forum> GetByIdAsync(int id);
+        Task<IEnumerable<Forum>> GetAll();
         Task Create(Forum forum);
         Task Delete(int id);
         Task UpdateForumTitle(int id, string newTitle);
         Task UpdateForumDescription(int id, string newDescription);
-        IEnumerable<Forum> GetTopForums(int n); 
+        Task<IEnumerable<Forum>> GetTopForums(int n); 
     }
 }

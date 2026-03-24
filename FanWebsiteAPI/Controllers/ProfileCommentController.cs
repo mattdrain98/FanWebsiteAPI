@@ -23,12 +23,11 @@ namespace Fan_Website.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCommentTemplate(string id)
         {
-            var userId = userManager.GetUserId(User);
-            var currentUser = await userManager.FindByIdAsync(userId);
+            var user = await userManager.GetUserAsync(User);
+            var currentUser = await userManager.FindByIdAsync(user.Id);
             if (currentUser == null)
                 return Unauthorized();
 
-            var user = userService.GetById(id);
             if (user == null)
                 return NotFound();
 
@@ -60,7 +59,7 @@ namespace Fan_Website.Controllers
 
             var comment = new ProfileComment
             {
-                ProfileUser = userService.GetById(dto.ProfileUserId),
+                ProfileUser = await userService.GetById(dto.ProfileUserId),
                 Content = dto.CommentContent,
                 CreateOn = DateTime.Now,
                 CommentUser = currentUser

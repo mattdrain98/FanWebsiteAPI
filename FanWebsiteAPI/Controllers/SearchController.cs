@@ -24,7 +24,7 @@ namespace Fan_Website.Controllers
             if (string.IsNullOrWhiteSpace(query))
                 return BadRequest(new { Message = "Search query cannot be empty." });
 
-            var posts = postService.GetFilteredPosts(query).ToList();
+            var posts = postService.GetFilteredPosts(query).Result.ToList();
             var areNoResults = !posts.Any();
 
             var postListings = posts.Select(post => new PostListingModel
@@ -57,7 +57,7 @@ namespace Fan_Website.Controllers
             if (request == null || string.IsNullOrWhiteSpace(request.Query))
                 return BadRequest(new { Message = "Search query cannot be empty." });
 
-            var posts = postService.GetFilteredPosts(request.Query).ToList();
+            var posts = postService.GetFilteredPosts(request.Query).Result.ToList();
             var areNoResults = !posts.Any();
 
             var postListings = posts.Select(post => new PostListingModel

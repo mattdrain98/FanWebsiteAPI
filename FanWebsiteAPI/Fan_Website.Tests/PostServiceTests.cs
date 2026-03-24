@@ -232,7 +232,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetAll_ReturnsAllPosts()
+        public async Task GetAll_ReturnsAllPosts()
         {
             var (ctx, svc) = Build(nameof(GetAll_ReturnsAllPosts));
             var user = MakeUser();
@@ -241,16 +241,16 @@ namespace Fan_Website.Tests
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.AddRange(MakePost(user, forum, 1), MakePost(user, forum, 2));
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            Assert.Equal(2, svc.GetAll().Count());
+            Assert.Equal(2, (await svc.GetAll()).Count());
         }
 
         [Fact]
-        public void GetAll_EmptyDatabase_ReturnsEmpty()
+        public async Task GetAll_EmptyDatabase_ReturnsEmpty()
         {
             var (_, svc) = Build(nameof(GetAll_EmptyDatabase_ReturnsEmpty));
-            Assert.Empty(svc.GetAll());
+            Assert.Empty(await svc.GetAll());
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -258,7 +258,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetById_ExistingId_ReturnsPost()
+        public async Task GetById_ExistingId_ReturnsPost()
         {
             var (ctx, svc) = Build(nameof(GetById_ExistingId_ReturnsPost));
             var user = MakeUser();
@@ -267,19 +267,19 @@ namespace Fan_Website.Tests
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.Add(post);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetById(post.PostId);
+            var result = await svc.GetById(post.PostId);
 
             Assert.NotNull(result);
             Assert.Equal(post.PostId, result!.PostId);
         }
 
         [Fact]
-        public void GetById_NonExistentId_ReturnsNull()
+        public async Task GetById_NonExistentId_ReturnsNull()
         {
             var (_, svc) = Build(nameof(GetById_NonExistentId_ReturnsNull));
-            Assert.Null(svc.GetById(999));
+            Assert.Null(await svc.GetById(999));
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -287,7 +287,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetFilteredPosts_MatchingTitle_ReturnsCorrectPosts()
+        public async Task GetFilteredPosts_MatchingTitle_ReturnsCorrectPosts()
         {
             var (ctx, svc) = Build(nameof(GetFilteredPosts_MatchingTitle_ReturnsCorrectPosts));
             var user = MakeUser();
@@ -307,16 +307,16 @@ namespace Fan_Website.Tests
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.AddRange(p1, p2);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var results = svc.GetFilteredPosts("hello").ToList();
+            var results = (await svc.GetFilteredPosts("hello")).ToList();
 
             Assert.Single(results);
             Assert.Equal("Hello World", results[0].Title);
         }
 
         [Fact]
-        public void GetFilteredPosts_NoMatch_ReturnsEmpty()
+        public async Task GetFilteredPosts_NoMatch_ReturnsEmpty()
         {
             var (ctx, svc) = Build(nameof(GetFilteredPosts_NoMatch_ReturnsEmpty));
             var user = MakeUser();
@@ -324,9 +324,9 @@ namespace Fan_Website.Tests
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.Add(MakePost(user, forum));
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            Assert.Empty(svc.GetFilteredPosts("zzznomatch"));
+            Assert.Empty(await svc.GetFilteredPosts("zzznomatch"));
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -334,7 +334,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetFilteredPosts_ForumOverload_EmptyQuery_ReturnsAll()
+        public async Task GetFilteredPosts_ForumOverload_EmptyQuery_ReturnsAll()
         {
             var (ctx, svc) = Build(nameof(GetFilteredPosts_ForumOverload_EmptyQuery_ReturnsAll));
             var user = MakeUser();
@@ -345,19 +345,18 @@ namespace Fan_Website.Tests
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.AddRange(post1, post2);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            // Reload forum with posts from DB
-            var forumWithPosts = ctx.Forums
+            var forumWithPosts = await ctx.Forums
                 .Include(f => f.Posts)
-                .First(f => f.ForumId == forum.ForumId);
+                .FirstAsync(f => f.ForumId == forum.ForumId);
 
-            var results = svc.GetFilteredPosts(forumWithPosts, string.Empty).ToList();
+            var results = (await svc.GetFilteredPosts(forumWithPosts, string.Empty)).ToList();
             Assert.Equal(2, results.Count);
         }
 
         [Fact]
-        public void GetFilteredPosts_ForumOverload_WithQuery_FiltersCorrectly()
+        public async Task GetFilteredPosts_ForumOverload_WithQuery_FiltersCorrectly()
         {
             var (ctx, svc) = Build(nameof(GetFilteredPosts_ForumOverload_WithQuery_FiltersCorrectly));
             var user = MakeUser();
@@ -377,10 +376,10 @@ namespace Fan_Website.Tests
 
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
-            ctx.Posts.AddRange(post1, post2); 
-            ctx.SaveChanges();
+            ctx.Posts.AddRange(post1, post2);
+            await ctx.SaveChangesAsync();
 
-            var results = svc.GetFilteredPosts(forum, "secret").ToList();
+            var results = (await svc.GetFilteredPosts(forum, "secret")).ToList();
             Assert.Single(results);
             Assert.Equal("Secret", results[0].Title);
         }
@@ -410,11 +409,11 @@ namespace Fan_Website.Tests
         }
 
         [Theory]
-        [InlineData("hello world", true)]   // lowercase → matches (ToLower on both sides)
-        [InlineData("hello", true)]   // partial lowercase → matches
-        [InlineData("Hello World", false)]  // mixed case → no match in InMemory
-        [InlineData("HELLO WORLD", false)]  // upper case → no match in InMemory
-        [InlineData("HELLO", false)]  // partial upper → no match in InMemory
+        [InlineData("hello world", true)]
+        [InlineData("hello", true)]
+        [InlineData("Hello World", false)]
+        [InlineData("HELLO WORLD", false)]
+        [InlineData("HELLO", false)]
         public async Task SearchPostsAsync_CaseInsensitive_AlwaysMatches(string query, bool shouldMatch)
         {
             var dbName = $"{nameof(SearchPostsAsync_CaseInsensitive_AlwaysMatches)}_{query}";
@@ -423,7 +422,7 @@ namespace Fan_Website.Tests
             var forum = MakeForum(user);
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
-            ctx.Posts.Add(MakePost(user, forum)); // Title = "Hello World"
+            ctx.Posts.Add(MakePost(user, forum));
             await ctx.SaveChangesAsync();
 
             var results = await svc.SearchPostsAsync(query);
@@ -454,7 +453,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetLatestPosts_ReturnsNewestFirst()
+        public async Task GetLatestPosts_ReturnsNewestFirst()
         {
             var (ctx, svc) = Build(nameof(GetLatestPosts_ReturnsNewestFirst));
             var user = MakeUser();
@@ -464,9 +463,9 @@ namespace Fan_Website.Tests
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.AddRange(older, newer);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetLatestPosts(1).ToList();
+            var result = (await svc.GetLatestPosts(1)).ToList();
 
             Assert.Single(result);
             Assert.Equal("Newer", result[0].Title);
@@ -477,7 +476,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetTopPosts_ReturnsMostLikedFirst()
+        public async Task GetTopPosts_ReturnsMostLikedFirst()
         {
             var (ctx, svc) = Build(nameof(GetTopPosts_ReturnsMostLikedFirst));
             var user = MakeUser();
@@ -487,9 +486,9 @@ namespace Fan_Website.Tests
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.AddRange(lowLikes, highLikes);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetTopPosts(1).ToList();
+            var result = (await svc.GetTopPosts(1)).ToList();
 
             Assert.Single(result);
             Assert.Equal("High", result[0].Title);
@@ -537,7 +536,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetLikeById_ExistingId_ReturnsLike()
+        public async Task GetLikeById_ExistingId_ReturnsLike()
         {
             var (ctx, svc) = Build(nameof(GetLikeById_ExistingId_ReturnsLike));
             var user = MakeUser();
@@ -548,19 +547,19 @@ namespace Fan_Website.Tests
             ctx.Forums.Add(forum);
             ctx.Posts.Add(post);
             ctx.Likes.Add(like);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetLikeById(like.Id);
+            var result = await svc.GetLikeById(like.Id);
 
             Assert.NotNull(result);
             Assert.Equal(like.Id, result!.Id);
         }
 
         [Fact]
-        public void GetLikeById_NonExistentId_ReturnsNull()
+        public async Task GetLikeById_NonExistentId_ReturnsNull()
         {
             var (_, svc) = Build(nameof(GetLikeById_NonExistentId_ReturnsNull));
-            Assert.Null(svc.GetLikeById(999));
+            Assert.Null(await svc.GetLikeById(999));
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -568,7 +567,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetAllLikes_ReturnsLikesForPost()
+        public async Task GetAllLikes_ReturnsLikesForPost()
         {
             var (ctx, svc) = Build(nameof(GetAllLikes_ReturnsLikesForPost));
             var user = MakeUser();
@@ -579,17 +578,17 @@ namespace Fan_Website.Tests
             ctx.Forums.Add(forum);
             ctx.Posts.Add(post);
             ctx.Likes.AddRange(new Like { User = user, Post = post }, new Like { User = user2, Post = post });
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var likes = svc.GetAllLikes(post.PostId).ToList();
+            var likes = (await svc.GetAllLikes(post.PostId)).ToList();
             Assert.Equal(2, likes.Count);
         }
 
         [Fact]
-        public void GetAllLikes_NonExistentPost_ReturnsEmpty()
+        public async Task GetAllLikes_NonExistentPost_ReturnsEmpty()
         {
             var (_, svc) = Build(nameof(GetAllLikes_NonExistentPost_ReturnsEmpty));
-            Assert.Empty(svc.GetAllLikes(999));
+            Assert.Empty(await svc.GetAllLikes(999));
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -597,7 +596,7 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Fact]
-        public void GetReplyById_ExistingId_ReturnsReply()
+        public async Task GetReplyById_ExistingId_ReturnsReply()
         {
             var (ctx, svc) = Build(nameof(GetReplyById_ExistingId_ReturnsReply));
             var user = MakeUser();
@@ -608,19 +607,19 @@ namespace Fan_Website.Tests
             ctx.Forums.Add(forum);
             ctx.Posts.Add(post);
             ctx.Replies.Add(reply);
-            ctx.SaveChanges();
+            await ctx.SaveChangesAsync();
 
-            var result = svc.GetReplyById(reply.Id);
+            var result = await svc.GetReplyByIdAsync(reply.Id);
 
             Assert.NotNull(result);
             Assert.Equal("hi", result!.ReplyContent);
         }
 
         [Fact]
-        public void GetReplyById_NonExistentId_ReturnsNull()
+        public async Task GetReplyById_NonExistentId_ReturnsNull()
         {
             var (_, svc) = Build(nameof(GetReplyById_NonExistentId_ReturnsNull));
-            Assert.Null(svc.GetReplyById(999));
+            Assert.Null(await svc.GetReplyByIdAsync(999));
         }
     }
 }

@@ -38,13 +38,13 @@ namespace Fan_Website.Controllers
 
         // GET: api/Profile/{id}
         [HttpGet("{id}")]
-        public IActionResult GetProfile(string id)
+        public async Task<IActionResult> GetProfile(string id)
         {
-            var user = userService.GetById(id);
+            var user = await userService.GetById(id);
             if (user == null) return NotFound();
 
             var comments = BuildProfileComments(user.ProfileComments ?? Enumerable.Empty<ProfileComment>());
-            var currentUserId = userManager.GetUserId(User);
+            var currentUser = await userManager.GetUserAsync(User);
 
             var model = new ProfileDto
             {
@@ -69,12 +69,12 @@ namespace Fan_Website.Controllers
                     UserName = f.Follower?.UserName ?? "",
                     ImagePath = f.Follower?.ImagePath,
                     Rating = f.Follower?.Rating ?? 0,
-                    MemberSince = f.Follower?.MemberSince.ToString() ?? "" // ✅ fixed: was calling .ToString() on the Follow object itself
+                    MemberSince = f.Follower?.MemberSince.ToString() ?? "" 
                 }),
                 ProfileComments = comments,
                 Bio = user.Bio,
                 IsFollowing = (user.Follows ?? Enumerable.Empty<Follow>())
-                    .Any(f => f.Follower != null && f.Follower.Id == currentUserId) // ✅ null check added
+                    .Any(f => f.Follower != null && f.Follower.Id == currentUser.Id) 
             };
 
             return Ok(model);
@@ -82,13 +82,13 @@ namespace Fan_Website.Controllers
 
         // POST: api/Profile/UpdateFollows/{id}
         [HttpPost("UpdateFollows/{id}")]
-        public IActionResult UpdateFollows(string id)
+        public async Task<IActionResult> UpdateFollows(string id)
         {
             var currentUserId = userManager.GetUserId(User);
             if (currentUserId == null) return Unauthorized();
 
-            var user = userService.GetById(id);
-            var currentUser = userService.GetById(currentUserId);
+            var user = await userService.GetById(id);
+            var currentUser = await userService.GetById(currentUserId);
 
             if (user == null || currentUser == null) return NotFound();
 
@@ -122,9 +122,9 @@ namespace Fan_Website.Controllers
 
         // GET: api/Profile/Followers/{id}
         [HttpGet("Followers/{id}")]
-        public IActionResult GetFollowers(string id)
+        public async Task<IActionResult> GetFollowers(string id)
         {
-            var user = userService.GetById(id);
+            var user = await userService.GetById(id);
             if (user == null) return NotFound();
 
             var follows = user.Follows ?? new List<Follow>();
@@ -151,9 +151,9 @@ namespace Fan_Website.Controllers
 
         // GET: api/Profile/Following/{id}
         [HttpGet("Following/{id}")]
-        public IActionResult GetFollowing(string id)
+        public async Task<IActionResult> GetFollowing(string id)
         {
-            var user = userService.GetById(id);
+            var user = await userService.GetById(id);
             if (user == null) return NotFound();
 
             var followings = user.Followings ?? new List<Follow>();

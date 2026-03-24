@@ -5,61 +5,72 @@ namespace Fan_Website.Service
 {
     public class ForumService : IForum
     {
-        private readonly AppDbContext context; 
+        private readonly AppDbContext context;
 
         public ForumService(AppDbContext ctx)
         {
-            context = ctx; 
+            context = ctx;
         }
+
         public async Task Create(Forum forum)
         {
             context.Add(forum);
-            await context.SaveChangesAsync(); 
+            await context.SaveChangesAsync();
         }
 
         public async Task Delete(int id)
         {
-            var forum = GetById(id);
+            var forum = await GetByIdAsync(id);
+            if (forum is null) return;
             context.Remove(forum);
-            await context.SaveChangesAsync(); 
+            await context.SaveChangesAsync();
         }
 
-        public IEnumerable<Forum> GetAll()
+        public async Task<IEnumerable<Forum>> GetAll()
         {
-            return context.Forums
+            return await context.Forums
                 .Include(forum => forum.User)
-                .Include(forum => forum.Posts); 
+                .Include(forum => forum.Posts)
+                .ToListAsync();
         }
 
         public Forum GetById(int id)
         {
-            var forum = context.Forums
+            throw new NotImplementedException();
+        }
+
+        public async Task<Forum> GetByIdAsync(int id)
+        {
+            return await context.Forums
                 .Include(f => f.User)
                 .Include(f => f.Posts)
                     .ThenInclude(p => p.User)
                 .Include(f => f.Posts)
                     .ThenInclude(p => p.Replies).ThenInclude(r => r.User)
-                .FirstOrDefault(f => f.ForumId == id);
-
-            return forum;
+                .FirstOrDefaultAsync(f => f.ForumId == id);
         }
 
-        public IEnumerable<Forum> GetTopForums(int n)
+        public async Task<IEnumerable<Forum>> GetTopForums(int n)
         {
-            return GetAll().OrderByDescending(forum => forum.Posts.Count()).Take(n);
+            return await context.Forums
+                .OrderByDescending(forum => forum.Posts.Count())
+                .Take(n)
+                .ToListAsync();
         }
 
         public async Task UpdateForumDescription(int id, string newDescription)
         {
-            var forum = GetById(id);
+            var forum = await GetByIdAsync(id);
+            if (forum is null) return;
             forum.Description = newDescription;
             context.Forums.Update(forum);
-            await context.SaveChangesAsync(); 
+            await context.SaveChangesAsync();
         }
 
         public async Task UpdateForumTitle(int id, string newTitle)
         {
-            var forum = GetById(id);
+            var forum = await GetByIdAsync(id);
+            if (forum is null) return;
             forum.PostTitle = newTitle;
             context.Forums.Update(forum);
             await context.SaveChangesAsync();

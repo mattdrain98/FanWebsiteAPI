@@ -14,27 +14,31 @@ namespace Fan_Website.Service
         {
             context = ctx; 
         }
-        public IEnumerable<ApplicationUser> GetAll()
+        public async Task<IEnumerable<ApplicationUser>> GetAll()
         {
-            return context.ApplicationUsers; 
+            return await context.ApplicationUsers.ToListAsync(); 
         }
 
-        public ApplicationUser GetById(string id)
+        public async Task<ApplicationUser?> GetById(string id)
         {
             var user = context.Users
         .Include(u => u.Follows).ThenInclude(f => f.Follower)
         .Include(u => u.Followings).ThenInclude(f => f.Following)
         .Include(u => u.ProfileComments)
-        .FirstOrDefault(u => u.Id == id);
+        .FirstOrDefaultAsync(u => u.Id == id);
 
-            return user ?? throw new KeyNotFoundException($"User with ID {id} was not found.");
+            return await user ?? throw new KeyNotFoundException($"User with ID {id} was not found.");
         }
 
         public async Task UpdateUserRating(string userId, Type type)
         {
-            var user = GetById(userId);
-            user.Rating = CalculateUserRating(type, user.Rating);
-            await context.SaveChangesAsync(); 
+            var user = await GetById(userId);
+
+            if (user != null)
+            {
+                user.Rating = CalculateUserRating(type, user.Rating);
+                await context.SaveChangesAsync();
+            }
         }
 
         private int CalculateUserRating(Type type, int userRating)
@@ -68,15 +72,15 @@ namespace Fan_Website.Service
 
         public async Task SetProfileImage(string id, Uri uri)
         {
-            var user = GetById(id);
+            var user = await GetById(id);
             user.ImagePath = uri.AbsoluteUri;
             context.Update(user);
             await context.SaveChangesAsync(); 
         }
 
-        public IEnumerable<ApplicationUser> GetLatestUsers(int n)
+        public async Task<IEnumerable<ApplicationUser>> GetLatestUsers(int n)
         {
-            return GetAll().OrderByDescending(user => user.MemberSince).Take(n);
+            return await context.ApplicationUsers.OrderByDescending(u => u.MemberSince).Take(n).ToListAsync();
         }
 
         public async Task<ProfileComment?> GetCommentById(int id)
@@ -103,9 +107,9 @@ namespace Fan_Website.Service
             await context.SaveChangesAsync();
         }
 
-        public IEnumerable<Follow?> GetFollowing(string id)
+        public async Task<IEnumerable<Follow?>> GetFollowing(string id)
         { 
-            var user = GetById(id);
+            var user = await GetById(id);
             var following = context.Follows.Where(follow => follow.Following == user);
             return following; 
         }
@@ -117,16 +121,12 @@ namespace Fan_Website.Service
 
         public async Task EditProfile(string id, string bio, string username)
         {
-            var user = GetById(id);
+            var user = await GetById(id);
             user.UserName = username;
-            context.Update(user);
-            await context.SaveChangesAsync();
             user.NormalizedUserName = username.ToUpper();
-            context.Update(user);
-            await context.SaveChangesAsync();
             user.Bio = bio;
             context.Update(user);
-            await context.SaveChangesAsync(); 
+            await context.SaveChangesAsync();
         }
     }
 }

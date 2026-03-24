@@ -38,7 +38,7 @@ namespace Fan_Website.Controllers
         public ActionResult<IEnumerable<ScreenshotDto>> GetAllScreenshots()
         {
             var screenshots = _screenshotService.GetAll()
-                .Select(s => new ScreenshotDto
+                .Result.Select(s => new ScreenshotDto
                 {
                     Id = s.ScreenshotId,
                     Title = s.ScreenshotTitle,
@@ -60,7 +60,7 @@ namespace Fan_Website.Controllers
         {
             var userId = _userManager.GetUserId(User);
             var screenshots = _screenshotService.GetAll()
-                .Where(s => s.User.Id == userId)
+                .Result.Where(s => s.User.Id == userId)
                 .Select(s => new ScreenshotDto
                 {
                     Id = s.ScreenshotId,

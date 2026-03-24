@@ -33,11 +33,11 @@ namespace Fan_Website.Controllers
         [HttpGet("stats")]
         public ActionResult<HomeStatsDto> GetStats()
         {
-            var totalMembers = _userManager.GetAll().Count();
-            var totalPosts = _postService.GetLatestPosts(int.MaxValue).Count();
-            var totalForums = _forumService.GetTopForums(int.MaxValue).Count();
+            var totalMembers = _userManager.GetAll().Result.Count();
+            var totalPosts = _postService.GetLatestPosts(int.MaxValue).Result.Count();
+            var totalForums = _forumService.GetTopForums(int.MaxValue).Result.Count();
             var totalReplies = _postService.GetLatestPosts(int.MaxValue)
-                                           .Sum(p => p.Replies.Count());
+                                           .Result.Sum(p => p.Replies.Count());
 
             return Ok(new HomeStatsDto
             {
@@ -55,7 +55,7 @@ namespace Fan_Website.Controllers
             if (count <= 0 || count > 50) count = 10;
 
             var posts = _postService.GetLatestPosts(count)
-                .Select(post => new PostListingModel
+                .Result.Select(post => new PostListingModel
                 {
                     Id = post.PostId,
                     Title = post.Title,
@@ -79,7 +79,7 @@ namespace Fan_Website.Controllers
             if (count <= 0 || count > 50) count = 10;
 
             var forums = _forumService.GetTopForums(count)
-                .Select(forum => new ForumDto
+                .Result.Select(forum => new ForumDto
                 {
                     ForumId = forum.ForumId,
                     ForumTitle = forum.PostTitle,
@@ -106,7 +106,7 @@ namespace Fan_Website.Controllers
             var since = DateTime.UtcNow.AddDays(-days);
 
             var posts = _postService.GetLatestPosts(200)   
-                .Where(p => p.CreatedOn >= since)
+                .Result.Where(p => p.CreatedOn >= since)
                 .OrderByDescending(p => p.TotalLikes)
                 .Take(count)
                 .Select(post => new PostListingModel
@@ -133,7 +133,7 @@ namespace Fan_Website.Controllers
             if (count <= 0 || count > 50) count = 8;
 
             var screenshots = _screenshotService.GetAll()
-                .OrderByDescending(s => s.CreatedOn)
+                .Result.OrderByDescending(s => s.CreatedOn)
                 .Take(count)
                 .Select(s => new ScreenshotDto
                 {

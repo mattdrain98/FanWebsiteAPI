@@ -32,7 +32,7 @@ namespace Fan_Website.Controllers
         public IActionResult GetAllForums()
         {
             var forums = forumService.GetAll()
-                .Select(forum => new ForumListingModel
+                .Result.Select(forum => new ForumListingModel
                 {
                     ForumId = forum.ForumId,
                     ForumTitle = forum.PostTitle,
@@ -49,7 +49,7 @@ namespace Fan_Website.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetForumById(int id, [FromQuery] string? searchQuery, [FromQuery] int limit = 6)
         {
-            var forum = forumService.GetById(id);
+            var forum = await forumService.GetByIdAsync(id);
 
             if (forum == null)
                 return NotFound();
@@ -124,7 +124,7 @@ namespace Fan_Website.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteForum(int id)
         {
-            var forum = forumService.GetById(id);
+            var forum = await forumService.GetByIdAsync(id);
             if (forum == null)
                 return NotFound();
 
