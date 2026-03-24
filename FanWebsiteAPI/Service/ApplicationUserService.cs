@@ -21,13 +21,23 @@ namespace Fan_Website.Service
 
         public async Task<ApplicationUser?> GetById(string id)
         {
-            var user = context.Users
-        .Include(u => u.Follows).ThenInclude(f => f.Follower)
-        .Include(u => u.Followings).ThenInclude(f => f.Following)
-        .Include(u => u.ProfileComments)
-        .FirstOrDefaultAsync(u => u.Id == id);
+            var user = await context.Users
+                .Include(u => u.ProfileComments).ThenInclude(c => c.CommentUser)
+                .FirstOrDefaultAsync(u => u.Id == id);
 
-            return await user ?? throw new KeyNotFoundException($"User with ID {id} was not found.");
+            if (user == null) return null;
+
+            user.Follows = await context.Follows
+                .Include(f => f.Following)
+                .Where(f => f.Follower.Id == id)
+                .ToListAsync();
+
+            user.Followings = await context.Follows
+                .Include(f => f.Follower)
+                .Where(f => f.Following.Id == id)
+                .ToListAsync();
+
+            return user;
         }
 
         public async Task UpdateUserRating(string userId, Type type)
@@ -43,31 +53,17 @@ namespace Fan_Website.Service
 
         private int CalculateUserRating(Type type, int userRating)
         {
-            var inc = 0;
+            var inc = type switch
+            {
+                _ when type == typeof(Post) => 1,
+                _ when type == typeof(Screenshot) => 2,
+                _ when type == typeof(Forum) => 2,
+                _ when type == typeof(PostReply) => 3,
+                _ when type == typeof(ProfileComment) => 3,
+                _ => 0
+            };
 
-            if (type == typeof(Post))
-            {
-                inc = 1;
-            }
-
-            if (type == typeof(PostReply))
-            {
-                inc = 3;
-            }
-            if (type == typeof(Screenshot))
-            {
-                inc = 2;
-            }
-            if (type == typeof(Forum))
-            {
-                inc = 2; 
-            }
-            if (type == typeof(ProfileComment))
-            {
-                inc = 3;
-            }
-
-            return userRating + inc; 
+            return userRating + inc;
         }
 
         public async Task SetProfileImage(string id, Uri uri)
@@ -91,14 +87,12 @@ namespace Fan_Website.Service
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
-        [HttpPut("profilecomment/{id:int}")]
         public async Task UpdateComment(ProfileComment comment)
         {
             context.ProfileComments.Update(comment);
             await context.SaveChangesAsync();
         }
 
-        [HttpDelete("profilecomment/{id:int}")]
         public async Task DeleteComment(int id)
         {
             var comment = await context.ProfileComments.FindAsync(id);
@@ -108,11 +102,13 @@ namespace Fan_Website.Service
         }
 
         public async Task<IEnumerable<Follow?>> GetFollowing(string id)
-        { 
+        {
             var user = await GetById(id);
-            var following = context.Follows.Where(follow => follow.Following == user);
-            return following; 
+            return await context.Follows
+                .Where(f => f.Follower == user)
+                .ToListAsync();
         }
+
         public async Task AddComment(ProfileComment comment)
         {
             context.Add(comment);

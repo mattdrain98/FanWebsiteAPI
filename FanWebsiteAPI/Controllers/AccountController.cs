@@ -14,21 +14,21 @@ namespace Fan_Website.Controllers
     [Route("api/[controller]")]
     public class AccountController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IApplicationUser _userService;
         private readonly IEmailSender _emailSender;
-        private readonly IConfiguration _configuration; 
+        private readonly IConfiguration _configuration;
+        private readonly IUpload _uploadService; 
         public AccountController(UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager, IUnitOfWork unitOfWork, IApplicationUser userService, IEmailSender emailSender, IConfiguration configuration)
+            SignInManager<ApplicationUser> signInManager, IApplicationUser userService, IEmailSender emailSender, IConfiguration configuration, IUpload uploadService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
-            _unitOfWork = unitOfWork;
             _userService = userService;
             _emailSender = emailSender;
-            _configuration = configuration; 
+            _configuration = configuration;
+            _uploadService = uploadService;
         }
 
         // GET: api/account/users
@@ -41,9 +41,9 @@ namespace Fan_Website.Controllers
 
         // GET: api/account/new-users
         [HttpGet("new-users")]
-        public ActionResult<IEnumerable<ApplicationUser>> GetLatestUsers()
+        public async Task<ActionResult<IEnumerable<ApplicationUser>>> GetLatestUsers()
         {
-            var latestUsers = _userService.GetLatestUsers(10);
+            var latestUsers = await _userService.GetLatestUsers(10);
             return Ok(latestUsers);
         }
 
@@ -59,7 +59,7 @@ namespace Fan_Website.Controllers
             {
                 try
                 {
-                    await _unitOfWork.UploadImageAsync(file);
+                    await _uploadService.UploadImageAsync(file);
                     user.ImagePath = file.FileName;
                 }
                 catch (Exception ex)
@@ -122,7 +122,7 @@ namespace Fan_Website.Controllers
                 ImagePath = file?.FileName
             };
 
-            if (file != null) await _unitOfWork.UploadImageAsync(file);
+            if (file != null) await _uploadService.UploadImageAsync(file);
 
             var result = await _userManager.CreateAsync(user, model.Password);
 

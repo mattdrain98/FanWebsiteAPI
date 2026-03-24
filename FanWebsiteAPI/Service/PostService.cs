@@ -156,7 +156,14 @@ namespace Fan_Website.Service
 
         public async Task<IEnumerable<Post>> GetLatestPosts(int n)
         {
-            return await context.Posts.OrderByDescending(post => post.CreatedOn).Take(n).ToListAsync();
+            return await context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Forum).ThenInclude(f => f.User)
+                .Include(p => p.Replies)
+                .Include(p => p.Likes)
+                .OrderByDescending(p => p.CreatedOn)
+                .Take(n)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<Post>> GetPostsByForum(int id)
@@ -175,8 +182,16 @@ namespace Fan_Website.Service
 
         public async Task<IEnumerable<Post>> GetTopPosts(int n)
         {
-            return await context.Posts.OrderByDescending(post => post.TotalLikes).Take(n).ToListAsync();
+            return await context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Forum).ThenInclude(f => f.User)
+                .Include(p => p.Replies)
+                .Include(p => p.Likes)
+                .OrderByDescending(p => p.TotalLikes)
+                .Take(n)
+                .ToListAsync();
         }
+
 
         public async Task UpdatePostLikes(int id)
         {

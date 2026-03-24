@@ -76,7 +76,6 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>,
     UserClaimsPrincipalFactory<ApplicationUser, IdentityRole>>();
 
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IForum, ForumService>();
 builder.Services.AddScoped<IPost, PostService>();
 builder.Services.AddScoped<IApplicationUser, ApplicationUserService>();

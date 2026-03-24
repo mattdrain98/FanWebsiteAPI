@@ -7,6 +7,7 @@ using Fan_Website.Models.ProfileComment;
 using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Controllers
 {
@@ -40,44 +41,59 @@ namespace Fan_Website.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProfile(string id)
         {
-            var user = await userService.GetById(id);
+            var currentUserId = userManager.GetUserId(User);
+
+            var user = await context.Users
+                .Where(u => u.Id == id)
+                .Select(u => new ProfileDto
+                {
+                    UserId = u.Id,
+                    UserName = u.UserName,
+                    UserRating = u.Rating.ToString(),
+                    ProfileImageUrl = u.ImagePath,
+                    MemberSince = u.MemberSince.ToString(),
+                    Following = u.Following,
+                    Followers = u.Followers,
+                    Bio = u.Bio,
+                    IsFollowing = context.Set<Follow>()
+                        .Any(f => f.Follower.Id == currentUserId && f.Following.Id == u.Id),
+                    Follows = u.Follows.Select(f => new FollowDto
+                    {
+                        Id = f.Following.Id,
+                        UserName = f.Following.UserName ?? "",
+                        ImagePath = f.Following.ImagePath,
+                        Rating = f.Following.Rating,
+                        MemberSince = f.Following.MemberSince.ToString()
+                    }).ToList(),
+
+                    Followings = u.Followings.Select(f => new FollowDto
+                    {
+                        Id = f.Follower.Id,
+                        UserName = f.Follower.UserName ?? "",
+                        ImagePath = f.Follower.ImagePath,
+                        Rating = f.Follower.Rating,
+                        MemberSince = f.Follower.MemberSince.ToString()
+                    }).ToList(),
+
+                    ProfileComments = u.ProfileComments.Select(c => new ProfileCommentDto
+                    {
+                        Id = c.Id,
+                        CommentContent = c.Content,
+                        CommentUserId = c.CommentUser.Id,
+                        CommentUserName = c.CommentUser.UserName ?? "",
+                        CommentUserImagePath = c.CommentUser.ImagePath,
+                        CommentUserRating = c.CommentUser.Rating, 
+                        ProfileUserId = c.ProfileUser.Id,
+                        ProfileUserImageUrl = c.ProfileUser.ImagePath,
+                        ProfileUserName = c.ProfileUser.UserName ?? "",
+                        ProfileUserRating = c.ProfileUser.Rating, 
+                        Date = c.CreateOn.ToString()
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
             if (user == null) return NotFound();
-
-            var comments = BuildProfileComments(user.ProfileComments ?? Enumerable.Empty<ProfileComment>());
-            var currentUser = await userManager.GetUserAsync(User);
-
-            var model = new ProfileDto
-            {
-                UserId = user.Id,
-                UserName = user.UserName,
-                UserRating = user.Rating.ToString(),
-                ProfileImageUrl = user.ImagePath,
-                MemberSince = user.MemberSince.ToString(),
-                Following = user.Following,
-                Followers = user.Followers,
-                Follows = (user.Follows ?? Enumerable.Empty<Follow>()).Select(f => new FollowDto
-                {
-                    Id = f.Following?.Id ?? "",
-                    UserName = f.Following?.UserName ?? "",
-                    ImagePath = f.Following?.ImagePath,
-                    Rating = f.Following?.Rating ?? 0,
-                    MemberSince = f.Following?.MemberSince.ToString() ?? ""
-                }),
-                Followings = (user.Followings ?? Enumerable.Empty<Follow>()).Select(f => new FollowDto
-                {
-                    Id = f.Follower?.Id ?? "",
-                    UserName = f.Follower?.UserName ?? "",
-                    ImagePath = f.Follower?.ImagePath,
-                    Rating = f.Follower?.Rating ?? 0,
-                    MemberSince = f.Follower?.MemberSince.ToString() ?? "" 
-                }),
-                ProfileComments = comments,
-                Bio = user.Bio,
-                IsFollowing = (user.Follows ?? Enumerable.Empty<Follow>())
-                    .Any(f => f.Follower != null && f.Follower.Id == currentUser.Id) 
-            };
-
-            return Ok(model);
+            return Ok(user);
         }
 
         // POST: api/Profile/UpdateFollows/{id}

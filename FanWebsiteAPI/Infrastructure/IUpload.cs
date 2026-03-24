@@ -7,5 +7,6 @@ namespace Fan_Website.Infrastructure
         BlobContainerClient GetBlobContainer(
             string connectionString,
             string containerName);
+        Task UploadImageAsync(IFormFile file);
     }
 }

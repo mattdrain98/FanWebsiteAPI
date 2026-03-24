@@ -53,7 +53,9 @@ namespace Fan_Website.Service
         public async Task<IEnumerable<Forum>> GetTopForums(int n)
         {
             return await context.Forums
-                .OrderByDescending(forum => forum.Posts.Count())
+                .Include(f => f.User)
+                .Include(f => f.Posts)
+                .OrderByDescending(f => f.Posts.Count())
                 .Take(n)
                 .ToListAsync();
         }
