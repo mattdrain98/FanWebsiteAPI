@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Fan_Website.Controllers
 {
@@ -386,14 +387,19 @@ namespace Fan_Website.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var user = await _userManager.FindByNameAsync(model.UserName);
+            var isEmail = Regex.IsMatch(model.UserName, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+
+            var user = isEmail
+                ? await _userManager.FindByEmailAsync(model.UserName)
+                : await _userManager.FindByNameAsync(model.UserName);
+
             if (user == null) return Unauthorized("Invalid login attempt");
 
             if (!await _userManager.IsEmailConfirmedAsync(user))
                 return Unauthorized("Please confirm your email before logging in.");
 
             var result = await _signInManager.PasswordSignInAsync(
-                model.UserName, model.Password, model.RememberMe, false);
+                user.UserName, model.Password, model.RememberMe, false);
 
             if (!result.Succeeded) return Unauthorized("Invalid login attempt");
 
