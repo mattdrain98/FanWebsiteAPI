@@ -1,8 +1,8 @@
 ﻿using Fan_Website.Infrastructure;
-using Fan_Website.Models.Forum;
 using Fan_Website.Services;
-using Fan_Website.ViewModel;
-using FanWebsiteAPI.DTOs;
+using FanWebsiteAPI.DTOs.Forums;
+using FanWebsiteAPI.DTOs.Posts;
+using FanWebsiteAPI.DTOs.Search;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -33,7 +33,7 @@ namespace Fan_Website.Controllers
         public IActionResult GetAllForums()
         {
             var forums = forumService.GetAll()
-                .Result.Select(forum => new ForumListingModel
+                .Result.Select(forum => new ForumDto
                 {
                     ForumId = forum.ForumId,
                     ForumTitle = forum.PostTitle,
@@ -41,6 +41,7 @@ namespace Fan_Website.Controllers
                     AuthorId = forum.User.Id,
                     AuthorName = forum.User.UserName ?? "Unkown",
                     AuthorRating = forum.User.Rating,
+                    AuthorImagePath = forum.User.ImagePath,
                     DatePosted = forum.UpdatedOn.ToString()
                 }); 
 
@@ -94,7 +95,7 @@ namespace Fan_Website.Controllers
                 })
                 .ToListAsync();
 
-            var result = new ForumTopicModel
+            var result = new SearchResultDto
             {
                 Posts = postListing,
                 Forum = BuildForumListing(forum),
@@ -153,9 +154,9 @@ namespace Fan_Website.Controllers
             return NoContent();
         }
 
-        private ForumListingModel BuildForumListing(Forum forum)
+        private ForumDto BuildForumListing(Forum forum)
         {
-            return new ForumListingModel
+            return new ForumDto
             {
                 ForumId = forum.ForumId,
                 ForumTitle = forum.PostTitle,
@@ -163,6 +164,7 @@ namespace Fan_Website.Controllers
                 AuthorId = forum.User.Id,
                 AuthorName = forum.User.UserName ?? "Unkown",
                 AuthorRating = forum.User.Rating,
+                AuthorImagePath = forum.User.ImagePath,
                 DatePosted = forum.UpdatedOn.ToString()
             };
         }

@@ -1,7 +1,5 @@
-﻿using Fan_Website.Models;
-using Fan_Website.Models.Forum;
-using Fan_Website.Services;
-using Fan_Website.ViewModel;
+﻿using Fan_Website.Services;
+using FanWebsiteAPI.DTOs.Posts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Service

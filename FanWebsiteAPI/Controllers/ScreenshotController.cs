@@ -1,5 +1,5 @@
 ﻿using Fan_Website.Infrastructure;
-using FanWebsiteAPI.DTOs;
+using FanWebsiteAPI.DTOs.Screenshots;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -46,7 +46,8 @@ namespace Fan_Website.Controllers
                     AuthorId = s.User.Id,
                     AuthorName = s.User.UserName,
                     AuthorRating = s.User.Rating,
-                    DatePosted = s.UpdatedOn,
+                    AuthorImagePath = s.User.ImagePath,
+                    DatePosted = s.UpdatedOn.ToString(),
                     ImageUrl = s.ImagePath,
                     Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
                 }).ToList();
@@ -69,7 +70,7 @@ namespace Fan_Website.Controllers
                     AuthorId = s.User.Id,
                     AuthorName = s.User.UserName,
                     AuthorRating = s.User.Rating,
-                    DatePosted = s.UpdatedOn,
+                    DatePosted = s.UpdatedOn.ToString(),
                     ImageUrl = s.ImagePath,
                     Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
                 }).ToList();
@@ -79,7 +80,7 @@ namespace Fan_Website.Controllers
 
         // POST: api/screenshot
         [HttpPost]
-        public async Task<ActionResult> AddScreenshot([FromForm] NewScreenshotDto model)
+        public async Task<ActionResult> AddScreenshot([FromForm] AddScreenshotDto model)
         {
             var userId = _userManager.GetUserId(User);
             var user = await _userManager.FindByIdAsync(userId);

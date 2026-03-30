@@ -1,6 +1,6 @@
-﻿using Fan_Website.DTOs;
-using Fan_Website.Infrastructure;
-using Fan_Website.ViewModel;
+﻿using Fan_Website.Infrastructure;
+using FanWebsiteAPI.DTOs.Auth;
+using FanWebsiteAPI.DTOs.Profile;
 using FanWebsiteAPI.Infrastructure;
 using FanWebsiteAPI.Service;
 using Microsoft.AspNetCore.Identity;

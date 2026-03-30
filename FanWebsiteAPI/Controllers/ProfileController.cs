@@ -2,8 +2,8 @@
 using Azure.Storage.Blobs.Models;
 using Fan_Website.Infrastructure;
 using Fan_Website.Models.Follow;
-using Fan_Website.ViewModel;
-using FanWebsiteAPI.DTOs;
+using FanWebsiteAPI.DTOs.Profile;
+using FanWebsiteAPI.DTOs.ProfileComments;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

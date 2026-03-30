@@ -1,6 +1,7 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Services;
-using FanWebsiteAPI.DTOs;
+using FanWebsiteAPI.DTOs.Replies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -36,15 +37,11 @@ namespace Fan_Website.Controllers
             var dto = new PostReplyDto
             {
                 PostId = post.PostId,
-                PostTitle = post.Title,
-                PostContent = post.Content,
                 AuthorId = user.Id,
                 AuthorName = user.UserName ?? "Unknown",
                 AuthorImagePath = user.ImagePath,
                 AuthorRating = user.Rating,
-                DatePosted = DateTime.UtcNow.ToString(),
-                ForumId = post.Forum.ForumId,
-                ForumName = post.Forum.PostTitle
+                DatePosted = DateTime.UtcNow.ToString()
             };
 
             return Ok(dto);
@@ -52,26 +49,30 @@ namespace Fan_Website.Controllers
 
         // POST: api/reply/add
         [HttpPost("add")]
+        [Authorize]
         public async Task<ActionResult> AddReply([FromBody] AddReplyDto model)
         {
-            var userId = _userManager.GetUserId(User) ?? throw new KeyNotFoundException($"Missing User Id");
-            var user = await _userManager.FindByIdAsync(userId); 
-            if (user == null) return Unauthorized("User not found");
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Unauthorized(new { message = "User not found" });
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return Unauthorized(new { message = "User not found" });
 
             var post = await _postService.GetById(model.PostId);
-            if (post == null) return NotFound("Post not found");
+            if (post == null) return NotFound(new { message = "Post not found" });
 
             var reply = new PostReply
             {
                 Post = post,
-                ReplyContent = model.ReplyContent ?? "Unknown",
-                UpdatedOn = DateTime.Now,
+                ReplyContent = model.ReplyContent ?? "",
+                UpdatedOn = DateTime.UtcNow,
                 User = user
             };
 
             await _postService.AddReply(reply);
             await _userService.UpdateUserRating(userId, typeof(PostReply));
-            return Ok(new { Message = "Reply added successfully", PostId = model.PostId });
+
+            return Ok(new { message = "Reply added successfully", postId = model.PostId });
         }
 
         // PUT: api/reply/{id}

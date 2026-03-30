@@ -1,5 +1,6 @@
 ﻿using Fan_Website.Services;
-using Fan_Website.ViewModel;
+using FanWebsiteAPI.DTOs.Posts;
+using FanWebsiteAPI.DTOs.Search;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fan_Website.Controllers

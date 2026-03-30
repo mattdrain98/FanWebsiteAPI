@@ -1,10 +1,10 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Models;
-using Fan_Website.Models.Forum;
-using Fan_Website.Service;
 using Fan_Website.Services;
-using Fan_Website.ViewModel;
-using FanWebsiteAPI.DTOs;
+using FanWebsiteAPI.DTOs.Forums;
+using FanWebsiteAPI.DTOs.Home;
+using FanWebsiteAPI.DTOs.Posts;
+using FanWebsiteAPI.DTOs.Screenshots;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -92,11 +92,13 @@ namespace Fan_Website.Controllers
                 ForumId = forum.ForumId,
                 ForumTitle = forum.PostTitle,
                 Description = forum.Description,
-                UserName = forum.User.UserName ?? "Unknown",
-                UserId = forum.User.Id,
-                UserRating = forum.User.Rating,
+                AuthorName = forum.User.UserName ?? "Unknown",
+                AuthorId = forum.User.Id,
+                AuthorRating = forum.User.Rating,
+                AuthorImagePath = forum.User.ImagePath,
+                DatePosted = forum.UpdatedOn.ToString(),
                 PostsCount = forum.Posts?.Count() ?? 0
-            });
+            }); 
 
             return Ok(result);
         }
@@ -158,7 +160,7 @@ namespace Fan_Website.Controllers
                     AuthorId = s.User.Id,
                     AuthorName = s.User.UserName ?? "Unknown",
                     AuthorRating = s.User.Rating,
-                    DatePosted = s.UpdatedOn,
+                    DatePosted = s.UpdatedOn.ToString(),
                     ImageUrl = s.ImagePath,
                     Slug = s.Slug
                 });

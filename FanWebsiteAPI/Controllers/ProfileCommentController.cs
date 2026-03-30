@@ -1,6 +1,7 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Models.ProfileComment;
-using FanWebsiteAPI.DTOs;
+using FanWebsiteAPI.DTOs.ProfileComments;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -46,9 +47,10 @@ namespace Fan_Website.Controllers
             return Ok(model);
         }
 
-        // POST: api/ProfileComment
-        [HttpPost]
-        public async Task<IActionResult> AddComment([FromBody] ProfileCommentDto dto)
+        // POST: api/ProfileComment/add
+        [HttpPost("add")]
+        [Authorize]
+        public async Task<IActionResult> AddComment([FromBody] AddProfileCommentDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -57,22 +59,30 @@ namespace Fan_Website.Controllers
             if (currentUser == null)
                 return Unauthorized();
 
+            var profileUser = await userService.GetById(dto.ProfileUserId);
+            if (profileUser == null)
+                return NotFound(new { message = "Profile not found" });
+
+            if (currentUser.Id == dto.ProfileUserId)
+                return BadRequest(new { message = "Cannot comment on your own profile" });
+
             var comment = new ProfileComment
             {
-                ProfileUser = await userService.GetById(dto.ProfileUserId),
+                ProfileUser = profileUser,
                 Content = dto.CommentContent,
-                UpdatedOn = DateTime.Now,
+                UpdatedOn = DateTime.UtcNow,
                 CommentUser = currentUser
             };
 
             await userService.AddComment(comment);
             await userService.UpdateUserRating(currentUser.Id, typeof(ProfileComment));
-            return CreatedAtAction(nameof(GetCommentTemplate), new { id = dto.ProfileUserId }, dto);
+
+            return Ok(new { message = "Comment added successfully" });
         }
 
         // PUT: api/ProfileComment/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> EditComment(int id, [FromBody] EditCommentDto dto)
+        public async Task<IActionResult> EditComment(int id, [FromBody] EditProfileCommentDto dto)
         {
             var currentUser = await userManager.GetUserAsync(User);
             if (currentUser == null)
@@ -85,7 +95,7 @@ namespace Fan_Website.Controllers
             if (comment.CommentUser.Id != currentUser.Id)
                 return Forbid();
 
-            comment.Content = dto.Content;
+            comment.Content = dto.CommentContent;
             await userService.UpdateComment(comment);
             return NoContent();
         }

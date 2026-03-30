@@ -1,4 +1,4 @@
-﻿using Fan_Website.ViewModel;
+﻿using FanWebsiteAPI.DTOs.Posts;
 
 namespace Fan_Website.Services
 {

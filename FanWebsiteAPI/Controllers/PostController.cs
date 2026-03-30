@@ -1,7 +1,7 @@
 ﻿using Fan_Website;
-using Fan_Website.Models.Reply;
-using Fan_Website.ViewModel;
-using FanWebsiteAPI.DTOs;
+using FanWebsiteAPI.DTOs.Likes;
+using FanWebsiteAPI.DTOs.Posts;
+using FanWebsiteAPI.DTOs.Replies;
 using FanWebsiteAPI.Models.Posts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +29,7 @@ namespace FanWebsiteAPI.Controllers
         /// </summary>
         [HttpPost("create")]
         [Authorize]
-        public async Task<IActionResult> CreatePost([FromBody] CreatePostRequest request)
+        public async Task<IActionResult> CreatePost([FromBody] AddPostDto request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -232,7 +232,6 @@ namespace FanWebsiteAPI.Controllers
                     Likes = post.Likes?.Select(l => new LikeDto
                     {
                         Id = l.Id,
-                        // FIX: was incorrectly mapping post.User instead of l.User
                         User = new LikeUserDto
                         {
                             Id = l.User.Id,
@@ -240,19 +239,15 @@ namespace FanWebsiteAPI.Controllers
                         }
                     }).ToList(),
                     UserHasLiked = userHasLiked,
-                    Replies = post.Replies?.OrderByDescending(r => r.UpdatedOn).Select(r => new PostReplyModel
+                    Replies = post.Replies?.OrderByDescending(r => r.UpdatedOn).Select(r => new PostReplyDto
                     {
                         Id = r.Id,
-                        PostTitle = r.Post.Title,
-                        PostId = r.Post.PostId,
-                        PostContent = r.Post.Content,
-                        ForumName = r.Post.Forum.PostTitle,
-                        ForumId = r.Post.ForumId,
+                        PostId = post.PostId,
                         AuthorId = r.User.Id,
                         AuthorName = r.User.UserName ?? "Unknown",
                         AuthorRating = r.User.Rating,
-                        AuthorImageUrl = r.User.ImagePath,
-                        Date = r.UpdatedOn,
+                        AuthorImagePath = r.User.ImagePath,
+                        DatePosted = r.UpdatedOn.ToString(),
                         ReplyContent = r.ReplyContent
                     }).ToList(),
                     PostImages = post.PostImages?.Select(img => new PostImageDto

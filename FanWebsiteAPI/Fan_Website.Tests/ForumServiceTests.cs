@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Fan_Website.Models;
-using Fan_Website.Models.Forum;
-using Fan_Website.Service;
+﻿using Fan_Website.Service;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
