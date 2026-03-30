@@ -1,4 +1,5 @@
-﻿using FanWebsiteAPI.DTOs.ProfileComments;
+﻿using FanWebsiteAPI.DTOs.Follow;
+using FanWebsiteAPI.DTOs.ProfileComments;
 
 namespace FanWebsiteAPI.DTOs.Profile
 {
@@ -6,7 +7,7 @@ namespace FanWebsiteAPI.DTOs.Profile
     {
         public required string UserId { get; set; }
         public required string UserName { get; set; }
-        public required string UserRating { get; set; }
+        public int UserRating { get; set; }
         public string? ProfileImageUrl { get; set; }
         public required string MemberSince { get; set; }
         public int Following { get; set; }

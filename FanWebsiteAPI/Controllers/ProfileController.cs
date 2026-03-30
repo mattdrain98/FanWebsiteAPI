@@ -2,6 +2,7 @@
 using Azure.Storage.Blobs.Models;
 using Fan_Website.Infrastructure;
 using Fan_Website.Models.Follow;
+using FanWebsiteAPI.DTOs.Follow;
 using FanWebsiteAPI.DTOs.Profile;
 using FanWebsiteAPI.DTOs.ProfileComments;
 using Microsoft.AspNetCore.Identity;
@@ -43,14 +44,22 @@ namespace Fan_Website.Controllers
             var currentUserId = userManager.GetUserId(User);
 
             var user = await context.Users
+                .Include(u => u.Follows)
+                    .ThenInclude(f => f.Follower)
+                .Include(u => u.Followings)
+                    .ThenInclude(f => f.Following)
+                .Include(u => u.ProfileComments)
+                    .ThenInclude(c => c.CommentUser)
+                .Include(u => u.ProfileComments)
+                    .ThenInclude(c => c.ProfileUser)
                 .Where(u => u.Id == id)
                 .Select(u => new ProfileDto
                 {
                     UserId = u.Id,
                     UserName = u.UserName,
-                    UserRating = u.Rating.ToString(),
+                    UserRating = u.Rating, 
                     ProfileImageUrl = u.ImagePath,
-                    MemberSince = u.MemberSince.ToString(),
+                    MemberSince = u.MemberSince.ToString("o"), 
                     Following = u.Following,
                     Followers = u.Followers,
                     Bio = u.Bio,
@@ -62,18 +71,16 @@ namespace Fan_Website.Controllers
                         UserName = f.Following.UserName ?? "",
                         ImagePath = f.Following.ImagePath,
                         Rating = f.Following.Rating,
-                        MemberSince = f.Following.MemberSince.ToString()
+                        MemberSince = f.Following.MemberSince.ToString("o") 
                     }).ToList(),
-
                     Followings = u.Followings.Select(f => new FollowDto
                     {
                         Id = f.Follower.Id,
                         UserName = f.Follower.UserName ?? "",
                         ImagePath = f.Follower.ImagePath,
                         Rating = f.Follower.Rating,
-                        MemberSince = f.Follower.MemberSince.ToString()
+                        MemberSince = f.Follower.MemberSince.ToString("o") 
                     }).ToList(),
-
                     ProfileComments = u.ProfileComments.Select(c => new ProfileCommentDto
                     {
                         Id = c.Id,
@@ -81,12 +88,12 @@ namespace Fan_Website.Controllers
                         AuthorId = c.CommentUser.Id,
                         AuthorName = c.CommentUser.UserName ?? "",
                         AuthorImagePath = c.CommentUser.ImagePath,
-                        AuthorRating = c.CommentUser.Rating, 
+                        AuthorRating = c.CommentUser.Rating,
                         ProfileUserId = c.ProfileUser.Id,
                         ProfileUserImageUrl = c.ProfileUser.ImagePath,
                         ProfileUserName = c.ProfileUser.UserName ?? "",
-                        ProfileUserRating = c.ProfileUser.Rating, 
-                        DatePosted = c.UpdatedOn.ToString()
+                        ProfileUserRating = c.ProfileUser.Rating,
+                        DatePosted = c.UpdatedOn.ToString("o") 
                     }).ToList()
                 })
                 .FirstOrDefaultAsync();
@@ -118,19 +125,18 @@ namespace Fan_Website.Controllers
             }
             else
             {
-                var follow = new Follow
+                context.Add(new Follow
                 {
                     Following = user,
                     Follower = currentUser
-                };
-                context.Add(follow);
+                });
                 user.Followers += 1;
                 currentUser.Following += 1;
             }
 
             context.Users.Update(user);
             context.Users.Update(currentUser);
-            context.SaveChanges();
+            await context.SaveChangesAsync();
 
             return Ok(new { Followers = user.Followers, Following = currentUser.Following });
         }
@@ -139,28 +145,33 @@ namespace Fan_Website.Controllers
         [HttpGet("Followers/{id}")]
         public async Task<IActionResult> GetFollowers(string id)
         {
-            var user = await userService.GetById(id);
-            if (user == null) return NotFound();
+            var followerIds = await context.Set<Follow>()
+                .Where(f => f.Following.Id == id)
+                .Select(f => f.Follower.Id)
+                .ToListAsync();
 
-            var follows = user.Follows ?? new List<Follow>();
-
-            var followersDto = follows
-                .Where(f => f.Follower != null)
-                .Select(f => new FollowDto
+            var followers = await context.Users
+                .Where(u => followerIds.Contains(u.Id))
+                .Select(u => new FollowDto
                 {
-                    Id = f.Follower.Id,
-                    UserName = f.Follower.UserName,
-                    ImagePath = f.Follower.ImagePath,
-                    Rating = f.Follower.Rating,
-                    MemberSince = f.Follower.MemberSince.ToString()
+                    Id = u.Id,
+                    UserName = u.UserName ?? "",
+                    ImagePath = u.ImagePath,
+                    Rating = u.Rating,
+                    MemberSince = u.MemberSince.ToString("o")
                 })
-                .ToList();
+                .ToListAsync();
+
+            var userName = await context.Users
+                .Where(u => u.Id == id)
+                .Select(u => u.UserName)
+                .FirstOrDefaultAsync();
 
             return Ok(new
             {
-                user.UserName,
-                FollowersCount = followersDto.Count,
-                Followers = followersDto
+                UserName = userName,
+                FollowersCount = followers.Count,
+                Followers = followers
             });
         }
 
@@ -168,28 +179,33 @@ namespace Fan_Website.Controllers
         [HttpGet("Following/{id}")]
         public async Task<IActionResult> GetFollowing(string id)
         {
-            var user = await userService.GetById(id);
-            if (user == null) return NotFound();
+            var followingIds = await context.Set<Follow>()
+                .Where(f => f.Follower.Id == id)
+                .Select(f => f.Following.Id)
+                .ToListAsync();
 
-            var followings = user.Followings ?? new List<Follow>();
-
-            var followingDto = followings
-                .Where(f => f.Following != null)
-                .Select(f => new FollowDto
+            var following = await context.Users
+                .Where(u => followingIds.Contains(u.Id))
+                .Select(u => new FollowDto
                 {
-                    Id = f.Following.Id,
-                    UserName = f.Following.UserName,
-                    ImagePath = f.Following.ImagePath,
-                    Rating = f.Following.Rating,
-                    MemberSince = f.Following.MemberSince.ToString()
+                    Id = u.Id,
+                    UserName = u.UserName ?? "",
+                    ImagePath = u.ImagePath,
+                    Rating = u.Rating,
+                    MemberSince = u.MemberSince.ToString("o")
                 })
-                .ToList();
+                .ToListAsync();
+
+            var userName = await context.Users
+                .Where(u => u.Id == id)
+                .Select(u => u.UserName)
+                .FirstOrDefaultAsync();
 
             return Ok(new
             {
-                user.UserName,
-                FollowingCount = followingDto.Count,
-                Following = followingDto
+                UserName = userName,
+                FollowingCount = following.Count,
+                Following = following
             });
         }
 

@@ -1,4 +1,6 @@
-﻿namespace FanWebsiteAPI.DTOs.Profile
+﻿using FanWebsiteAPI.Infrastructure.Abstractions;
+
+namespace FanWebsiteAPI.DTOs.Follow
 {
     public class FollowDto
     {

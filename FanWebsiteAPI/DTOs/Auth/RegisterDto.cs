@@ -10,4 +10,6 @@ public class RegisterDto
 
     [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
     public required string ConfirmPassword { get; set; }
+
+    public IFormFile? ProfileImage { get; set; }
 }
