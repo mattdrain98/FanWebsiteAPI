@@ -40,9 +40,9 @@ namespace Fan_Website.Controllers
                 PostContent = post.Content,
                 AuthorId = user.Id,
                 AuthorName = user.UserName ?? "Unknown",
-                AuthorImageUrl = user.ImagePath,
+                AuthorImagePath = user.ImagePath,
                 AuthorRating = user.Rating,
-                Date = DateTime.Now,
+                DatePosted = DateTime.UtcNow.ToString(),
                 ForumId = post.Forum.ForumId,
                 ForumName = post.Forum.PostTitle
             };
@@ -65,7 +65,7 @@ namespace Fan_Website.Controllers
             {
                 Post = post,
                 ReplyContent = model.ReplyContent ?? "Unknown",
-                CreateOn = DateTime.Now,
+                UpdatedOn = DateTime.Now,
                 User = user
             };
 

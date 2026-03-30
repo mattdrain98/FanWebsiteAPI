@@ -1,7 +1,5 @@
-﻿using Fan_Website.Models;
-using Fan_Website.Models.Forum;
-using Fan_Website.Models.Search;
-using Fan_Website.Services;
+﻿using Fan_Website.Services;
+using Fan_Website.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fan_Website.Controllers
@@ -17,90 +15,56 @@ namespace Fan_Website.Controllers
             postService = _postService;
         }
 
-        // GET: api/Search?query=keyword
+        // GET: api/Search?query=keyword&page=1&pageSize=6
         [HttpGet]
-        public IActionResult Results([FromQuery] string query)
+        public async Task<IActionResult> Results(
+            [FromQuery] string query,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 6)
         {
             if (string.IsNullOrWhiteSpace(query))
-                return BadRequest(new { Message = "Search query cannot be empty." });
+                return BadRequest(new { message = "Search query cannot be empty." });
 
-            var posts = postService.GetFilteredPosts(query).Result.ToList();
-            var areNoResults = !posts.Any();
+            page = Math.Clamp(page, 1, 100);
 
-            var postListings = posts.Select(post => new PostListingModel
+            var allPosts = (await postService.GetFilteredPosts(query)).ToList();
+            var totalPosts = allPosts.Count;
+            var totalPages = Math.Min((int)Math.Ceiling(totalPosts / (double)pageSize), 100);
+
+            var pagedPosts = allPosts
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize);
+
+            var postListings = pagedPosts.Select(post => new PostDto
             {
-                Id = post.PostId,
+                PostId = post.PostId,
                 Title = post.Title,
                 AuthorId = post.User.Id,
                 AuthorName = post.User.UserName ?? "Unknown",
                 AuthorRating = post.User.Rating,
-                AuthorUrl = post.User.ImagePath,
-                DatePosted = post.CreatedOn.ToString(),
-                RepliesCount = post.Replies?.Count() ?? 0,
-                Forum = BuildForumListing(post)
-            });
+                AuthorImagePath = post.User.ImagePath,
+                Content = post.Content,
+                TotalLikes = post.TotalLikes,
+                DatePosted = post.UpdatedOn.ToString(),
+                RepliesCount = post.Replies?.Count ?? 0,
+                ForumId = post.ForumId,
+                ForumName = post.Forum?.PostTitle
+            }).ToList();
 
-            var result = new SearchResultModel
+            var result = new SearchResultDto
             {
                 Posts = postListings,
                 SearchQuery = query,
-                EmptySearchResults = areNoResults
+                EmptySearchResults = !postListings.Any(),
+                Page = page,
+                TotalPages = totalPages,
+                TotalPosts = totalPosts
             };
 
             return Ok(result);
-        }
-
-        // POST: api/Search
-        [HttpPost]
-        public IActionResult Search([FromBody] SearchRequestModel request)
-        {
-            if (request == null || string.IsNullOrWhiteSpace(request.Query))
-                return BadRequest(new { Message = "Search query cannot be empty." });
-
-            var posts = postService.GetFilteredPosts(request.Query).Result.ToList();
-            var areNoResults = !posts.Any();
-
-            var postListings = posts.Select(post => new PostListingModel
-            {
-                Id = post.PostId,
-                Title = post.Title,
-                AuthorId = post.User.Id,
-                AuthorName = post.User.UserName ?? "Unknown",
-                AuthorRating = post.User.Rating,
-                AuthorUrl = post.User.ImagePath, 
-                DatePosted = post.CreatedOn.ToString(),
-                RepliesCount = post.Replies?.Count() ?? 0,
-                Forum = BuildForumListing(post)
-            });
-
-            var result = new SearchResultModel
-            {
-                Posts = postListings,
-                SearchQuery = request.Query,
-                EmptySearchResults = areNoResults
-            };
-
-            return Ok(result);
-        }
-
-        // Helper method
-        private ForumListingModel BuildForumListing(Post post)
-        {
-            var forum = post.Forum;
-            return new ForumListingModel
-            {
-                ForumId = forum.ForumId,
-                ForumTitle = forum.PostTitle,
-                Description = forum.Description,
-                AuthorId = forum.User.Id,
-                AuthorName = forum.User.UserName ?? "Unknown", 
-                AuthorRating = forum.User.Rating,
-                AuthorUrl = post.User.ImagePath,
-            };
         }
     }
 
-    // Model for POST search request
     public class SearchRequestModel
     {
         public string? Query { get; set; }

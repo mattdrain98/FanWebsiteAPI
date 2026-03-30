@@ -40,7 +40,7 @@ namespace Fan_Website.Tests
                 ScreenshotTitle = title,
                 ScreenshotDescription = description,
                 ImagePath = imagePath,
-                CreatedOn = DateTime.UtcNow,
+                UpdatedOn = DateTime.UtcNow,
                 User = user
             };
 
@@ -234,8 +234,8 @@ namespace Fan_Website.Tests
             var user = MakeUser();
             var older = MakeScreenshot(user, 1, "Older");
             var newer = MakeScreenshot(user, 2, "Newer");
-            older.CreatedOn = DateTime.UtcNow.AddDays(-5);
-            newer.CreatedOn = DateTime.UtcNow;
+            older.UpdatedOn = DateTime.UtcNow.AddDays(-5);
+            newer.UpdatedOn = DateTime.UtcNow;
 
             ctx.Users.Add(user);
             ctx.Screenshots.AddRange(older, newer);

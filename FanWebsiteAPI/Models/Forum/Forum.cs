@@ -14,7 +14,7 @@ namespace Fan_Website
         public required string PostTitle { get; set; }
         [Required(ErrorMessage = "Please enter a description")]
         public required string Description { get; set; }
-        public DateTime CreatedOn { get; set; }
+        public DateTime UpdatedOn { get; set; }
         public required ApplicationUser User { get; set; }
         public List<Post>? Posts { get; set; }
         public string? Slug =>

@@ -1,4 +1,4 @@
-﻿using Fan_Website.Models;
+﻿using Fan_Website.ViewModel;
 
 namespace Fan_Website.Services
 {
@@ -10,7 +10,7 @@ namespace Fan_Website.Services
         Task<IEnumerable<Post>> GetFilteredPosts(string searchQuery);
         Task<IEnumerable<Post>> GetPostsByForum(int id);
         Task<IEnumerable<Post>> GetLatestPosts(int n);
-        Task<IEnumerable<PostListingModel>> SearchPostsAsync(string query);
+        Task<IEnumerable<PostDto>> SearchPostsAsync(string query);
         Task<IEnumerable<Post>> GetTopPosts(int likes); 
         Task Add(Post post);
         Task Delete(int id);

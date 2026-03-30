@@ -6,7 +6,7 @@ namespace FanWebsiteAPI.Models.Posts
     {
         public int Id { get; set; }
         public required string Url { get; set; }
-        public required DateTime CreatedOn { get; set; }    
+        public required DateTime UpdatedOn { get; set; }    
 
         public int PostId { get; set; } 
         public required Post Post { get; set; }

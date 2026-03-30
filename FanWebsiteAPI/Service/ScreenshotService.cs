@@ -48,7 +48,7 @@ namespace Fan_Website.Service
 
         public async Task<IEnumerable<Screenshot>> GetLatestScreenshots(int n)
         {
-            return await context.Screenshots.OrderByDescending(screenshot => screenshot.CreatedOn).Take(n).ToListAsync();
+            return await context.Screenshots.OrderByDescending(screenshot => screenshot.UpdatedOn).Take(n).ToListAsync();
 
         }
 

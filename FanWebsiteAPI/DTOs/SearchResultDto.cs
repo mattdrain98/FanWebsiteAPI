@@ -1,13 +1,10 @@
-﻿using Fan_Website.ViewModel;
-using System.Collections.Generic;
-
-namespace Fan_Website.Models.Forum
+﻿namespace Fan_Website.ViewModel
 {
-    public class ForumTopicModel
+    public class SearchResultDto
     {
-        public required ForumListingModel Forum { get; set; }
         public IEnumerable<PostDto>? Posts { get; set; }
         public string? SearchQuery { get; set; }
+        public bool EmptySearchResults { get; set; }
         public int Page { get; set; }
         public int TotalPages { get; set; }
         public int TotalPosts { get; set; }

@@ -41,7 +41,7 @@ namespace Fan_Website.Tests
                 PostId = id,
                 Title = "Test Post",
                 Content = "Test content",
-                CreatedOn = DateTime.UtcNow,
+                UpdatedOn = DateTime.UtcNow,
                 User = author,
                 Forum = forum,
                 Replies = new List<PostReply>(),
@@ -218,7 +218,7 @@ namespace Fan_Website.Tests
             var reply = new PostReply
             {
                 ReplyContent = "Nice!",
-                CreateOn = DateTime.UtcNow,
+                UpdatedOn = DateTime.UtcNow,
                 User = user,
                 Post = post
             };

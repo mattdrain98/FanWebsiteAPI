@@ -11,7 +11,7 @@ namespace Fan_Website
         public required string ScreenshotTitle { get; set; }
         public required string ImagePath { get; set; }
         public required  string ScreenshotDescription { get; set; }
-        public required DateTime CreatedOn { get; set; }
+        public required DateTime UpdatedOn { get; set; }
         public required ApplicationUser User { get; set; }
         public string Slug =>
             ScreenshotTitle.Replace(' ', '-').ToLower();

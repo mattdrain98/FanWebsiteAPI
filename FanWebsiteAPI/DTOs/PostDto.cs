@@ -1,4 +1,6 @@
-﻿namespace Fan_Website.ViewModel
+﻿using FanWebsiteAPI.Infrastructure.Abstractions;
+
+namespace Fan_Website.ViewModel
 {
     public class CreatePostRequest
     {
@@ -14,15 +16,14 @@
         public required string Url { get; set; }
     }
 
-    public class PostDto
+    public class PostDto : AuthorDto
     {
         public int PostId { get; set; }
         public required string Title { get; set; }
         public required string Content { get; set; }
         public DateTime CreatedOn { get; set; }
-        public required string AuthorId { get; set; }
-        public required string AuthorName { get; set; }
         public int ForumId { get; set; }
+        public string? ForumName { get; set; }
         public int TotalLikes { get; set; }
         public int RepliesCount { get; set; }
         public List<PostImageDto>? PostImages { get; set; }

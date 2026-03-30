@@ -1,6 +1,4 @@
 ﻿using Fan_Website;
-using Fan_Website.Models;
-using Fan_Website.Models.Posts;
 using Fan_Website.Models.Reply;
 using Fan_Website.ViewModel;
 using FanWebsiteAPI.DTOs;
@@ -34,38 +32,27 @@ namespace FanWebsiteAPI.Controllers
         public async Task<IActionResult> CreatePost([FromBody] CreatePostRequest request)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             try
             {
-                // Get current user
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
-                {
                     return Unauthorized(new { message = "User not found" });
-                }
 
                 var user = await _context.Users.FindAsync(userId);
                 if (user == null)
-                {
                     return Unauthorized(new { message = "User not found" });
-                }
 
-                // Verify forum exists
                 var forum = await _context.Forums.FindAsync(request.ForumId);
                 if (forum == null)
-                {
                     return BadRequest(new { message = "Forum not found" });
-                }
 
-                // Create post
                 var post = new Post
                 {
                     Title = request.Title,
                     Content = request.Content,
-                    CreatedOn = DateTime.UtcNow,
+                    UpdatedOn = DateTime.UtcNow,
                     User = user,
                     Forum = forum,
                     TotalLikes = 0,
@@ -74,7 +61,6 @@ namespace FanWebsiteAPI.Controllers
                     PostImages = new List<PostImage>()
                 };
 
-                // Add images if provided
                 if (request.ImageUrls != null && request.ImageUrls.Count > 0)
                 {
                     foreach (var imageUrl in request.ImageUrls)
@@ -82,7 +68,7 @@ namespace FanWebsiteAPI.Controllers
                         post.PostImages.Add(new PostImage
                         {
                             Url = imageUrl,
-                            CreatedOn = DateTime.UtcNow,
+                            UpdatedOn = DateTime.UtcNow,
                             Post = post
                         });
                     }
@@ -91,23 +77,20 @@ namespace FanWebsiteAPI.Controllers
                 _context.Posts.Add(post);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Post {post.PostId} created with {post.PostImages.Count} images");
-                _logger.LogInformation($"Original content: {post.Content}");
+                _logger.LogInformation("Post {PostId} created with {ImageCount} images", post.PostId, post.PostImages.Count);
+                _logger.LogInformation("Original content: {Content}", post.Content);
 
-                // Now replace temp placeholders with real image IDs in order
+                // Replace temp placeholders with real image IDs in order
                 var updatedContent = post.Content;
-                var regex = new Regex(@"\[Image-[^\]]+\]");
-
-                // Sort images by ID to ensure consistent order
                 var sortedImages = post.PostImages.OrderBy(img => img.Id).ToList();
 
-                foreach (var image in sortedImages.Select((img, idx) => new { img, idx }))
+                foreach (var item in sortedImages.Select((img, idx) => new { img, idx }))
                 {
-                    var pattern = $@"\[Image-{image.idx}-[^\]]+\]";
-                    updatedContent = Regex.Replace(updatedContent, pattern, $"[Image-{image.idx}-{image.img.Id}]");
+                    var pattern = $@"\[Image-{item.idx}-[^\]]+\]";
+                    updatedContent = Regex.Replace(updatedContent, pattern, $"[Image-{item.idx}-{item.img.Id}]");
                 }
 
-                _logger.LogInformation($"Updated content: {updatedContent}");
+                _logger.LogInformation("Updated content: {Content}", updatedContent);
 
                 if (updatedContent != post.Content)
                 {
@@ -121,7 +104,7 @@ namespace FanWebsiteAPI.Controllers
                     _logger.LogInformation("Content unchanged");
                 }
 
-                _logger.LogInformation($"Post {post.PostId} created by user {userId}");
+                _logger.LogInformation("Post {PostId} created by user {UserId}", post.PostId, userId);
 
                 return Ok(new
                 {
@@ -163,9 +146,8 @@ namespace FanWebsiteAPI.Controllers
 
                 post.Title = request.Title;
                 post.Content = request.Content ?? "";
-                post.CreatedOn = DateTime.UtcNow;
+                post.UpdatedOn = DateTime.UtcNow;
 
-                // Add new images if provided
                 if (request.NewImageUrls != null && request.NewImageUrls.Count > 0)
                 {
                     foreach (var imageUrl in request.NewImageUrls)
@@ -173,24 +155,21 @@ namespace FanWebsiteAPI.Controllers
                         post.PostImages?.Add(new PostImage
                         {
                             Url = imageUrl,
-                            CreatedOn = DateTime.UtcNow,
+                            UpdatedOn = DateTime.UtcNow,
                             Post = post
                         });
                     }
 
                     await _context.SaveChangesAsync();
 
-                    // Replace temp placeholders with real image IDs
                     var updatedContent = post.Content;
                     var sortedImages = post.PostImages?.OrderBy(img => img.Id).ToList();
 
                     for (int i = 0; i < sortedImages?.Count; i++)
                     {
-                        // Replace any temp placeholder for this index
                         var tempPattern = $@"\[Image-{i}-temp\]";
                         updatedContent = Regex.Replace(updatedContent, tempPattern, $"[Image-{i}-{sortedImages[i].Id}]");
 
-                        // Also fix any existing placeholders that may have shifted
                         var existingPattern = $@"\[Image-{i}-\d+\]";
                         updatedContent = Regex.Replace(updatedContent, existingPattern, $"[Image-{i}-{sortedImages[i].Id}]");
                     }
@@ -201,7 +180,8 @@ namespace FanWebsiteAPI.Controllers
                 _context.Posts.Update(post);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Post {id} edited by user {userId}, {request.NewImageUrls?.Count ?? 0} new images added");
+                _logger.LogInformation("Post {PostId} edited by user {UserId}, {NewImageCount} new images added",
+                    id, userId, request.NewImageUrls?.Count ?? 0);
 
                 return Ok(new { message = "Post updated successfully" });
             }
@@ -225,47 +205,42 @@ namespace FanWebsiteAPI.Controllers
                     .Include(p => p.Forum)
                     .Include(p => p.PostImages)
                     .Include(p => p.Likes)
-                    .ThenInclude(l => l.User)
+                        .ThenInclude(l => l.User)
                     .Include(p => p.Replies)
-                    .ThenInclude(r => r.User)
+                        .ThenInclude(r => r.User)
                     .FirstOrDefaultAsync(p => p.PostId == id);
 
                 if (post == null)
-                {
                     return NotFound(new { message = "Post not found" });
-                }
 
-                // Get current user ID
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                bool userHasLiked = false; 
+                var userHasLiked = userId != null && post.Likes?.Any(l => l.User.Id == userId) == true;
 
-                if (post.Likes.Count > 0)
-                    userHasLiked = userId != null && post.Likes?.Any(l => l.User.Id == userId) == true;
-
-                var dto = new PostIndexModel
+                var dto = new PostDetailDto
                 {
                     PostId = post.PostId,
                     Title = post.Title,
-                    PostContent = post.Content,
-                    Date = post.CreatedOn,
+                    Content = post.Content,
+                    DatePosted = post.UpdatedOn.ToString(),
                     AuthorId = post.User.Id,
                     AuthorName = post.User.UserName ?? "Unknown",
                     AuthorRating = post.User.Rating,
-                    AuthorImageUrl = post.User.ImagePath,
+                    AuthorImagePath = post.User.ImagePath,
                     ForumId = post.ForumId,
                     ForumName = post.Forum.PostTitle,
                     TotalLikes = post.TotalLikes,
                     Likes = post.Likes?.Select(l => new LikeDto
                     {
                         Id = l.Id,
+                        // FIX: was incorrectly mapping post.User instead of l.User
                         User = new LikeUserDto
                         {
-                            Id = post.User.Id,
-                            UserName = post.User.UserName ?? "Unknown"
+                            Id = l.User.Id,
+                            UserName = l.User.UserName ?? "Unknown"
                         }
                     }).ToList(),
                     UserHasLiked = userHasLiked,
-                    Replies = post.Replies?.OrderByDescending(r => r.CreateOn).Select(r => new PostReplyModel
+                    Replies = post.Replies?.OrderByDescending(r => r.UpdatedOn).Select(r => new PostReplyModel
                     {
                         Id = r.Id,
                         PostTitle = r.Post.Title,
@@ -277,7 +252,7 @@ namespace FanWebsiteAPI.Controllers
                         AuthorName = r.User.UserName ?? "Unknown",
                         AuthorRating = r.User.Rating,
                         AuthorImageUrl = r.User.ImagePath,
-                        Date = r.CreateOn,
+                        Date = r.UpdatedOn,
                         ReplyContent = r.ReplyContent
                     }).ToList(),
                     PostImages = post.PostImages?.Select(img => new PostImageDto
@@ -316,21 +291,25 @@ namespace FanWebsiteAPI.Controllers
                     .OrderByDescending(p => p.TotalLikes)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
-                    .Select(post => new PostListingModel
+                    .Select(post => new PostDto
                     {
-                        Id = post.PostId,
+                        PostId = post.PostId,
                         Title = post.Title,
-                        Content = post.Content, 
+                        Content = post.Content,
                         AuthorId = post.User.Id,
                         AuthorName = post.User.UserName ?? "Unknown",
                         AuthorRating = post.User.Rating,
-                        AuthorUrl = post.User.ImagePath,
+                        AuthorImagePath = post.User.ImagePath,
                         TotalLikes = post.TotalLikes,
-                        DatePosted = post.CreatedOn.ToString(),
+                        DatePosted = post.UpdatedOn.ToString(),
                         RepliesCount = post.Replies.Count,
                         ForumId = post.ForumId,
                         ForumName = post.Forum.PostTitle,
-                        PostImages = post.PostImages
+                        PostImages = post.PostImages.Select(img => new PostImageDto
+                        {
+                            Id = img.Id,
+                            Url = img.Url
+                        }).ToList()
                     })
                     .ToListAsync();
 
@@ -359,28 +338,32 @@ namespace FanWebsiteAPI.Controllers
                     .Include(p => p.PostImages)
                     .Include(p => p.Likes)
                     .Include(p => p.Replies)
-                    .OrderByDescending(p => p.CreatedOn)
+                    .OrderByDescending(p => p.UpdatedOn)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
-                    .Select(post => new PostListingModel
+                    .Select(post => new PostDto
                     {
-                        Id = post.PostId,
+                        PostId = post.PostId,
                         Title = post.Title,
                         Content = post.Content,
                         AuthorId = post.User.Id,
                         AuthorName = post.User.UserName ?? "Unknown",
                         AuthorRating = post.User.Rating,
-                        AuthorUrl = post.User.ImagePath,
+                        AuthorImagePath = post.User.ImagePath,
                         TotalLikes = post.TotalLikes,
-                        DatePosted = post.CreatedOn.ToString(),
+                        DatePosted = post.UpdatedOn.ToString(),
                         RepliesCount = post.Replies.Count,
                         ForumId = post.ForumId,
                         ForumName = post.Forum.PostTitle,
-                        PostImages = post.PostImages
+                        PostImages = post.PostImages.Select(img => new PostImageDto
+                        {
+                            Id = img.Id,
+                            Url = img.Url
+                        }).ToList()
                     })
                     .ToListAsync();
 
-                return Ok(new { posts, page, totalPages, totalPosts});
+                return Ok(new { posts, page, totalPages, totalPosts });
             }
             catch (Exception ex)
             {
@@ -400,29 +383,21 @@ namespace FanWebsiteAPI.Controllers
             {
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
-                {
                     return Unauthorized(new { message = "User not found" });
-                }
 
                 var post = await _context.Posts
+                    .Include(p => p.User)
                     .Include(p => p.PostImages)
                     .Include(p => p.Likes)
                     .Include(p => p.Replies)
                     .FirstOrDefaultAsync(p => p.PostId == id);
 
                 if (post == null)
-                {
                     return NotFound(new { message = "Post not found" });
-                }
 
-                // Check ownership using the FK directly
-                var postUser = await _context.Users.FirstOrDefaultAsync(u =>
-                    _context.Posts.Any(p => p.PostId == id && p.User.Id == u.Id) && u.Id == userId);
-
-                if (postUser == null)
-                {
+                // FIX: removed redundant DB round-trip; post.User is already loaded
+                if (post.User?.Id != userId)
                     return Forbid();
-                }
 
                 if (post.PostImages?.Any() == true)
                     _context.PostImages.RemoveRange(post.PostImages);
@@ -436,7 +411,7 @@ namespace FanWebsiteAPI.Controllers
                 _context.Posts.Remove(post);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Post {id} deleted by user {userId}");
+                _logger.LogInformation("Post {PostId} deleted by user {UserId}", id, userId);
 
                 return Ok(new { message = "Post deleted successfully" });
             }
@@ -466,7 +441,7 @@ namespace FanWebsiteAPI.Controllers
 
                 var post = await _context.Posts
                     .Include(p => p.Likes)
-                    .ThenInclude(l => l.User)
+                        .ThenInclude(l => l.User)
                     .FirstOrDefaultAsync(p => p.PostId == id);
 
                 if (post == null)
@@ -476,25 +451,20 @@ namespace FanWebsiteAPI.Controllers
 
                 if (existingLike != null)
                 {
-                    // Remove like
                     _context.Likes.Remove(existingLike);
                     post.TotalLikes = Math.Max(0, post.TotalLikes - 1);
                 }
                 else
                 {
-                    // Add like
-                    var like = new Like
-                    {
-                        User = user,
-                        Post = post
-                    };
+                    var like = new Like { User = user, Post = post };
                     _context.Likes.Add(like);
                     post.TotalLikes += 1;
                 }
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Like toggled on post {id} by user {userId}. Total: {post.TotalLikes}");
+                _logger.LogInformation("Like toggled on post {PostId} by user {UserId}. Total: {TotalLikes}",
+                    id, userId, post.TotalLikes);
 
                 return Ok(post.TotalLikes);
             }
@@ -504,7 +474,6 @@ namespace FanWebsiteAPI.Controllers
                 return StatusCode(500, new { message = "Error toggling like", error = ex.Message });
             }
         }
-
 
         [HttpGet("liked")]
         [Authorize]
@@ -533,21 +502,25 @@ namespace FanWebsiteAPI.Controllers
                         .ThenInclude(p => p.Replies)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
-                    .Select(l => new PostListingModel
+                    .Select(l => new PostDto
                     {
-                        Id = l.Post.PostId,
+                        PostId = l.Post.PostId,
                         Title = l.Post.Title,
-                        Content = l.Post.Content, 
+                        Content = l.Post.Content,
                         AuthorId = l.Post.User.Id,
                         AuthorName = l.Post.User.UserName ?? "Unknown",
                         AuthorRating = l.Post.User.Rating,
-                        AuthorUrl = l.Post.User.ImagePath,
+                        AuthorImagePath = l.Post.User.ImagePath,
                         TotalLikes = l.Post.TotalLikes,
-                        DatePosted = l.Post.CreatedOn.ToString(),
+                        DatePosted = l.Post.UpdatedOn.ToString(),
                         RepliesCount = l.Post.Replies.Count,
                         ForumId = l.Post.ForumId,
                         ForumName = l.Post.Forum.PostTitle,
-                        PostImages = l.Post.PostImages
+                        PostImages = l.Post.PostImages.Select(img => new PostImageDto
+                        {
+                            Id = img.Id,
+                            Url = img.Url
+                        }).ToList()
                     })
                     .ToListAsync();
 
@@ -581,25 +554,28 @@ namespace FanWebsiteAPI.Controllers
                     .Include(p => p.Forum)
                     .Include(p => p.PostImages)
                     .Include(p => p.Replies)
-                    .OrderByDescending(p => p.CreatedOn)
+                    .OrderByDescending(p => p.UpdatedOn)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
-                    .Select(p => new PostListingModel
+                    .Select(p => new PostDto
                     {
-                        Id = p.PostId,
+                        PostId = p.PostId,
                         Title = p.Title,
-                        Content = p.Content, 
+                        Content = p.Content,
                         AuthorId = p.User.Id,
                         AuthorName = p.User.UserName ?? "Unknown",
                         AuthorRating = p.User.Rating,
-                        AuthorUrl = p.User.ImagePath,
+                        AuthorImagePath = p.User.ImagePath,
                         TotalLikes = p.TotalLikes,
-                        DatePosted = p.CreatedOn.ToString(),
+                        DatePosted = p.UpdatedOn.ToString(),
                         RepliesCount = p.Replies.Count,
                         ForumId = p.ForumId,
                         ForumName = p.Forum.PostTitle,
-                        PostImages = p.PostImages,
-
+                        PostImages = p.PostImages.Select(img => new PostImageDto
+                        {
+                            Id = img.Id,
+                            Url = img.Url
+                        }).ToList()
                     })
                     .ToListAsync();
 

@@ -2,8 +2,7 @@
 using Azure.Storage.Blobs.Models;
 using Fan_Website.Infrastructure;
 using Fan_Website.Models.Follow;
-using Fan_Website.Models.Profile;
-using Fan_Website.Models.ProfileComment;
+using Fan_Website.ViewModel;
 using FanWebsiteAPI.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -79,15 +78,15 @@ namespace Fan_Website.Controllers
                     {
                         Id = c.Id,
                         CommentContent = c.Content,
-                        CommentUserId = c.CommentUser.Id,
-                        CommentUserName = c.CommentUser.UserName ?? "",
-                        CommentUserImagePath = c.CommentUser.ImagePath,
-                        CommentUserRating = c.CommentUser.Rating, 
+                        AuthorId = c.CommentUser.Id,
+                        AuthorName = c.CommentUser.UserName ?? "",
+                        AuthorImagePath = c.CommentUser.ImagePath,
+                        AuthorRating = c.CommentUser.Rating, 
                         ProfileUserId = c.ProfileUser.Id,
                         ProfileUserImageUrl = c.ProfileUser.ImagePath,
                         ProfileUserName = c.ProfileUser.UserName ?? "",
                         ProfileUserRating = c.ProfileUser.Rating, 
-                        Date = c.CreateOn.ToString()
+                        DatePosted = c.UpdatedOn.ToString()
                     }).ToList()
                 })
                 .FirstOrDefaultAsync();
@@ -196,7 +195,7 @@ namespace Fan_Website.Controllers
 
         // PUT: api/Profile/EditBio
         [HttpPut("EditBio")]
-        public async Task<IActionResult> EditBio([FromBody] ProfileEditModel model)
+        public async Task<IActionResult> EditBio([FromBody] EditProfileDto model)
         {
             var currentUserId = userManager.GetUserId(User);
             if (currentUserId != model.UserId) return Forbid();
@@ -209,7 +208,7 @@ namespace Fan_Website.Controllers
 
         // PUT: api/Profile/EditUsername
         [HttpPut("EditUsername")]
-        public async Task<IActionResult> EditUsername([FromBody] ProfileEditModel model)
+        public async Task<IActionResult> EditUsername([FromBody] EditProfileDto model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -242,27 +241,6 @@ namespace Fan_Website.Controllers
             await userService.SetProfileImage(userId, blobClient.Uri);
 
             return Ok(new { ImageUrl = blobClient.Uri.ToString() });
-        }
-
-        // Helper method
-        private IEnumerable<ProfileCommentDto> BuildProfileComments(IEnumerable<ProfileComment> comments)
-        {
-            return comments
-                .Where(c => c.ProfileUser != null && c.CommentUser != null) // ✅ skip any broken comments
-                .Select(c => new ProfileCommentDto
-                {
-                    Id = c.Id,
-                    ProfileUserId = c.ProfileUser.Id,
-                    ProfileUserName = c.ProfileUser.UserName,
-                    ProfileUserImageUrl = c.ProfileUser.ImagePath,
-                    ProfileUserRating = c.ProfileUser.Rating,
-                    Date = c.CreateOn.ToString("yyyy-MM-dd HH:mm"),
-                    CommentContent = c.Content,
-                    CommentUserId = c.CommentUser.Id,
-                    CommentUserName = c.CommentUser.UserName ?? "",
-                    CommentUserImagePath = c.CommentUser.ImagePath,
-                    CommentUserRating = c.CommentUser.Rating
-                });
         }
     }
 }

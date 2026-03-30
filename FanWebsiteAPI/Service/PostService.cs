@@ -1,6 +1,7 @@
 ﻿using Fan_Website.Models;
 using Fan_Website.Models.Forum;
 using Fan_Website.Services;
+using Fan_Website.ViewModel;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Service
@@ -31,126 +32,103 @@ namespace Fan_Website.Service
             var post = await GetById(id);
             if (post == null) return;
 
+            // FIX: also remove PostImages, consistent with the controller
+            if (post.PostImages?.Any() == true)
+                context.PostImages.RemoveRange(post.PostImages);
+
             context.Likes.RemoveRange(context.Likes.Where(l => l.Post.PostId == id));
             context.Replies.RemoveRange(context.Replies.Where(r => r.Post.PostId == id));
-
             context.Posts.Remove(post);
+
             await context.SaveChangesAsync();
         }
 
         public async Task DeleteReply(int id)
         {
             var reply = await GetReplyByIdAsync(id);
+            if (reply == null) return;
 
-            if (reply != null)
-            {
-                context.Remove(reply);
-                await context.SaveChangesAsync();
-            }
+            context.Remove(reply);
+            await context.SaveChangesAsync();
         }
+
         public async Task EditPost(int id, string newContent, string newTitle)
         {
             var post = await GetById(id);
+            if (post == null) return;
 
-            if (post != null)
-            {
-                post.Content = newContent;
-                post.Title = newTitle;
-                post.CreatedOn = DateTime.UtcNow;
-                context.Posts.Update(post);
-                await context.SaveChangesAsync();
-            }
+            post.Content = newContent;
+            post.Title = newTitle;
+            post.UpdatedOn = DateTime.UtcNow; 
+            context.Posts.Update(post);
+            await context.SaveChangesAsync();
         }
 
         public async Task EditReply(int id, string newContent)
         {
             var reply = await GetReplyByIdAsync(id);
+            if (reply == null) return;
 
-            if (reply != null)
-            {
-                reply.ReplyContent = newContent;
-                reply.CreateOn = DateTime.UtcNow;
-                context.Replies.Update(reply);
-                await context.SaveChangesAsync();
-            }
-
+            reply.ReplyContent = newContent;
+            reply.UpdatedOn = DateTime.UtcNow; 
+            context.Replies.Update(reply);
+            await context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<Post>> GetAll()
         {
             return await context.Posts
-                .Include(post => post.User)
-                .Include(post => post.Replies).ThenInclude(post => post.User)
-                .Include(post => post.Forum)
-                .Include(post => post.Likes).ThenInclude(like => like.User).ToListAsync();
+                .Include(p => p.User)
+                .Include(p => p.Replies).ThenInclude(r => r.User)
+                .Include(p => p.Forum)
+                .Include(p => p.Likes).ThenInclude(l => l.User)
+                .ToListAsync();
         }
 
         public async Task<Post?> GetById(int id)
         {
             return await context.Posts
-                .Include(post => post.Forum).ThenInclude(forum => forum.User)
-                .Include(post => post.User)
-                .Include(post => post.Replies).ThenInclude(reply => reply.User)
-                .Include(post => post.Likes).ThenInclude(like => like.User)
-                .FirstOrDefaultAsync(post => post.PostId == id);
+                .Include(p => p.Forum).ThenInclude(f => f.User)
+                .Include(p => p.User)
+                .Include(p => p.PostImages)
+                .Include(p => p.Replies).ThenInclude(r => r.User)
+                .Include(p => p.Likes).ThenInclude(l => l.User)
+                .FirstOrDefaultAsync(p => p.PostId == id);
         }
+
+        // Forum-scoped filtered search — filter and search in the query, not in memory
         public async Task<IEnumerable<Post>> GetFilteredPosts(Forum forum, string searchQuery)
         {
-            var posts = await context.Posts.Where(p => p.ForumId == forum.ForumId).ToListAsync();
+            var query = context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Forum)
+                .Include(p => p.Replies)
+                .Include(p => p.Likes)
+                .Where(p => p.ForumId == forum.ForumId);
 
-            if (posts == null) throw new NullReferenceException("There are no posts"); 
-
+            // FIX: push search filter into DB query instead of fetching all then filtering
             if (!string.IsNullOrEmpty(searchQuery))
-            {
-                var lowerQuery = searchQuery.ToLower();
+                query = query.Where(p =>
+                    p.Title.Contains(searchQuery) ||
+                    p.Content.Contains(searchQuery));
 
-                return posts.Where(post =>
-                    (post.Title.ToLower().Contains(lowerQuery)) ||
-                    (post.Content.ToLower().Contains(lowerQuery)));
-            }
-            else
-                return posts.OrderByDescending(p => p.CreatedOn);
+            return await query
+                .OrderByDescending(p => p.UpdatedOn)
+                .ToListAsync();
         }
 
+        // Global search — FIX: removed duplicate conditions, let DB collation handle case
         public async Task<IEnumerable<Post>> GetFilteredPosts(string searchQuery)
-        {
-            return await context.Posts.Where(post => post.Title.ToLower().Contains(searchQuery) || post.Content.ToLower().Contains(searchQuery) || post.Content.Contains(searchQuery) || post.Title.Contains(searchQuery)).ToListAsync();
-        }
-
-        public async Task<IEnumerable<PostListingModel>> SearchPostsAsync(string query)
         {
             return await context.Posts
                 .Include(p => p.User)
+                .Include(p => p.Forum)
                 .Include(p => p.Replies)
                 .Include(p => p.Likes)
-                .Include(p => p.Forum)
-                    .ThenInclude(f => f.User) 
                 .Where(p =>
-                    (p.Title != null && p.Title.ToLower().Contains(query)) ||
-                    (p.Content != null && p.Content.ToLower().Contains(query)))
-                .Select(p => new PostListingModel
-                {
-                    Id = p.PostId,
-                    Title = p.Title,
-
-                    AuthorId = p.User.Id,
-                    AuthorName = p.User.UserName ?? "Unknown",
-                    AuthorRating = p.User != null ? p.User.Rating : 0,
-
-                    DatePosted = p.CreatedOn.ToString(),
-                    RepliesCount = p.Replies != null ? p.Replies.Count() : 0,
-                    TotalLikes = p.Likes.Count(),
-
-                    Forum = p.Forum != null ? new ForumListingModel
-                    {
-                        ForumId = p.Forum.ForumId,
-                        ForumTitle = p.Forum.PostTitle ?? string.Empty,
-                        Description = p.Forum.Description,
-                        AuthorId = p.Forum.User.Id,
-                        AuthorName = p.Forum.User.UserName ?? "Unknown",
-                        AuthorRating = p.Forum.User.Rating
-                    } : null
-                })
+                    p.Title.Contains(searchQuery) ||
+                    p.Content.Contains(searchQuery))
+                .OrderByDescending(p => p.UpdatedOn)
                 .ToListAsync();
         }
 
@@ -159,25 +137,32 @@ namespace Fan_Website.Service
             return await context.Posts
                 .Include(p => p.User)
                 .Include(p => p.Forum).ThenInclude(f => f.User)
+                .Include(p => p.PostImages)
                 .Include(p => p.Replies)
                 .Include(p => p.Likes)
-                .OrderByDescending(p => p.CreatedOn)
+                .OrderByDescending(p => p.UpdatedOn)
                 .Take(n)
                 .ToListAsync();
         }
 
+        // FIX: include Posts in the query so forum.Posts isn't null
         public async Task<IEnumerable<Post>> GetPostsByForum(int id)
         {
-            var forum = await context.Forums.Where(forum => forum.ForumId == id).FirstOrDefaultAsync(); 
-            return forum.Posts ?? throw new NullReferenceException("Forum is null.");
+            var forum = await context.Forums
+                .Include(f => f.Posts)
+                    .ThenInclude(p => p.User)
+                .Where(f => f.ForumId == id)
+                .FirstOrDefaultAsync();
+
+            return forum?.Posts ?? Enumerable.Empty<Post>();
         }
 
         public async Task<PostReply?> GetReplyByIdAsync(int id)
         {
             return await context.Replies
-                .Include(reply => reply.User)
-                .Include(reply => reply.Post)
-                .FirstOrDefaultAsync(reply => reply.Id == id);
+                .Include(r => r.User)
+                .Include(r => r.Post)
+                .FirstOrDefaultAsync(r => r.Id == id);
         }
 
         public async Task<IEnumerable<Post>> GetTopPosts(int n)
@@ -185,6 +170,7 @@ namespace Fan_Website.Service
             return await context.Posts
                 .Include(p => p.User)
                 .Include(p => p.Forum).ThenInclude(f => f.User)
+                .Include(p => p.PostImages)
                 .Include(p => p.Replies)
                 .Include(p => p.Likes)
                 .OrderByDescending(p => p.TotalLikes)
@@ -192,39 +178,69 @@ namespace Fan_Website.Service
                 .ToListAsync();
         }
 
-
-        public async Task UpdatePostLikes(int id)
-        {
-            var post = await GetById(id);
-
-            if (post != null)
-            {
-                post.TotalLikes = CalculatePostLikes(post.TotalLikes);
-                await context.SaveChangesAsync();
-            }
-        }
-
-        public int CalculatePostLikes(int likes)
-        {
-            var inc = 1;
-            return likes + inc;
-        }
-
         public async Task<Like?> GetLikeById(int id)
         {
-            return await context.Likes.Where(like => like.Id == id)
-                .Include(like => like.User)
+            return await context.Likes
+                .Include(l => l.User)
+                .Where(l => l.Id == id)
                 .FirstOrDefaultAsync();
         }
 
         public async Task<IEnumerable<Like>> GetAllLikes(int id)
         {
-            var userLikes = await context.Posts.Where(post => post.PostId == id)
-                .Include(post => post.Likes)
-                .ThenInclude(like => like.User)
+            var post = await context.Posts
+                .Include(p => p.Likes)
+                    .ThenInclude(l => l.User)
+                .Where(p => p.PostId == id)
                 .FirstOrDefaultAsync();
 
-            return userLikes?.Likes ?? Enumerable.Empty<Like>();
+            return post?.Likes ?? Enumerable.Empty<Like>();
+        }
+
+        public async Task<IEnumerable<PostDto>> SearchPostsAsync(string query)
+        {
+            return await context.Posts
+                .Include(p => p.User)
+                .Include(p => p.Forum)
+                .Include(p => p.PostImages)
+                .Include(p => p.Replies)
+                .Include(p => p.Likes)
+                .Where(p =>
+                    p.Title.Contains(query) ||
+                    p.Content.Contains(query))
+                .OrderByDescending(p => p.UpdatedOn)
+                .Select(p => new PostDto
+                {
+                    PostId = p.PostId,
+                    Title = p.Title,
+                    Content = p.Content,
+                    AuthorId = p.User.Id,
+                    AuthorName = p.User.UserName ?? "Unknown",
+                    AuthorRating = p.User.Rating,
+                    AuthorImagePath = p.User.ImagePath,
+                    TotalLikes = p.TotalLikes,
+                    DatePosted = p.UpdatedOn.ToString(),
+                    RepliesCount = p.Replies.Count,
+                    ForumId = p.ForumId,
+                    ForumName = p.Forum.PostTitle,
+                    PostImages = p.PostImages.Select(img => new PostImageDto
+                    {
+                        Id = img.Id,
+                        Url = img.Url
+                    }).ToList()
+                })
+                .ToListAsync();
+        }
+
+        public async Task UpdatePostLikes(int id)
+        {
+            var post = await context.Posts.FindAsync(id);
+            if (post == null) return;
+
+            var likeCount = await context.Likes.CountAsync(l => l.Post.PostId == id);
+            post.TotalLikes = likeCount;
+
+            await context.SaveChangesAsync();
         }
     }
 }

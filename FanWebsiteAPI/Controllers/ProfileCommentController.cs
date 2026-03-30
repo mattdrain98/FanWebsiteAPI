@@ -37,11 +37,11 @@ namespace Fan_Website.Controllers
                 ProfileUserName = user.UserName,
                 ProfileUserImageUrl = user.ImagePath,
                 ProfileUserRating = user.Rating,
-                Date = DateTime.Now.ToString(),
-                CommentUserId = currentUser.Id,
-                CommentUserImagePath = currentUser.ImagePath,
-                CommentUserName = currentUser.UserName,
-                CommentUserRating = currentUser.Rating
+                DatePosted = DateTime.UtcNow.ToString(),
+                AuthorId = currentUser.Id,
+                AuthorImagePath = currentUser.ImagePath,
+                AuthorName = currentUser.UserName,
+                AuthorRating = currentUser.Rating
             };
             return Ok(model);
         }
@@ -61,7 +61,7 @@ namespace Fan_Website.Controllers
             {
                 ProfileUser = await userService.GetById(dto.ProfileUserId),
                 Content = dto.CommentContent,
-                CreateOn = DateTime.Now,
+                UpdatedOn = DateTime.Now,
                 CommentUser = currentUser
             };
 

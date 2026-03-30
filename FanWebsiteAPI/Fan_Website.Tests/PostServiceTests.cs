@@ -45,7 +45,7 @@ namespace Fan_Website.Tests
                 PostId = id,
                 Title = "Hello World",
                 Content = "Some content",
-                CreatedOn = DateTime.UtcNow,
+                UpdatedOn = DateTime.UtcNow,
                 User = author,
                 Forum = forum,
                 Replies = new List<PostReply>(),
@@ -93,7 +93,7 @@ namespace Fan_Website.Tests
             var reply = new PostReply
             {
                 ReplyContent = "Nice post!",
-                CreateOn = DateTime.UtcNow,
+                UpdatedOn = DateTime.UtcNow,
                 User = user,
                 Post = post
             };
@@ -114,7 +114,7 @@ namespace Fan_Website.Tests
             var forum = MakeForum(user);
             var post = MakePost(user, forum);
 
-            var reply = new PostReply { ReplyContent = "reply", CreateOn = DateTime.UtcNow, User = user, Post = post };
+            var reply = new PostReply { ReplyContent = "reply", UpdatedOn = DateTime.UtcNow, User = user, Post = post };
             var like = new Like { User = user, Post = post };
 
             ctx.Users.Add(user);
@@ -150,7 +150,7 @@ namespace Fan_Website.Tests
             var user = MakeUser();
             var forum = MakeForum(user);
             var post = MakePost(user, forum);
-            var reply = new PostReply { ReplyContent = "bye", CreateOn = DateTime.UtcNow, User = user, Post = post };
+            var reply = new PostReply { ReplyContent = "bye", UpdatedOn = DateTime.UtcNow, User = user, Post = post };
 
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
@@ -213,7 +213,7 @@ namespace Fan_Website.Tests
             var user = MakeUser();
             var forum = MakeForum(user);
             var post = MakePost(user, forum);
-            var reply = new PostReply { ReplyContent = "old", CreateOn = DateTime.UtcNow, User = user, Post = post };
+            var reply = new PostReply { ReplyContent = "old", UpdatedOn = DateTime.UtcNow, User = user, Post = post };
 
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
@@ -298,7 +298,7 @@ namespace Fan_Website.Tests
                 PostId = 2,
                 Title = "Another",
                 Content = "stuff",
-                CreatedOn = DateTime.UtcNow,
+                UpdatedOn = DateTime.UtcNow,
                 User = user,
                 Forum = forum,
                 Replies = new List<PostReply>(),
@@ -367,7 +367,7 @@ namespace Fan_Website.Tests
                 PostId = 2,
                 Title = "Secret",
                 Content = "hidden",
-                CreatedOn = DateTime.UtcNow,
+                UpdatedOn = DateTime.UtcNow,
                 User = user,
                 Forum = forum,
                 Replies = new List<PostReply>(),
@@ -403,7 +403,7 @@ namespace Fan_Website.Tests
             var results = (await svc.SearchPostsAsync("hello")).ToList();
 
             Assert.Single(results);
-            Assert.Equal(post.PostId, results[0].Id);
+            Assert.Equal(post.PostId, results[0].PostId);
             Assert.Equal(post.Title, results[0].Title);
             Assert.Equal(user.UserName, results[0].AuthorName);
         }
@@ -458,8 +458,8 @@ namespace Fan_Website.Tests
             var (ctx, svc) = Build(nameof(GetLatestPosts_ReturnsNewestFirst));
             var user = MakeUser();
             var forum = MakeForum(user);
-            var older = new Post { PostId = 1, Title = "Older", Content = "x", CreatedOn = DateTime.UtcNow.AddDays(-2), User = user, Forum = forum, Replies = new List<PostReply>(), Likes = new() };
-            var newer = new Post { PostId = 2, Title = "Newer", Content = "y", CreatedOn = DateTime.UtcNow, User = user, Forum = forum, Replies = new List<PostReply>(), Likes = new() };
+            var older = new Post { PostId = 1, Title = "Older", Content = "x", UpdatedOn = DateTime.UtcNow.AddDays(-2), User = user, Forum = forum, Replies = new List<PostReply>(), Likes = new() };
+            var newer = new Post { PostId = 2, Title = "Newer", Content = "y", UpdatedOn = DateTime.UtcNow, User = user, Forum = forum, Replies = new List<PostReply>(), Likes = new() };
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.AddRange(older, newer);
@@ -481,8 +481,8 @@ namespace Fan_Website.Tests
             var (ctx, svc) = Build(nameof(GetTopPosts_ReturnsMostLikedFirst));
             var user = MakeUser();
             var forum = MakeForum(user);
-            var lowLikes = new Post { PostId = 1, Title = "Low", Content = "x", TotalLikes = 1, CreatedOn = DateTime.UtcNow, User = user, Forum = forum, Replies = new List<PostReply>(), Likes = new() };
-            var highLikes = new Post { PostId = 2, Title = "High", Content = "y", TotalLikes = 9, CreatedOn = DateTime.UtcNow, User = user, Forum = forum, Replies = new List<PostReply>(), Likes = new() };
+            var lowLikes = new Post { PostId = 1, Title = "Low", Content = "x", TotalLikes = 1, UpdatedOn = DateTime.UtcNow, User = user, Forum = forum, Replies = new List<PostReply>(), Likes = new() };
+            var highLikes = new Post { PostId = 2, Title = "High", Content = "y", TotalLikes = 9, UpdatedOn = DateTime.UtcNow, User = user, Forum = forum, Replies = new List<PostReply>(), Likes = new() };
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.AddRange(lowLikes, highLikes);
@@ -522,13 +522,47 @@ namespace Fan_Website.Tests
         // ──────────────────────────────────────────────────────────────
 
         [Theory]
-        [InlineData(0, 1)]
-        [InlineData(5, 6)]
-        [InlineData(99, 100)]
-        public void CalculatePostLikes_AlwaysAddsOne(int input, int expected)
+        [InlineData(2)]
+        [InlineData(0)]
+        public async Task UpdatePostLikes_SyncsTotalLikesFromDb(int likeCount)
         {
-            var (_, svc) = Build(nameof(CalculatePostLikes_AlwaysAddsOne) + input);
-            Assert.Equal(expected, svc.CalculatePostLikes(input));
+            var (ctx, svc) = Build(nameof(UpdatePostLikes_SyncsTotalLikesFromDb) + likeCount);
+
+            var user = new ApplicationUser { Id = "u1", UserName = "tester" };
+            var post = new Post
+            {
+                Title = "T",
+                Content = "C",
+                User = user,
+                UpdatedOn = DateTime.UtcNow,
+                Forum = new Forum
+                {
+                    PostTitle = "Test Forum",
+                    Description = "Test Forum Descriptoin", 
+                    User = user,
+                    UpdatedOn = DateTime.UtcNow,
+                    Posts = new List<Post>()
+                },
+                Replies = new List<PostReply>(),
+                Likes = new List<Like>()
+            }; ctx.Users.Add(user);
+            ctx.Posts.Add(post);
+            await ctx.SaveChangesAsync();
+
+            for (int i = 0; i < likeCount; i++)
+            {
+                ctx.Likes.Add(new Like
+                {
+                    Post = post,
+                    User = new ApplicationUser { Id = $"liker{i}", UserName = $"liker{i}" }
+                });
+            }
+            await ctx.SaveChangesAsync();
+
+            await svc.UpdatePostLikes(post.PostId);
+
+            var updated = await ctx.Posts.FindAsync(post.PostId);
+            Assert.Equal(likeCount, updated!.TotalLikes);
         }
 
         // ──────────────────────────────────────────────────────────────
@@ -602,7 +636,7 @@ namespace Fan_Website.Tests
             var user = MakeUser();
             var forum = MakeForum(user);
             var post = MakePost(user, forum);
-            var reply = new PostReply { ReplyContent = "hi", CreateOn = DateTime.UtcNow, User = user, Post = post };
+            var reply = new PostReply { ReplyContent = "hi", UpdatedOn = DateTime.UtcNow, User = user, Post = post };
             ctx.Users.Add(user);
             ctx.Forums.Add(forum);
             ctx.Posts.Add(post);

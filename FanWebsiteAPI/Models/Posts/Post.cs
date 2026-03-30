@@ -11,7 +11,7 @@ namespace Fan_Website
         public required string Title { get; set; }
         [Required(ErrorMessage = "Please enter content.")]
         public required string Content { get; set; } 
-        public DateTime CreatedOn { get; set; }
+        public DateTime UpdatedOn { get; set; }
         public required ApplicationUser User { get; set; }
         public int ForumId { get; set; }
         public required Forum Forum { get; set; }

@@ -5,7 +5,6 @@ using Fan_Website.Service;
 using Fan_Website.Services;
 using Fan_Website.ViewModel;
 using FanWebsiteAPI.DTOs;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -19,121 +18,137 @@ namespace Fan_Website.Controllers
         private readonly IPost _postService;
         private readonly IScreenshot _screenshotService;
         private readonly IForum _forumService;
-        private readonly IApplicationUser _userManager; 
-        public HomeController(ILogger<HomeController> logger, IPost postService, IScreenshot screenshotService, IForum forumService, IApplicationUser userManager)
+        private readonly IApplicationUser _userManager;
+
+        public HomeController(
+            ILogger<HomeController> logger,
+            IPost postService,
+            IScreenshot screenshotService,
+            IForum forumService,
+            IApplicationUser userManager)
         {
             _logger = logger;
             _postService = postService;
             _screenshotService = screenshotService;
             _forumService = forumService;
-            _userManager = userManager; 
+            _userManager = userManager;
         }
 
         // GET: api/home/stats
         [HttpGet("stats")]
-        public ActionResult<HomeStatsDto> GetStats()
+        public async Task<ActionResult<HomeStatsDto>> GetStats()
         {
-            var totalMembers = _userManager.GetAll().Result.Count();
-            var totalPosts = _postService.GetLatestPosts(int.MaxValue).Result.Count();
-            var totalForums = _forumService.GetTopForums(int.MaxValue).Result.Count();
-            var totalReplies = _postService.GetLatestPosts(int.MaxValue)
-                                           .Result.Sum(p => p.Replies.Count());
+            var members = await _userManager.GetAll();
+            var posts = await _postService.GetLatestPosts(int.MaxValue);
+            var postList = posts.ToList();
+            var forums = await _forumService.GetTopForums(int.MaxValue);
 
             return Ok(new HomeStatsDto
             {
-                TotalMembers = totalMembers,
-                TotalPosts = totalPosts,
-                TotalForums = totalForums,
-                TotalReplies = totalReplies
+                TotalMembers = members.Count(),
+                TotalPosts = postList.Count,
+                TotalForums = forums.Count(),
+                TotalReplies = postList.Sum(p => p.Replies.Count)
             });
         }
 
-        // GET: api/home/latest?count=10
+        // GET: api/home/latest-posts?count=10
         [HttpGet("latest-posts")]
-        public ActionResult<IEnumerable<PostListingModel>> GetLatestPosts([FromQuery] int count = 10)
+        public async Task<ActionResult<IEnumerable<PostDto>>> GetLatestPosts([FromQuery] int count = 10)
         {
             if (count <= 0 || count > 50) count = 10;
 
-            var posts = _postService.GetLatestPosts(count)
-                .Result.Select(post => new PostListingModel
-                {
-                    Id = post.PostId,
-                    Title = post.Title,
-                    AuthorName = post.User.UserName ?? "Unkown",
-                    AuthorId = post.User.Id,
-                    AuthorRating = post.User.Rating,
-                    TotalLikes = post.TotalLikes,
-                    DatePosted = post.CreatedOn.ToString("yyyy-MM-dd HH:mm"),
-                    RepliesCount = post.Replies.Count(),
-                    Forum = GetForumListingForPost(post),
-                    ForumName = post.Forum.PostTitle
-                });
+            var posts = await _postService.GetLatestPosts(count);
 
-            return Ok(posts);
+            var result = posts.Select(post => new PostDto
+            {
+                PostId = post.PostId,
+                Title = post.Title,
+                Content = post.Content,
+                AuthorName = post.User.UserName ?? "Unknown",
+                AuthorId = post.User.Id,
+                AuthorRating = post.User.Rating,
+                AuthorImagePath = post.User.ImagePath,
+                TotalLikes = post.TotalLikes,
+                DatePosted = post.UpdatedOn.ToString("yyyy-MM-dd HH:mm"),
+                RepliesCount = post.Replies.Count,
+                ForumId = post.ForumId,          
+                ForumName = post.Forum.PostTitle  
+            });
+
+            return Ok(result);
         }
 
-        // GET: api/home/latest?count=10
+        // GET: api/home/top-forums?count=5
         [HttpGet("top-forums")]
-        public ActionResult<IEnumerable<ForumDto>> GetTopForums([FromQuery] int count = 5)
+        public async Task<ActionResult<IEnumerable<ForumDto>>> GetTopForums([FromQuery] int count = 5)
         {
-            if (count <= 0 || count > 50) count = 10;
+            if (count <= 0 || count > 50) count = 5;
 
-            var forums = _forumService.GetTopForums(count)
-                .Result.Select(forum => new ForumDto
-                {
-                    ForumId = forum.ForumId,
-                    ForumTitle = forum.PostTitle,
-                    Description = forum.Description,
-                    UserName = forum.User.UserName ?? "Unkown",
-                    UserId = forum.User.Id,
-                    UserRating = forum.User.Rating,
-                    PostsCount = forum.Posts?.Count() ?? 0
-                });
+            var forums = await _forumService.GetTopForums(count);
 
-            return Ok(forums);
+            var result = forums.Select(forum => new ForumDto
+            {
+                ForumId = forum.ForumId,
+                ForumTitle = forum.PostTitle,
+                Description = forum.Description,
+                UserName = forum.User.UserName ?? "Unknown",
+                UserId = forum.User.Id,
+                UserRating = forum.User.Rating,
+                PostsCount = forum.Posts?.Count() ?? 0
+            });
+
+            return Ok(result);
         }
 
         // GET: api/home/top?count=5&days=7
-        // Ranks by TotalLikes descending within the last N days
         [HttpGet("top")]
-        public ActionResult<IEnumerable<PostListingModel>> GetTopPosts(
+        public async Task<ActionResult<IEnumerable<PostDto>>> GetTopPosts(
             [FromQuery] int count = 5,
             [FromQuery] int days = 7)
         {
             if (count <= 0 || count > 50) count = 5;
             if (days <= 0 || days > 365) days = 7;
 
+            // NOTE: filtering/ordering should ideally be pushed into the service/DB layer
+            // rather than loading 200 posts into memory here
             var since = DateTime.UtcNow.AddDays(-days);
+            var posts = await _postService.GetLatestPosts(200);
 
-            var posts = _postService.GetLatestPosts(200)   
-                .Result.Where(p => p.CreatedOn >= since)
+            var result = posts
+                .Where(p => p.UpdatedOn >= since)
                 .OrderByDescending(p => p.TotalLikes)
                 .Take(count)
-                .Select(post => new PostListingModel
+                .Select(post => new PostDto
                 {
-                    Id = post.PostId,
+                    PostId = post.PostId, 
                     Title = post.Title,
-                    AuthorName = post.User.UserName ?? "Unkown",
+                    Content = post.Content,
+                    AuthorName = post.User.UserName ?? "Unknown",
                     AuthorId = post.User.Id,
                     AuthorRating = post.User.Rating,
+                    AuthorImagePath = post.User.ImagePath,
                     TotalLikes = post.TotalLikes,
-                    DatePosted = post.CreatedOn.ToString("yyyy-MM-dd HH:mm"),
-                    RepliesCount = post.Replies.Count(),
-                    Forum = GetForumListingForPost(post),
+                    DatePosted = post.UpdatedOn.ToString("yyyy-MM-dd HH:mm"),
+                    RepliesCount = post.Replies.Count,
+                    ForumId = post.ForumId,
                     ForumName = post.Forum.PostTitle
                 });
 
-            return Ok(posts);
+            return Ok(result);
         }
 
         // GET: api/home/screenshots?count=8
         [HttpGet("screenshots")]
-        public ActionResult<IEnumerable<ScreenshotDto>> GetLatestScreenshots([FromQuery] int count = 8)
+        public async Task<ActionResult<IEnumerable<ScreenshotDto>>> GetLatestScreenshots(
+            [FromQuery] int count = 8)
         {
             if (count <= 0 || count > 50) count = 8;
 
-            var screenshots = _screenshotService.GetAll()
-                .Result.OrderByDescending(s => s.CreatedOn)
+            var screenshots = await _screenshotService.GetAll();
+
+            var result = screenshots
+                .OrderByDescending(s => s.UpdatedOn)
                 .Take(count)
                 .Select(s => new ScreenshotDto
                 {
@@ -141,36 +156,19 @@ namespace Fan_Website.Controllers
                     Title = s.ScreenshotTitle,
                     Content = s.ScreenshotDescription,
                     AuthorId = s.User.Id,
-                    AuthorName = s.User.UserName ?? "Unkown",
+                    AuthorName = s.User.UserName ?? "Unknown",
                     AuthorRating = s.User.Rating,
-                    DatePosted = s.CreatedOn,
+                    DatePosted = s.UpdatedOn,
                     ImageUrl = s.ImagePath,
                     Slug = s.Slug
                 });
 
-            return Ok(screenshots);
-        }
-
-        private ForumListingModel GetForumListingForPost(Post post)
-        {
-            var forum = post.Forum;
-            return new ForumListingModel
-            {
-                ForumId = forum.ForumId,
-                ForumTitle = forum.PostTitle,
-                Description = forum.Description, 
-                AuthorId = forum.User.Id,
-                AuthorName = forum.User.UserName ?? "Unkown", 
-                AuthorRating = forum.User.Rating
-            };
+            return Ok(result);
         }
 
         // GET: api/home/privacy
         [HttpGet("privacy")]
-        public ActionResult<string> Privacy()
-        {
-            return Ok("Privacy info here");
-        }
+        public ActionResult<string> Privacy() => Ok("Privacy info here");
 
         // GET: api/home/error
         [HttpGet("error")]
