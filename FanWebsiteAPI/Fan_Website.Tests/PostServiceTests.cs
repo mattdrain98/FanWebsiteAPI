@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Fan_Website.Tests
 {
-    public class PostServiceTests : IDisposable
+    public class PostServiceTests
     {
         private AppDbContext CreateContext(string dbName)
         {

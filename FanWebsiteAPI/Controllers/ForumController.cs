@@ -2,9 +2,11 @@
 using Fan_Website.Models;
 using Fan_Website.Models.Forum;
 using Fan_Website.Services;
+using Fan_Website.ViewModel;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Fan_Website.Controllers
 {
@@ -98,7 +100,7 @@ namespace Fan_Website.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = userManager.GetUserId(User);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (userId == null) throw new KeyNotFoundException("User Id not found."); 
 

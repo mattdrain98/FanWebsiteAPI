@@ -21,23 +21,9 @@ namespace Fan_Website.Service
 
         public async Task<ApplicationUser?> GetById(string id)
         {
-            var user = await context.Users
+            return await context.Users
                 .Include(u => u.ProfileComments).ThenInclude(c => c.CommentUser)
                 .FirstOrDefaultAsync(u => u.Id == id);
-
-            if (user == null) return null;
-
-            user.Follows = await context.Follows
-                .Include(f => f.Following)
-                .Where(f => f.Follower.Id == id)
-                .ToListAsync();
-
-            user.Followings = await context.Follows
-                .Include(f => f.Follower)
-                .Where(f => f.Following.Id == id)
-                .ToListAsync();
-
-            return user;
         }
 
         public async Task UpdateUserRating(string userId, Type type)
