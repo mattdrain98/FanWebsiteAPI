@@ -47,7 +47,7 @@ namespace Fan_Website.Controllers
                     AuthorName = s.User.UserName,
                     AuthorRating = s.User.Rating,
                     AuthorImagePath = s.User.ImagePath,
-                    DatePosted = s.UpdatedOn.ToString(),
+                    DatePosted = s.UpdatedOn.ToString("o"),
                     ImageUrl = s.ImagePath,
                     Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
                 }).ToList();
@@ -70,7 +70,7 @@ namespace Fan_Website.Controllers
                     AuthorId = s.User.Id,
                     AuthorName = s.User.UserName,
                     AuthorRating = s.User.Rating,
-                    DatePosted = s.UpdatedOn.ToString(),
+                    DatePosted = s.UpdatedOn.ToString("o"),
                     ImageUrl = s.ImagePath,
                     Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
                 }).ToList();
@@ -94,7 +94,7 @@ namespace Fan_Website.Controllers
             {
                 ScreenshotTitle = model.Title,
                 ScreenshotDescription = model.Content,
-                UpdatedOn = DateTime.Now,
+                UpdatedOn = DateTime.UtcNow,
                 ImagePath = imageUri ?? "",
                 User = user
             };

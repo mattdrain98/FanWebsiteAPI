@@ -38,7 +38,7 @@ namespace Fan_Website.Controllers
                 ProfileUserName = user.UserName,
                 ProfileUserImageUrl = user.ImagePath,
                 ProfileUserRating = user.Rating,
-                DatePosted = DateTime.UtcNow.ToString(),
+                DatePosted = DateTime.UtcNow.ToString("o"),
                 AuthorId = currentUser.Id,
                 AuthorImagePath = currentUser.ImagePath,
                 AuthorName = currentUser.UserName,

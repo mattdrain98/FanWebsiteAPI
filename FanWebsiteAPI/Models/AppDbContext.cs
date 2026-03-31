@@ -1,6 +1,8 @@
 ﻿using Fan_Website.Models;
 using Fan_Website.Models.Follow;
 using Fan_Website.Models.ProfileComment;
+using FanWebsiteAPI.Infrastructure.Converters;
+using FanWebsiteAPI.Models.Notification;
 using FanWebsiteAPI.Models.Posts;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +24,8 @@ namespace Fan_Website
         public DbSet<Like> Likes { get; set; }
         public DbSet<Follow> Follows { get; set; }
         public DbSet<ProfileComment> ProfileComments { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -66,6 +70,12 @@ namespace Fan_Website
                 .HasOne(i => i.Post)
                 .WithMany(p => p.PostImages)
                 .OnDelete(DeleteBehavior.Cascade); 
+        }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder builder)
+        {
+            builder.Properties<DateTime>()
+                .HaveConversion<UtcDateTimeConverter>();
         }
     }
 }

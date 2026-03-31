@@ -42,7 +42,8 @@ namespace Fan_Website.Controllers
                     AuthorName = forum.User.UserName ?? "Unkown",
                     AuthorRating = forum.User.Rating,
                     AuthorImagePath = forum.User.ImagePath,
-                    DatePosted = forum.UpdatedOn.ToString()
+                    DatePosted = forum.UpdatedOn.ToString("o"),
+                    PostsCount = forum.Posts.Count()
                 }); 
 
             return Ok(forums);
