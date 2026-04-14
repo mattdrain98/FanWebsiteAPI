@@ -18,7 +18,6 @@ namespace Fan_Website.Controllers
         private readonly UserManager<ApplicationUser> userManager;
         private readonly SignInManager<ApplicationUser> signInManager;
         private readonly IApplicationUser userService;
-        private readonly IUpload uploadService;
         private readonly IConfiguration configuration;
         private readonly AppDbContext context;
 
@@ -32,7 +31,6 @@ namespace Fan_Website.Controllers
             userManager = _userManager;
             signInManager = _signInManager;
             userService = _userService;
-            uploadService = _uploadService;
             configuration = _configuration;
             context = ctx;
         }
