@@ -30,23 +30,25 @@ namespace Fan_Website.Controllers
 
         // GET: api/forum
         [HttpGet]
-        public IActionResult GetAllForums()
+        public async Task<IActionResult> GetAllForums()
         {
-            var forums = forumService.GetAll()
-                .Result.Select(forum => new ForumDto
+            var forums = await forumService.GetAll();
+
+            var result = forums
+                .Select(forum => new ForumDto
                 {
                     ForumId = forum.ForumId,
                     ForumTitle = forum.PostTitle,
                     Description = forum.Description,
                     AuthorId = forum.User.Id,
-                    AuthorName = forum.User.UserName ?? "Unkown",
+                    AuthorName = forum.User.UserName ?? "Unknown",
                     AuthorRating = forum.User.Rating,
                     AuthorImagePath = forum.User.ImagePath,
                     DatePosted = forum.UpdatedOn.ToString("o"),
                     PostsCount = forum.Posts.Count()
-                }); 
+                });
 
-            return Ok(forums);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]

@@ -35,10 +35,12 @@ namespace Fan_Website.Controllers
 
         // GET: api/screenshot
         [HttpGet]
-        public ActionResult<IEnumerable<ScreenshotDto>> GetAllScreenshots()
+        public async Task<ActionResult<IEnumerable<ScreenshotDto>>> GetAllScreenshots()
         {
-            var screenshots = _screenshotService.GetAll()
-                .Result.Select(s => new ScreenshotDto
+            var screenshots = await _screenshotService.GetAll(); 
+
+            var result = screenshots
+                .Select(s => new ScreenshotDto
                 {
                     Id = s.ScreenshotId,
                     Title = s.ScreenshotTitle,
@@ -52,7 +54,7 @@ namespace Fan_Website.Controllers
                     Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
                 }).ToList();
 
-            return Ok(screenshots);
+            return Ok(result);
         }
 
         // GET: api/screenshot/user
@@ -60,8 +62,10 @@ namespace Fan_Website.Controllers
         public async Task<ActionResult<IEnumerable<ScreenshotDto>>> GetUserScreenshots()
         {
             var userId = _userManager.GetUserId(User);
-            var screenshots = _screenshotService.GetAll()
-                .Result.Where(s => s.User.Id == userId)
+            var screenshots = await _screenshotService.GetAll(); 
+
+            var result = screenshots
+                .Where(s => s.User.Id == userId)
                 .Select(s => new ScreenshotDto
                 {
                     Id = s.ScreenshotId,
@@ -75,7 +79,7 @@ namespace Fan_Website.Controllers
                     Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
                 }).ToList();
 
-            return Ok(screenshots);
+            return Ok(result);
         }
 
         // POST: api/screenshot
