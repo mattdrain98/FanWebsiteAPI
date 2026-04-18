@@ -1,8 +1,8 @@
 ﻿namespace FanWebsiteAPI.DTOs.ProfileComments
 {
-    public class AddProfileCommentDto
+    public class EditProfileCommentDto
     {
-        public required string ProfileUserId { get; set; }
+        public int Id { get; set; }
         public required string CommentContent { get; set; }
     }
 }
