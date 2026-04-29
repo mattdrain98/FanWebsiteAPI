@@ -1,4 +1,4 @@
-@FanWebsiteAPI_HostAddress = http://localhost:5072
+@FanWebsiteAPI_HostAddress = http://0.0.0.0:5072
 
 GET {{FanWebsiteAPI_HostAddress}}/api/home
 Accept: application/json
