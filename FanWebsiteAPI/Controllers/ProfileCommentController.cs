@@ -14,13 +14,13 @@ namespace Fan_Website.Controllers
     {
         private readonly IApplicationUser userService;
         private readonly UserManager<ApplicationUser> userManager;
-        private readonly INotificationService _notificationService;
+        private readonly INotificationService notificationService;
 
-        public ProfileCommentController(IApplicationUser _userService, UserManager<ApplicationUser> _userManager, INotificationService notificationService)
+        public ProfileCommentController(IApplicationUser _userService, UserManager<ApplicationUser> _userManager, INotificationService _notificationService)
         {
             userService = _userService;
             userManager = _userManager;
-            _notificationService = notificationService;
+            notificationService = _notificationService;
         }
 
         // GET: api/ProfileComment/{id}
@@ -69,6 +69,20 @@ namespace Fan_Website.Controllers
             if (currentUser.Id == dto.ProfileUserId)
                 return BadRequest(new { message = "Cannot comment on your own profile" });
 
+            try
+            {
+                await notificationService.CreateAsync(
+                    profileUser.Id,
+                    $"{currentUser.UserName} commented on your profile",
+                    "profile_comment",
+                    $"/profile/{profileUser.Id}"
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Notification error: {ex.Message}");
+            }
+            
             var comment = new ProfileComment
             {
                 ProfileUser = profileUser,
@@ -79,12 +93,6 @@ namespace Fan_Website.Controllers
 
             await userService.AddComment(comment);
             await userService.UpdateUserRating(currentUser.Id, typeof(ProfileComment));
-            await _notificationService.CreateAsync(
-                profileUser.Id,
-                $"{currentUser.UserName} commented on your profile",
-                "profile_comment",
-                $"/profile/{profileUser.Id}"
-            );
 
             return Ok(new { message = "Comment added successfully" });
         }

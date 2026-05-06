@@ -19,6 +19,7 @@ public class NotificationsController : ControllerBase
         _userManager = userManager;
     }
 
+    // DELETE: api/Notifications
     [HttpGet]
     public async Task<IActionResult> GetNotifications()
     {
@@ -69,6 +70,19 @@ public class NotificationsController : ControllerBase
         await _context.Notifications
             .Where(n => n.UserId == userId && !n.IsRead)
             .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
+        return Ok();
+    }
+
+    // DELETE: api/Notifications/{id}
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var userId = _userManager.GetUserId(User);
+        var notification = await _context.Notifications
+            .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
+        if (notification == null) return NotFound();
+        _context.Notifications.Remove(notification);
+        await _context.SaveChangesAsync();
         return Ok();
     }
 }

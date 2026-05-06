@@ -5,6 +5,7 @@ using Fan_Website.Models.Follow;
 using FanWebsiteAPI.DTOs.Follow;
 using FanWebsiteAPI.DTOs.Profile;
 using FanWebsiteAPI.DTOs.ProfileComments;
+using FanWebsiteAPI.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,19 +21,22 @@ namespace Fan_Website.Controllers
         private readonly IApplicationUser userService;
         private readonly IConfiguration configuration;
         private readonly AppDbContext context;
+        private readonly INotificationService notificationService;
 
         public ProfileController(UserManager<ApplicationUser> _userManager,
                                  SignInManager<ApplicationUser> _signInManager,
                                  IApplicationUser _userService,
                                  IUpload _uploadService,
                                  IConfiguration _configuration,
-                                 AppDbContext ctx)
+                                 AppDbContext ctx,
+                                 INotificationService _notificationService)
         {
             userManager = _userManager;
             signInManager = _signInManager;
             userService = _userService;
             configuration = _configuration;
             context = ctx;
+            notificationService = _notificationService;
         }
 
         // GET: api/Profile/{id}
@@ -130,6 +134,12 @@ namespace Fan_Website.Controllers
                 });
                 user.Followers += 1;
                 currentUser.Following += 1;
+                await notificationService.CreateAsync(
+                    user.Id,
+                    $"{currentUser.UserName} started following you",
+                    "follow",
+                    $"/profile/{currentUser.Id}"
+                );
             }
 
             context.Users.Update(user);
