@@ -1,6 +1,8 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Services;
 using FanWebsiteAPI.DTOs.Replies;
+using FanWebsiteAPI.DTOs.Notifications;
+using FanWebsiteAPI.Infrastructure; 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -13,13 +15,15 @@ namespace Fan_Website.Controllers
     {
         private readonly IPost _postService;
         private readonly IApplicationUser _userService;
+        private readonly INotificationService _notificationService; 
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public ReplyController(IPost postService, IApplicationUser userService, UserManager<ApplicationUser> userManager)
+        public ReplyController(IPost postService, IApplicationUser userService, UserManager<ApplicationUser> userManager, INotificationService notificationService)
         {
             _postService = postService;
             _userService = userService;
             _userManager = userManager;
+            _notificationService = notificationService; 
         }
 
         // GET: api/reply/create/5
@@ -60,6 +64,16 @@ namespace Fan_Website.Controllers
 
             var post = await _postService.GetById(model.PostId);
             if (post == null) return NotFound(new { message = "Post not found" });
+
+            if (post.User.Id != userId)
+            {
+                await _notificationService.CreateAsync(
+                    post.User.Id,
+                    $"{user.UserName} replied to your post",
+                    "reply",
+                    $"/post/{model.PostId}"
+                );
+            }
 
             var reply = new PostReply
             {

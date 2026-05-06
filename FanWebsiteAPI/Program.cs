@@ -109,10 +109,6 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular", policy =>
     {
         policy.WithOrigins(
-            "http://localhost:4200",
-            "http://192.168.1.156:5000",
-            "https://192.168.1.156:5001",
-            "https://brave-sand-05fbc5b1e.2.azurestaticapps.net",
             "https://fanwebsiteapi20260228180319-hsfjg3dtchcgebe9.canadacentral-01.azurewebsites.net",
             "https://www.dismino.com",
             "https://dismino.com"
