@@ -1,5 +1,6 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Models.ProfileComment;
+using FanWebsiteAPI.Infrastructure;
 using FanWebsiteAPI.DTOs.ProfileComments;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -13,11 +14,13 @@ namespace Fan_Website.Controllers
     {
         private readonly IApplicationUser userService;
         private readonly UserManager<ApplicationUser> userManager;
+        private readonly INotificationService _notificationService;
 
-        public ProfileCommentController(IApplicationUser _userService, UserManager<ApplicationUser> _userManager)
+        public ProfileCommentController(IApplicationUser _userService, UserManager<ApplicationUser> _userManager, INotificationService notificationService)
         {
             userService = _userService;
             userManager = _userManager;
+            _notificationService = notificationService;
         }
 
         // GET: api/ProfileComment/{id}
@@ -76,6 +79,12 @@ namespace Fan_Website.Controllers
 
             await userService.AddComment(comment);
             await userService.UpdateUserRating(currentUser.Id, typeof(ProfileComment));
+            await _notificationService.CreateAsync(
+                profileUser.Id,
+                $"{currentUser.UserName} commented on your profile",
+                "profile_comment",
+                $"/profile/{profileUser.Id}"
+            );
 
             return Ok(new { message = "Comment added successfully" });
         }
