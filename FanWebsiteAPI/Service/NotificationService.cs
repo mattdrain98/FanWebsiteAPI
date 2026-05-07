@@ -31,7 +31,7 @@ namespace FanWebsiteAPI.Service
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
 
-            await _hubContext.Clients.Group(userId).SendAsync("ReceiveNotification", new
+            await _hubContext.Clients.User(userId).SendAsync("ReceiveNotification", new
             {
                 notification.Id,
                 notification.Message,
