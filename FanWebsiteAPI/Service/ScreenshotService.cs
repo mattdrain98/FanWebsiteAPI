@@ -5,17 +5,17 @@ namespace Fan_Website.Service
 {
     public class ScreenshotService : IScreenshot
     {
-        private readonly AppDbContext context; 
+        private readonly AppDbContext _context;
 
-        public ScreenshotService(AppDbContext ctx)
+        public ScreenshotService(AppDbContext context)
         {
-            context = ctx; 
+            _context = context;
         }
 
         public async Task Add(Screenshot screenshot)
         {
-            context.Add(screenshot);
-            await context.SaveChangesAsync();
+            _context.Add(screenshot);
+            await _context.SaveChangesAsync();
         }
 
         public async Task Delete(int id)
@@ -24,37 +24,37 @@ namespace Fan_Website.Service
 
             if (screenshot != null)
             {
-                context.Remove(screenshot);
-                await context.SaveChangesAsync();
+                _context.Remove(screenshot);
+                await _context.SaveChangesAsync();
             }
         }
 
         public async Task<IEnumerable<Screenshot>> GetAll()
         {
-            return await context.Screenshots.Include(screenshot => screenshot.User).ToListAsync(); 
+            return await _context.Screenshots.Include(screenshot => screenshot.User).ToListAsync(); 
         }
 
         public async Task<IEnumerable<ApplicationUser>> GetAllUsers()
         {
-            return await context.ApplicationUsers.ToListAsync();
+            return await _context.ApplicationUsers.ToListAsync();
         }
 
         public async Task<Screenshot?> GetById(int id)
         {
-            return await context.Screenshots
+            return await _context.Screenshots
                 .Include(screenshot => screenshot.User)
                 .FirstOrDefaultAsync(screenshot => screenshot.ScreenshotId == id);
         }
 
         public async Task<IEnumerable<Screenshot>> GetLatestScreenshots(int n)
         {
-            return await context.Screenshots.OrderByDescending(screenshot => screenshot.UpdatedOn).Take(n).ToListAsync();
+            return await _context.Screenshots.OrderByDescending(screenshot => screenshot.UpdatedOn).Take(n).ToListAsync();
 
         }
 
         public async Task<ApplicationUser?> GetUserById(string id)
         {
-            return await context.Users.FirstOrDefaultAsync(user => user.Id == id);
+            return await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
         }
 
         public async Task SetScreenshotImage(int id, Uri uri)
@@ -64,8 +64,8 @@ namespace Fan_Website.Service
             if (screenshot != null)
             {
                 screenshot.ImagePath = uri.AbsoluteUri;
-                context.Update(screenshot);
-                await context.SaveChangesAsync();
+                _context.Update(screenshot);
+                await _context.SaveChangesAsync();
             }
 
         }

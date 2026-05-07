@@ -1,4 +1,4 @@
-﻿using Fan_Website.Infrastructure;
+using Fan_Website.Infrastructure;
 using Fan_Website.Services;
 using FanWebsiteAPI.DTOs.Forums;
 using FanWebsiteAPI.DTOs.Posts;
@@ -15,16 +15,16 @@ namespace Fan_Website.Controllers
     [Route("api/[controller]")]
     public class ForumController : ControllerBase
     {
-        private readonly IForum forumService;
-        private readonly IApplicationUser userService;
-        private readonly UserManager<ApplicationUser> userManager;
+        private readonly IForum _forumService;
+        private readonly IApplicationUser _userService;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly AppDbContext _context;
 
-        public ForumController(IForum _forumService, IPost _postService, IApplicationUser _userService, UserManager<ApplicationUser> _userManager, AppDbContext context)
+        public ForumController(IForum forumService, IPost postService, IApplicationUser userService, UserManager<ApplicationUser> userManager, AppDbContext context)
         {
-            forumService = _forumService;
-            userService = _userService;
-            userManager = _userManager;
+            _forumService = forumService;
+            _userService = userService;
+            _userManager = userManager;
             _context = context;
         }
 
@@ -32,7 +32,7 @@ namespace Fan_Website.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllForums()
         {
-            var forums = await forumService.GetAll();
+            var forums = await _forumService.GetAll();
 
             var result = forums
                 .Select(forum => new ForumDto
@@ -54,7 +54,7 @@ namespace Fan_Website.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetForumById(int id, [FromQuery] string? searchQuery, [FromQuery] int page = 1, [FromQuery] int limit = 6)
         {
-            var forum = await forumService.GetByIdAsync(id);
+            var forum = await _forumService.GetByIdAsync(id);
             if (forum == null)
                 return NotFound();
 
@@ -122,7 +122,7 @@ namespace Fan_Website.Controllers
             if (userId == null)
                 return Unauthorized(new { message = "User not found" });
 
-            var user = await userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return Unauthorized(new { message = "User not found" });
 
@@ -130,12 +130,12 @@ namespace Fan_Website.Controllers
             {
                 PostTitle = model.Title,
                 Description = model.Description,
-                UpdatedOn = DateTime.UtcNow, 
+                UpdatedOn = DateTime.UtcNow,
                 User = user
             };
 
-            await forumService.Create(forum);
-            await userService.UpdateUserRating(userId, typeof(Forum));
+            await _forumService.Create(forum);
+            await _userService.UpdateUserRating(userId, typeof(Forum));
 
             return CreatedAtAction(nameof(GetForumById), new { id = forum.ForumId }, new
             {
@@ -149,11 +149,11 @@ namespace Fan_Website.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteForum(int id)
         {
-            var forum = await forumService.GetByIdAsync(id);
+            var forum = await _forumService.GetByIdAsync(id);
             if (forum == null)
                 return NotFound();
 
-            await forumService.Delete(id);
+            await _forumService.Delete(id);
             return NoContent();
         }
 
@@ -165,7 +165,7 @@ namespace Fan_Website.Controllers
                 ForumTitle = forum.PostTitle,
                 Description = forum.Description,
                 AuthorId = forum.User.Id,
-                AuthorName = forum.User.UserName ?? "Unkown",
+                AuthorName = forum.User.UserName ?? "Unknown",
                 AuthorRating = forum.User.Rating,
                 AuthorImagePath = forum.User.ImagePath,
                 DatePosted = forum.UpdatedOn.ToString()

@@ -103,6 +103,7 @@ DTOs/
   AddScreenshotDto.cs
   ScreenshotDto.cs
  Search/SearchResultDto.cs
+Hubs/NotificationHub.cs
 Infrastructure/Abstractions/
  AuditableEntity.cs
  AuthorDto.cs

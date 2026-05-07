@@ -5,30 +5,30 @@ namespace Fan_Website.Service
 {
     public class ForumService : IForum
     {
-        private readonly AppDbContext context;
+        private readonly AppDbContext _context;
 
-        public ForumService(AppDbContext ctx)
+        public ForumService(AppDbContext context)
         {
-            context = ctx;
+            _context = context;
         }
 
         public async Task Create(Forum forum)
         {
-            context.Add(forum);
-            await context.SaveChangesAsync();
+            _context.Add(forum);
+            await _context.SaveChangesAsync();
         }
 
         public async Task Delete(int id)
         {
             var forum = await GetByIdAsync(id);
             if (forum is null) return;
-            context.Remove(forum);
-            await context.SaveChangesAsync();
+            _context.Remove(forum);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<Forum>> GetAll()
         {
-            return await context.Forums
+            return await _context.Forums
                 .Include(forum => forum.User)
                 .Include(forum => forum.Posts)
                 .ToListAsync();
@@ -41,7 +41,7 @@ namespace Fan_Website.Service
 
         public async Task<Forum> GetByIdAsync(int id)
         {
-            return await context.Forums
+            return await _context.Forums
                 .Include(f => f.User)
                 .Include(f => f.Posts)
                     .ThenInclude(p => p.User)
@@ -52,7 +52,7 @@ namespace Fan_Website.Service
 
         public async Task<IEnumerable<Forum>> GetTopForums(int n)
         {
-            return await context.Forums
+            return await _context.Forums
                 .Include(f => f.User)
                 .Include(f => f.Posts)
                 .OrderByDescending(f => f.Posts.Count())
@@ -65,8 +65,8 @@ namespace Fan_Website.Service
             var forum = await GetByIdAsync(id);
             if (forum is null) return;
             forum.Description = newDescription;
-            context.Forums.Update(forum);
-            await context.SaveChangesAsync();
+            _context.Forums.Update(forum);
+            await _context.SaveChangesAsync();
         }
 
         public async Task UpdateForumTitle(int id, string newTitle)
@@ -74,8 +74,8 @@ namespace Fan_Website.Service
             var forum = await GetByIdAsync(id);
             if (forum is null) return;
             forum.PostTitle = newTitle;
-            context.Forums.Update(forum);
-            await context.SaveChangesAsync();
+            _context.Forums.Update(forum);
+            await _context.SaveChangesAsync();
         }
     }
 }

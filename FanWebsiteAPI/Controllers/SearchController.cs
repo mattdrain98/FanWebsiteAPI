@@ -1,4 +1,4 @@
-﻿using Fan_Website.Services;
+using Fan_Website.Services;
 using FanWebsiteAPI.DTOs.Posts;
 using FanWebsiteAPI.DTOs.Search;
 using Microsoft.AspNetCore.Mvc;
@@ -9,11 +9,11 @@ namespace Fan_Website.Controllers
     [Route("api/[controller]")]
     public class SearchController : ControllerBase
     {
-        private readonly IPost postService;
+        private readonly IPost _postService;
 
-        public SearchController(IPost _postService)
+        public SearchController(IPost postService)
         {
-            postService = _postService;
+            _postService = postService;
         }
 
         // GET: api/Search?query=keyword&page=1&pageSize=6
@@ -28,7 +28,7 @@ namespace Fan_Website.Controllers
 
             page = Math.Clamp(page, 1, 100);
 
-            var allPosts = (await postService.GetFilteredPosts(query)).ToList();
+            var allPosts = (await _postService.GetFilteredPosts(query)).ToList();
             var totalPosts = allPosts.Count;
             var totalPages = Math.Min((int)Math.Ceiling(totalPosts / (double)pageSize), 100);
 

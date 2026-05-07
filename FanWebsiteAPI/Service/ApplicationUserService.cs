@@ -8,20 +8,20 @@ namespace Fan_Website.Service
 {
     public class ApplicationUserService : IApplicationUser
     {
-        private readonly AppDbContext context; 
+        private readonly AppDbContext _context;
 
-        public ApplicationUserService(AppDbContext ctx)
+        public ApplicationUserService(AppDbContext context)
         {
-            context = ctx; 
+            _context = context;
         }
         public async Task<IEnumerable<ApplicationUser>> GetAll()
         {
-            return await context.ApplicationUsers.ToListAsync(); 
+            return await _context.ApplicationUsers.ToListAsync(); 
         }
 
         public async Task<ApplicationUser?> GetById(string id)
         {
-            return await context.Users
+            return await _context.Users
                 .Include(u => u.ProfileComments).ThenInclude(c => c.CommentUser)
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
@@ -33,7 +33,7 @@ namespace Fan_Website.Service
             if (user != null)
             {
                 user.Rating = CalculateUserRating(type, user.Rating);
-                await context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             }
         }
 
@@ -56,18 +56,18 @@ namespace Fan_Website.Service
         {
             var user = await GetById(id);
             user.ImagePath = uri.AbsoluteUri;
-            context.Update(user);
-            await context.SaveChangesAsync(); 
+            _context.Update(user);
+            await _context.SaveChangesAsync(); 
         }
 
         public async Task<IEnumerable<ApplicationUser>> GetLatestUsers(int n)
         {
-            return await context.ApplicationUsers.OrderByDescending(u => u.MemberSince).Take(n).ToListAsync();
+            return await _context.ApplicationUsers.OrderByDescending(u => u.MemberSince).Take(n).ToListAsync();
         }
 
         public async Task<ProfileComment?> GetCommentById(int id)
         {
-            return await context.ProfileComments
+            return await _context.ProfileComments
                 .Include(c => c.CommentUser)
                 .Include(c => c.ProfileUser)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -75,30 +75,30 @@ namespace Fan_Website.Service
 
         public async Task UpdateComment(ProfileComment comment)
         {
-            context.ProfileComments.Update(comment);
-            await context.SaveChangesAsync();
+            _context.ProfileComments.Update(comment);
+            await _context.SaveChangesAsync();
         }
 
         public async Task DeleteComment(int id)
         {
-            var comment = await context.ProfileComments.FindAsync(id);
+            var comment = await _context.ProfileComments.FindAsync(id);
             if (comment == null) return;
-            context.ProfileComments.Remove(comment);
-            await context.SaveChangesAsync();
+            _context.ProfileComments.Remove(comment);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<Follow?>> GetFollowing(string id)
         {
             var user = await GetById(id);
-            return await context.Follows
+            return await _context.Follows
                 .Where(f => f.Follower == user)
                 .ToListAsync();
         }
 
         public async Task AddComment(ProfileComment comment)
         {
-            context.Add(comment);
-            await context.SaveChangesAsync();
+            _context.Add(comment);
+            await _context.SaveChangesAsync();
         }
 
         public async Task EditProfile(string id, string bio, string username)
@@ -107,8 +107,8 @@ namespace Fan_Website.Service
             user.UserName = username;
             user.NormalizedUserName = username.ToUpper();
             user.Bio = bio;
-            context.Update(user);
-            await context.SaveChangesAsync();
+            _context.Update(user);
+            await _context.SaveChangesAsync();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Fan_Website.Infrastructure;
 using Fan_Website.Models.Follow;
@@ -16,36 +16,35 @@ namespace Fan_Website.Controllers
     [Route("api/[controller]")]
     public class ProfileController : ControllerBase
     {
-        private readonly UserManager<ApplicationUser> userManager;
-        private readonly SignInManager<ApplicationUser> signInManager;
-        private readonly IApplicationUser userService;
-        private readonly IConfiguration configuration;
-        private readonly AppDbContext context;
-        private readonly INotificationService notificationService;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly IApplicationUser _userService;
+        private readonly IConfiguration _configuration;
+        private readonly AppDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public ProfileController(UserManager<ApplicationUser> _userManager,
-                                 SignInManager<ApplicationUser> _signInManager,
-                                 IApplicationUser _userService,
-                                 IUpload _uploadService,
-                                 IConfiguration _configuration,
-                                 AppDbContext ctx,
-                                 INotificationService _notificationService)
+        public ProfileController(UserManager<ApplicationUser> userManager,
+                                 SignInManager<ApplicationUser> signInManager,
+                                 IApplicationUser userService,
+                                 IConfiguration configuration,
+                                 AppDbContext context,
+                                 INotificationService notificationService)
         {
-            userManager = _userManager;
-            signInManager = _signInManager;
-            userService = _userService;
-            configuration = _configuration;
-            context = ctx;
-            notificationService = _notificationService;
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _userService = userService;
+            _configuration = configuration;
+            _context = context;
+            _notificationService = notificationService;
         }
 
         // GET: api/Profile/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProfile(string id)
         {
-            var currentUserId = userManager.GetUserId(User);
+            var currentUserId = _userManager.GetUserId(User);
 
-            var user = await context.Users
+            var user = await _context.Users
                 .Include(u => u.Follows)
                     .ThenInclude(f => f.Follower)
                 .Include(u => u.Followings)
@@ -59,13 +58,13 @@ namespace Fan_Website.Controllers
                 {
                     UserId = u.Id,
                     UserName = u.UserName,
-                    UserRating = u.Rating, 
+                    UserRating = u.Rating,
                     ProfileImageUrl = u.ImagePath,
-                    MemberSince = u.MemberSince.ToString("o"), 
+                    MemberSince = u.MemberSince.ToString("o"),
                     Following = u.Following,
                     Followers = u.Followers,
                     Bio = u.Bio,
-                    IsFollowing = context.Set<Follow>()
+                    IsFollowing = _context.Set<Follow>()
                         .Any(f => f.Follower.Id == currentUserId && f.Following.Id == u.Id),
                     Follows = u.Follows.Select(f => new FollowDto
                     {
@@ -73,7 +72,7 @@ namespace Fan_Website.Controllers
                         UserName = f.Following.UserName ?? "",
                         ImagePath = f.Following.ImagePath,
                         Rating = f.Following.Rating,
-                        MemberSince = f.Following.MemberSince.ToString("o") 
+                        MemberSince = f.Following.MemberSince.ToString("o")
                     }).ToList(),
                     Followings = u.Followings.Select(f => new FollowDto
                     {
@@ -81,7 +80,7 @@ namespace Fan_Website.Controllers
                         UserName = f.Follower.UserName ?? "",
                         ImagePath = f.Follower.ImagePath,
                         Rating = f.Follower.Rating,
-                        MemberSince = f.Follower.MemberSince.ToString("o") 
+                        MemberSince = f.Follower.MemberSince.ToString("o")
                     }).ToList(),
                     ProfileComments = u.ProfileComments.Select(c => new ProfileCommentDto
                     {
@@ -95,7 +94,7 @@ namespace Fan_Website.Controllers
                         ProfileUserImageUrl = c.ProfileUser.ImagePath,
                         ProfileUserName = c.ProfileUser.UserName ?? "",
                         ProfileUserRating = c.ProfileUser.Rating,
-                        DatePosted = c.UpdatedOn.ToString("o") 
+                        DatePosted = c.UpdatedOn.ToString("o")
                     }).ToList()
                 })
                 .FirstOrDefaultAsync();
@@ -108,33 +107,33 @@ namespace Fan_Website.Controllers
         [HttpPost("UpdateFollows/{id}")]
         public async Task<IActionResult> UpdateFollows(string id)
         {
-            var currentUserId = userManager.GetUserId(User);
+            var currentUserId = _userManager.GetUserId(User);
             if (currentUserId == null) return Unauthorized();
 
-            var user = await userService.GetById(id);
-            var currentUser = await userService.GetById(currentUserId);
+            var user = await _userService.GetById(id);
+            var currentUser = await _userService.GetById(currentUserId);
 
             if (user == null || currentUser == null) return NotFound();
 
-            var existingFollow = context.Set<Follow>()
+            var existingFollow = _context.Set<Follow>()
                 .FirstOrDefault(f => f.Follower.Id == currentUserId && f.Following.Id == id);
 
             if (existingFollow != null)
             {
-                context.Remove(existingFollow);
+                _context.Remove(existingFollow);
                 user.Followers = Math.Max(0, user.Followers - 1);
                 currentUser.Following = Math.Max(0, currentUser.Following - 1);
             }
             else
             {
-                context.Add(new Follow
+                _context.Add(new Follow
                 {
                     Following = user,
                     Follower = currentUser
                 });
                 user.Followers += 1;
                 currentUser.Following += 1;
-                await notificationService.CreateAsync(
+                await _notificationService.CreateAsync(
                     user.Id,
                     $"{currentUser.UserName} started following you",
                     "follow",
@@ -142,9 +141,9 @@ namespace Fan_Website.Controllers
                 );
             }
 
-            context.Users.Update(user);
-            context.Users.Update(currentUser);
-            await context.SaveChangesAsync();
+            _context.Users.Update(user);
+            _context.Users.Update(currentUser);
+            await _context.SaveChangesAsync();
 
             return Ok(new { Followers = user.Followers, Following = currentUser.Following });
         }
@@ -153,12 +152,12 @@ namespace Fan_Website.Controllers
         [HttpGet("Followers/{id}")]
         public async Task<IActionResult> GetFollowers(string id)
         {
-            var followerIds = await context.Set<Follow>()
+            var followerIds = await _context.Set<Follow>()
                 .Where(f => f.Following.Id == id)
                 .Select(f => f.Follower.Id)
                 .ToListAsync();
 
-            var followers = await context.Users
+            var followers = await _context.Users
                 .Where(u => followerIds.Contains(u.Id))
                 .Select(u => new FollowDto
                 {
@@ -170,7 +169,7 @@ namespace Fan_Website.Controllers
                 })
                 .ToListAsync();
 
-            var userName = await context.Users
+            var userName = await _context.Users
                 .Where(u => u.Id == id)
                 .Select(u => u.UserName)
                 .FirstOrDefaultAsync();
@@ -187,12 +186,12 @@ namespace Fan_Website.Controllers
         [HttpGet("Following/{id}")]
         public async Task<IActionResult> GetFollowing(string id)
         {
-            var followingIds = await context.Set<Follow>()
+            var followingIds = await _context.Set<Follow>()
                 .Where(f => f.Follower.Id == id)
                 .Select(f => f.Following.Id)
                 .ToListAsync();
 
-            var following = await context.Users
+            var following = await _context.Users
                 .Where(u => followingIds.Contains(u.Id))
                 .Select(u => new FollowDto
                 {
@@ -204,7 +203,7 @@ namespace Fan_Website.Controllers
                 })
                 .ToListAsync();
 
-            var userName = await context.Users
+            var userName = await _context.Users
                 .Where(u => u.Id == id)
                 .Select(u => u.UserName)
                 .FirstOrDefaultAsync();
@@ -221,12 +220,12 @@ namespace Fan_Website.Controllers
         [HttpPut("EditBio")]
         public async Task<IActionResult> EditBio([FromBody] EditProfileDto model)
         {
-            var currentUserId = userManager.GetUserId(User);
+            var currentUserId = _userManager.GetUserId(User);
             if (currentUserId != model.UserId) return Forbid();
-            var user = await userManager.FindByIdAsync(model.UserId);
+            var user = await _userManager.FindByIdAsync(model.UserId);
             if (user == null) return NotFound();
             user.Bio = model.Bio;
-            await userManager.UpdateAsync(user);
+            await _userManager.UpdateAsync(user);
             return Ok(new { Message = "Bio updated successfully." });
         }
 
@@ -236,8 +235,8 @@ namespace Fan_Website.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            await userService.EditProfile(model.UserId, model.Bio, model.UserName);
-            await signInManager.SignOutAsync();
+            await _userService.EditProfile(model.UserId, model.Bio, model.UserName);
+            await _signInManager.SignOutAsync();
 
             return Ok(new { Message = "Username updated successfully." });
         }
@@ -250,8 +249,8 @@ namespace Fan_Website.Controllers
             if (file == null || file.Length == 0)
                 return BadRequest(new { Message = "Please provide a valid image." });
 
-            var userId = userManager.GetUserId(User);
-            var connectionString = configuration.GetConnectionString("AzureStorageAccount");
+            var userId = _userManager.GetUserId(User);
+            var connectionString = _configuration.GetConnectionString("AzureStorageAccount");
 
             var containerClient = new BlobContainerClient(connectionString, "profile-images");
             await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
@@ -262,7 +261,7 @@ namespace Fan_Website.Controllers
             await using var stream = file.OpenReadStream();
             await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = file.ContentType });
 
-            await userService.SetProfileImage(userId, blobClient.Uri);
+            await _userService.SetProfileImage(userId, blobClient.Uri);
 
             return Ok(new { ImageUrl = blobClient.Uri.ToString() });
         }

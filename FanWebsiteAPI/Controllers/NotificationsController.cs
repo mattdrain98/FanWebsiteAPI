@@ -1,4 +1,4 @@
-﻿using Fan_Website;
+using Fan_Website;
 using FanWebsiteAPI.DTOs.Notifications;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -19,7 +19,6 @@ public class NotificationsController : ControllerBase
         _userManager = userManager;
     }
 
-    // DELETE: api/Notifications
     [HttpGet]
     public async Task<IActionResult> GetNotifications()
     {
@@ -42,6 +41,7 @@ public class NotificationsController : ControllerBase
         return Ok(notifications);
     }
 
+    // GET: api/notifications/unread-count
     [HttpGet("unread-count")]
     public async Task<IActionResult> GetUnreadCount()
     {
@@ -51,6 +51,7 @@ public class NotificationsController : ControllerBase
         return Ok(new { count });
     }
 
+    // PUT: api/notifications/{id}/read
     [HttpPut("{id}/read")]
     public async Task<IActionResult> MarkAsRead(int id)
     {
@@ -63,6 +64,7 @@ public class NotificationsController : ControllerBase
         return Ok();
     }
 
+    // PUT: api/notifications/read-all
     [HttpPut("read-all")]
     public async Task<IActionResult> MarkAllAsRead()
     {
@@ -73,7 +75,7 @@ public class NotificationsController : ControllerBase
         return Ok();
     }
 
-    // DELETE: api/Notifications/{id}
+    // DELETE: api/notifications/{id}
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

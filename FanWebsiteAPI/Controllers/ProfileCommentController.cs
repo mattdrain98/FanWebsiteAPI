@@ -1,7 +1,7 @@
-﻿using Fan_Website.Infrastructure;
+using Fan_Website.Infrastructure;
 using Fan_Website.Models.ProfileComment;
-using FanWebsiteAPI.Infrastructure;
 using FanWebsiteAPI.DTOs.ProfileComments;
+using FanWebsiteAPI.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,23 +12,23 @@ namespace Fan_Website.Controllers
     [Route("api/[controller]")]
     public class ProfileCommentController : ControllerBase
     {
-        private readonly IApplicationUser userService;
-        private readonly UserManager<ApplicationUser> userManager;
-        private readonly INotificationService notificationService;
+        private readonly IApplicationUser _userService;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly INotificationService _notificationService;
 
-        public ProfileCommentController(IApplicationUser _userService, UserManager<ApplicationUser> _userManager, INotificationService _notificationService)
+        public ProfileCommentController(IApplicationUser userService, UserManager<ApplicationUser> userManager, INotificationService notificationService)
         {
-            userService = _userService;
-            userManager = _userManager;
-            notificationService = _notificationService;
+            _userService = userService;
+            _userManager = userManager;
+            _notificationService = notificationService;
         }
 
         // GET: api/ProfileComment/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCommentTemplate(string id)
         {
-            var user = await userManager.GetUserAsync(User);
-            var currentUser = await userManager.FindByIdAsync(user.Id);
+            var user = await _userManager.GetUserAsync(User);
+            var currentUser = await _userManager.FindByIdAsync(user.Id);
             if (currentUser == null)
                 return Unauthorized();
 
@@ -58,11 +58,11 @@ namespace Fan_Website.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var currentUser = await userManager.GetUserAsync(User);
+            var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null)
                 return Unauthorized();
 
-            var profileUser = await userService.GetById(dto.ProfileUserId);
+            var profileUser = await _userService.GetById(dto.ProfileUserId);
             if (profileUser == null)
                 return NotFound(new { message = "Profile not found" });
 
@@ -71,7 +71,7 @@ namespace Fan_Website.Controllers
 
             try
             {
-                await notificationService.CreateAsync(
+                await _notificationService.CreateAsync(
                     profileUser.Id,
                     $"{currentUser.UserName} commented on your profile",
                     "profile_comment",
@@ -82,7 +82,7 @@ namespace Fan_Website.Controllers
             {
                 Console.WriteLine($"Notification error: {ex.Message}");
             }
-            
+
             var comment = new ProfileComment
             {
                 ProfileUser = profileUser,
@@ -91,8 +91,8 @@ namespace Fan_Website.Controllers
                 CommentUser = currentUser
             };
 
-            await userService.AddComment(comment);
-            await userService.UpdateUserRating(currentUser.Id, typeof(ProfileComment));
+            await _userService.AddComment(comment);
+            await _userService.UpdateUserRating(currentUser.Id, typeof(ProfileComment));
 
             return Ok(new { message = "Comment added successfully" });
         }
@@ -101,11 +101,11 @@ namespace Fan_Website.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> EditComment(int id, [FromBody] EditProfileCommentDto dto)
         {
-            var currentUser = await userManager.GetUserAsync(User);
+            var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null)
                 return Unauthorized();
 
-            var comment = await userService.GetCommentById(id);
+            var comment = await _userService.GetCommentById(id);
             if (comment == null)
                 return NotFound();
 
@@ -113,7 +113,7 @@ namespace Fan_Website.Controllers
                 return Forbid();
 
             comment.Content = dto.CommentContent;
-            await userService.UpdateComment(comment);
+            await _userService.UpdateComment(comment);
             return NoContent();
         }
 
@@ -121,18 +121,18 @@ namespace Fan_Website.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteComment(int id)
         {
-            var currentUser = await userManager.GetUserAsync(User);
+            var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null)
                 return Unauthorized();
 
-            var comment = await userService.GetCommentById(id);
+            var comment = await _userService.GetCommentById(id);
             if (comment == null)
                 return NotFound();
 
             if (comment.CommentUser.Id != currentUser.Id)
                 return Forbid();
 
-            await userService.DeleteComment(id);
+            await _userService.DeleteComment(id);
             return NoContent();
         }
     }
