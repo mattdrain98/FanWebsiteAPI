@@ -124,6 +124,8 @@ Migrations/
  20260330173131_SyncPostImages.Designer.cs
  20260331172037_AddNotifications.cs
  20260331172037_AddNotifications.Designer.cs
+ 20260507231328_AddExpoPushToken.cs
+ 20260507231328_AddExpoPushToken.Designer.cs
  AppDbContextModelSnapshot.cs
 Models/
  Account.cs

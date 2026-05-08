@@ -3,6 +3,7 @@ using FanWebsiteAPI.DTOs.Auth;
 using FanWebsiteAPI.DTOs.Profile;
 using FanWebsiteAPI.Infrastructure;
 using FanWebsiteAPI.Service;
+using Microsoft.AspNetCore.Authorization; 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -96,6 +97,18 @@ namespace Fan_Website.Controllers
 
             await _signInManager.RefreshSignInAsync(user);
             return Ok(new { Message = "Password changed successfully" });
+        }
+
+        // PUT: api/account/push-token
+        [HttpPut("push-token")]
+        [Authorize]
+        public async Task<ActionResult> UpdatePushToken([FromBody] string pushToken)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+            user.ExpoPushToken = pushToken;
+            await _userManager.UpdateAsync(user);
+            return Ok();
         }
 
         // POST: api/account/logout

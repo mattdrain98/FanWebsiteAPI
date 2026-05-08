@@ -17,5 +17,6 @@ namespace Fan_Website
         public List<ProfileComment> ProfileComments { get; set; } = new List<ProfileComment>(); // comments ON this profile
         public List<ProfileComment> CommentsMade { get; set; } = new List<ProfileComment>();      // comments this user has written
         public string? Bio { get; set; }
+        public string? ExpoPushToken { get; set; }
     }
 }

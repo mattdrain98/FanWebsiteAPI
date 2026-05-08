@@ -449,7 +449,7 @@ namespace FanWebsiteAPI.Controllers
 
                     await _notificationService.CreateAsync(
                         post.User.Id,
-                        $"{user.UserName} liked your post \"{post.Title}\"",
+                        $"{user.UserName} liked your post \"{post.Title.Trim()}\"",
                         "like",
                         $"/post/{post.PostId}"
                     );
