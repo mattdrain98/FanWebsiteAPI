@@ -394,7 +394,112 @@ namespace Fan_Website.Controllers
         }
         
 
-        // POST: api/account/login 
+        // POST: api/account/forgot-password
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
+                return Ok("If that email exists, a reset link has been sent.");
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            var clientUrl = _configuration["App:ClientUrl"];
+            var resetUrl = $"{clientUrl}/reset-password?email={Uri.EscapeDataString(user.Email!)}&token={encodedToken}";
+
+            await _emailSender.SendEmailAsync(user.Email!, "Reset your password",
+                $@"<!DOCTYPE html>
+                    <html>
+                    <head>
+                      <meta charset='utf-8'>
+                      <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                    </head>
+                    <body style='margin:0; padding:0; background-color:#f1f5f9; font-family: DM Sans, Segoe UI, sans-serif;'>
+                      <table width='100%' cellpadding='0' cellspacing='0' style='padding: 40px 16px;'>
+                        <tr>
+                          <td align='center'>
+                            <table width='100%' cellpadding='0' cellspacing='0'
+                                   style='max-width:520px; background:#ffffff; border-radius:20px;
+                                          overflow:hidden; box-shadow: 0 4px 24px rgba(37,99,235,0.10);'>
+                              <tr>
+                                <td align='center'
+                                    style='background: linear-gradient(135deg, skyblue, #00AECC);
+                                           padding: 40px 32px 32px;'>
+                                  <h1 style='margin:0; color:#ffffff; font-size:22px;
+                                             font-weight:700; letter-spacing:-0.5px;'>Dismino</h1>
+                                  <p style='margin:8px 0 0; color:rgba(255,255,255,0.8); font-size:14px;'>
+                                    Password reset request
+                                  </p>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style='padding: 36px 32px 24px;'>
+                                  <h2 style='margin:0 0 8px; color:#0f172a; font-size:20px; font-weight:700;'>
+                                    Reset your password
+                                  </h2>
+                                  <p style='margin:0 0 24px; color:#64748b; font-size:15px; line-height:1.6;'>
+                                    We received a request to reset your password for <strong>{user.UserName}</strong>.
+                                    Click the button below to choose a new one.
+                                  </p>
+                                  <table width='100%' cellpadding='0' cellspacing='0'>
+                                    <tr>
+                                      <td align='center' style='padding: 8px 0 28px;'>
+                                        <a href='{resetUrl}'
+                                           style='display:inline-block; padding:14px 36px;
+                                                  background: linear-gradient(135deg, skyblue, #00AECC);
+                                                  color:#ffffff; font-size:15px; font-weight:600;
+                                                  text-decoration:none; border-radius:12px;
+                                                  box-shadow: 0 4px 14px rgba(37,99,235,0.4);'>
+                                          Reset Password →
+                                        </a>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                  <hr style='border:none; border-top:1px solid #e2e8f0; margin: 0 0 24px;'/>
+                                  <p style='margin:0; color:#94a3b8; font-size:12px; line-height:1.6;'>
+                                    This link expires in 1 hour. If you didn't request a password reset,
+                                    you can safely ignore this email.
+                                    <br/>
+                                    <a href='{resetUrl}' style='color:#3b82f6; word-break:break-all; font-size:11px;'>
+                                      {resetUrl}
+                                    </a>
+                                  </p>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td align='center'
+                                    style='background:#f8fafc; border-top:1px solid #e2e8f0; padding: 20px 32px;'>
+                                  <p style='margin:0; color:#cbd5e1; font-size:11px;'>© 2026 Dismino</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </body>
+                    </html>");
+
+            return Ok("If that email exists, a reset link has been sent.");
+        }
+
+        // POST: api/account/reset-password
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+                return BadRequest(new[] { "Invalid request." });
+
+            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Token));
+            var result = await _userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
+
+            if (!result.Succeeded)
+                return BadRequest(result.Errors.Select(e => e.Description));
+
+            return Ok("Password reset successfully. You can now log in.");
+        }
+
+        // POST: api/account/login
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginDto model)
         {

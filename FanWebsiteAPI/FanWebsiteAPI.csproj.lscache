@@ -70,8 +70,10 @@ Controllers/
  SearchController.cs
 DTOs/Auth/
  ChangePasswordDto.cs
+ ForgotPasswordDto.cs
  LoginDto.cs
  RegisterDto.cs
+ ResetPasswordDto.cs
 DTOs/
  Follow/FollowDto.cs
  Forums/
@@ -467,8 +469,9 @@ Service/
  System.Xml.XPath.XDocument.dll
  WindowsBase.dll
 <NUGET>/
- azure.core/1.51.1/lib/net10.0/Azure.Core.dll
+ azure.core/1.54.0/lib/net10.0/Azure.Core.dll
  azure.data.tables/12.11.0/lib/net8.0/Azure.Data.Tables.dll
+ azure.extensions.aspnetcore.dataprotection.blobs/1.5.2/lib/net10.0/Azure.Extensions.AspNetCore.DataProtection.Blobs.dll
  azure.identity/1.18.0/lib/net10.0/Azure.Identity.dll
  azure.storage.blobs/12.27.0/lib/net10.0/Azure.Storage.Blobs.dll
  azure.storage.common/12.26.0/lib/net10.0/Azure.Storage.Common.dll
@@ -483,7 +486,7 @@ Service/
  microsoft.aspnetcore.jsonpatch/10.0.3/lib/net10.0/Microsoft.AspNetCore.JsonPatch.dll
  microsoft.aspnetcore.mvc.newtonsoftjson/10.0.3/lib/net10.0/Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll
  microsoft.aspnetcore.openapi/10.0.3/lib/net10.0/Microsoft.AspNetCore.OpenApi.dll
- microsoft.bcl.asyncinterfaces/10.0.2/lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll
+ microsoft.bcl.asyncinterfaces/10.0.3/lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll
  microsoft.bcl.cryptography/9.0.4/lib/net9.0/Microsoft.Bcl.Cryptography.dll
  microsoft.codecoverage/17.13.0/lib/netcoreapp3.1/Microsoft.VisualStudio.CodeCoverage.Shim.dll
  microsoft.data.sqlclient/6.1.1/ref/net9.0/Microsoft.Data.SqlClient.dll
@@ -493,8 +496,8 @@ Service/
  microsoft.entityframeworkcore.sqlserver/10.0.0/lib/net10.0/Microsoft.EntityFrameworkCore.SqlServer.dll
  microsoft.entityframeworkcore/10.0.3/lib/net10.0/Microsoft.EntityFrameworkCore.dll
  microsoft.extensions.azure/1.13.1/lib/net8.0/Microsoft.Extensions.Azure.dll
- microsoft.identity.client.extensions.msal/4.78.0/lib/net8.0/Microsoft.Identity.Client.Extensions.Msal.dll
- microsoft.identity.client/4.78.0/lib/net8.0/Microsoft.Identity.Client.dll
+ microsoft.identity.client.extensions.msal/4.83.1/lib/net8.0/Microsoft.Identity.Client.Extensions.Msal.dll
+ microsoft.identity.client/4.83.1/lib/net8.0/Microsoft.Identity.Client.dll
  microsoft.identitymodel.abstractions/8.14.0/lib/net9.0/Microsoft.IdentityModel.Abstractions.dll
  microsoft.identitymodel.jsonwebtokens/8.0.1/lib/net9.0/Microsoft.IdentityModel.JsonWebTokens.dll
  microsoft.identitymodel.logging/8.0.1/lib/net9.0/Microsoft.IdentityModel.Logging.dll
@@ -520,10 +523,10 @@ Service/
  swashbuckle.aspnetcore.swagger/10.1.4/lib/net10.0/Swashbuckle.AspNetCore.Swagger.dll
  swashbuckle.aspnetcore.swaggergen/10.1.4/lib/net10.0/Swashbuckle.AspNetCore.SwaggerGen.dll
  swashbuckle.aspnetcore.swaggerui/10.1.4/lib/net10.0/Swashbuckle.AspNetCore.SwaggerUI.dll
- system.clientmodel/1.9.0/lib/net10.0/System.ClientModel.dll
+ system.clientmodel/1.10.0/lib/net10.0/System.ClientModel.dll
  system.identitymodel.tokens.jwt/8.0.1/lib/net9.0/System.IdentityModel.Tokens.Jwt.dll
  system.io.hashing/10.0.1/lib/net10.0/System.IO.Hashing.dll
- system.memory.data/10.0.1/lib/net10.0/System.Memory.Data.dll
+ system.memory.data/10.0.3/lib/net10.0/System.Memory.Data.dll
  system.security.cryptography.pkcs/10.0.0/lib/net10.0/System.Security.Cryptography.Pkcs.dll
  system.security.cryptography.protecteddata/9.0.4/lib/net9.0/System.Security.Cryptography.ProtectedData.dll
  xunit.abstractions/2.0.3/lib/netstandard2.0/xunit.abstractions.dll
@@ -563,7 +566,7 @@ Service/
   Microsoft.CodeAnalysis.Analyzers.dll
   Microsoft.CodeAnalysis.CSharp.Analyzers.dll
  microsoft.entityframeworkcore.analyzers/10.0.3/analyzers/dotnet/cs/Microsoft.EntityFrameworkCore.Analyzers.dll
- system.clientmodel/1.9.0/analyzers/dotnet/cs/System.ClientModel.SourceGeneration.dll
+ system.clientmodel/1.10.0/analyzers/dotnet/cs/System.ClientModel.SourceGeneration.dll
  xunit.analyzers/1.18.0/analyzers/dotnet/cs/
   xunit.analyzers.dll
   xunit.analyzers.fixes.dll

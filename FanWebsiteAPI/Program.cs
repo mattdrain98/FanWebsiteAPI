@@ -1,3 +1,4 @@
+using Azure.Storage.Blobs;
 using Fan_Website;
 using Fan_Website.Infrastructure;
 using Fan_Website.Service;
@@ -6,6 +7,7 @@ using FanWebsiteAPI.Hubs;
 using FanWebsiteAPI.Infrastructure;
 using FanWebsiteAPI.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
@@ -106,6 +108,13 @@ if (!string.IsNullOrEmpty(storageConnection))
         azureBuilder.AddBlobServiceClient(storageConnection);
         azureBuilder.AddQueueServiceClient(storageConnection);
     });
+
+    var dpContainer = new BlobContainerClient(storageConnection, "data-protection-keys");
+    dpContainer.CreateIfNotExists();
+
+    builder.Services.AddDataProtection()
+        .PersistKeysToAzureBlobStorage(dpContainer.GetBlobClient("keys.xml"))
+        .SetApplicationName("FanWebsiteAPI");
 }
 
 builder.Services.AddSignalR();
