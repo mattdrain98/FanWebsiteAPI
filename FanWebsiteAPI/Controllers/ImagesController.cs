@@ -3,6 +3,10 @@ using Azure.Storage.Blobs.Models;
 using Fan_Website.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Webp;
 
 namespace FanWebsiteAPI.Controllers
 {
@@ -15,14 +19,6 @@ namespace FanWebsiteAPI.Controllers
         private readonly ILogger<ImagesController> _logger;
         private readonly long _maxFileSize = 5 * 1024 * 1024; // 5MB
         private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-        private readonly Dictionary<string, string> _contentTypes = new()
-        {
-            { ".jpg", "image/jpeg" },
-            { ".jpeg", "image/jpeg" },
-            { ".png", "image/png" },
-            { ".gif", "image/gif" },
-            { ".webp", "image/webp" }
-        };
         private readonly IHttpClientFactory _httpClientFactory;
 
         public ImagesController(
@@ -72,16 +68,16 @@ namespace FanWebsiteAPI.Controllers
             var connectionString = _configuration.GetConnectionString("AzureStorageAccount");
             var container = _uploadService.GetBlobContainer(connectionString, "post-images");
 
-            var blobName = $"{Guid.NewGuid()}{extension}";
+            using var inputStream = new MemoryStream(bytes);
+            var (compressed, outExtension, outContentType) = await CompressImageAsync(inputStream, extension);
+            using var _ = compressed;
+
+            var blobName = $"{Guid.NewGuid()}{outExtension}";
             var blobClient = container.GetBlobClient(blobName);
 
-            var blobHeaders = new BlobHttpHeaders
-            {
-                ContentType = _contentTypes.GetValueOrDefault(extension, "application/octet-stream")
-            };
+            var blobHeaders = new BlobHttpHeaders { ContentType = outContentType };
 
-            using var stream = new MemoryStream(bytes);
-            await blobClient.UploadAsync(stream, new BlobUploadOptions { HttpHeaders = blobHeaders });
+            await blobClient.UploadAsync(compressed, new BlobUploadOptions { HttpHeaders = blobHeaders });
 
             var url = blobClient.Uri.ToString();
             _logger.LogInformation($"File fetched from URL and uploaded to blob: {url}");
@@ -113,16 +109,16 @@ namespace FanWebsiteAPI.Controllers
                 var connectionString = _configuration.GetConnectionString("AzureStorageAccount");
                 var container = _uploadService.GetBlobContainer(connectionString, "post-images");
 
-                var blobName = $"{Guid.NewGuid()}{extension}";
+                using var inputStream = file.OpenReadStream();
+                var (compressed, outExtension, contentType) = await CompressImageAsync(inputStream, extension);
+                using var _ = compressed;
+
+                var blobName = $"{Guid.NewGuid()}{outExtension}";
                 var blobClient = container.GetBlobClient(blobName);
 
-                var headers = new BlobHttpHeaders
-                {
-                    ContentType = _contentTypes.GetValueOrDefault(extension, "application/octet-stream")
-                };
+                var headers = new BlobHttpHeaders { ContentType = contentType };
 
-                using var stream = file.OpenReadStream();
-                await blobClient.UploadAsync(stream, new BlobUploadOptions
+                await blobClient.UploadAsync(compressed, new BlobUploadOptions
                 {
                     HttpHeaders = headers
                 });
@@ -137,6 +133,39 @@ namespace FanWebsiteAPI.Controllers
                 _logger.LogError(ex, "Error uploading file");
                 return StatusCode(500, new { message = "Error uploading file", error = ex.Message });
             }
+        }
+
+        private static async Task<(Stream stream, string extension, string contentType)> CompressImageAsync(Stream input, string extension)
+        {
+            if (extension == ".gif")
+            {
+                var passthrough = new MemoryStream();
+                await input.CopyToAsync(passthrough);
+                passthrough.Position = 0;
+                return (passthrough, extension, "image/gif");
+            }
+
+            using var image = await Image.LoadAsync(input);
+            var output = new MemoryStream();
+
+            if (extension == ".png")
+            {
+                await image.SaveAsync(output, new PngEncoder { CompressionLevel = PngCompressionLevel.BestCompression });
+                output.Position = 0;
+                return (output, ".png", "image/png");
+            }
+
+            if (extension == ".webp")
+            {
+                await image.SaveAsync(output, new WebpEncoder { Quality = 82 });
+                output.Position = 0;
+                return (output, ".webp", "image/webp");
+            }
+
+            // .jpg / .jpeg
+            await image.SaveAsync(output, new JpegEncoder { Quality = 82 });
+            output.Position = 0;
+            return (output, ".jpg", "image/jpeg");
         }
 
         [HttpDelete("delete")]
