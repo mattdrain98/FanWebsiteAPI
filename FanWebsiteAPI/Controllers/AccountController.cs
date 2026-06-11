@@ -522,7 +522,7 @@ namespace Fan_Website.Controllers
             if (!result.Succeeded) return Unauthorized("Invalid login attempt");
 
             var jwtTokenService = HttpContext.RequestServices.GetRequiredService<JwtTokenService>();
-            var token = jwtTokenService.GenerateToken(user);
+            var token = await jwtTokenService.GenerateToken(user);
 
             return Ok(new
             {
