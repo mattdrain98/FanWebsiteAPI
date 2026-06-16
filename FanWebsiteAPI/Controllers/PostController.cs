@@ -384,7 +384,7 @@ namespace FanWebsiteAPI.Controllers
                 if (post == null)
                     return NotFound(new { message = "Post not found" });
 
-                if (post.User?.Id != userId)
+                if (post.User?.Id != userId && !User.IsInRole("Admin") && !User.IsInRole("Moderator"))
                     return Forbid();
 
                 if (post.PostImages?.Any() == true)

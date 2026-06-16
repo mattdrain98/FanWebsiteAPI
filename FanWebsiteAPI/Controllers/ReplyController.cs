@@ -108,7 +108,8 @@ namespace Fan_Website.Controllers
             var userId = _userManager.GetUserId(User);
             var reply = await _postService.GetReplyByIdAsync(id);
             if (reply == null) return NotFound("Reply not found");
-            if (reply.User.Id != userId) return Forbid();
+            if (reply.User.Id != userId && !User.IsInRole("Admin") && !User.IsInRole("Moderator"))
+                return Forbid();
             await _postService.DeleteReply(id);
             return NoContent();
         }
