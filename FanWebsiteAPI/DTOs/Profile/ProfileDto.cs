@@ -17,5 +17,6 @@ namespace FanWebsiteAPI.DTOs.Profile
         public IEnumerable<ProfileCommentDto>? ProfileComments { get; set; }
         public string? Bio { get; set; }
         public required bool IsFollowing { get; set; }
+        public List<string> Roles { get; set; } = new();
     }
 }

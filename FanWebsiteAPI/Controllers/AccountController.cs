@@ -536,5 +536,15 @@ namespace Fan_Website.Controllers
                 }
             });
         }
+
+        // GET: api/account/user-roles/{userId}
+        [HttpGet("user-roles/{userId}")]
+        public async Task<IActionResult> GetUserRoles(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return Ok(Array.Empty<string>());
+            var roles = await _userManager.GetRolesAsync(user);
+            return Ok(roles);
+        }
     }
 }

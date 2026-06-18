@@ -1,4 +1,4 @@
-using Azure.Storage.Blobs;
+﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Fan_Website.Infrastructure;
 using Fan_Website.Models.Follow;
@@ -44,7 +44,7 @@ namespace Fan_Website.Controllers
         {
             var currentUserId = _userManager.GetUserId(User);
 
-            var user = await _context.Users
+            var dto = await _context.Users
                 .Include(u => u.Follows)
                     .ThenInclude(f => f.Follower)
                 .Include(u => u.Followings)
@@ -99,8 +99,9 @@ namespace Fan_Website.Controllers
                 })
                 .FirstOrDefaultAsync();
 
-            if (user == null) return NotFound();
-            return Ok(user);
+            if (dto == null) return NotFound();
+
+            return Ok(dto);
         }
 
         // POST: api/Profile/UpdateFollows/{id}
