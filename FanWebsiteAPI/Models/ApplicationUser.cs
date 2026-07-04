@@ -18,5 +18,6 @@ namespace Fan_Website
         public List<ProfileComment> CommentsMade { get; set; } = new List<ProfileComment>();      // comments this user has written
         public string? Bio { get; set; }
         public string? ExpoPushToken { get; set; }
+        public bool IsHidden { get; set; }
     }
 }

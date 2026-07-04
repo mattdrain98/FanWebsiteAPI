@@ -6,6 +6,7 @@ using FanWebsiteAPI.DTOs.Follow;
 using FanWebsiteAPI.DTOs.Profile;
 using FanWebsiteAPI.DTOs.ProfileComments;
 using FanWebsiteAPI.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -64,6 +65,7 @@ namespace Fan_Website.Controllers
                     Following = u.Following,
                     Followers = u.Followers,
                     Bio = u.Bio,
+                    IsHidden = u.IsHidden,
                     IsFollowing = _context.Set<Follow>()
                         .Any(f => f.Follower.Id == currentUserId && f.Following.Id == u.Id),
                     Follows = u.Follows.Select(f => new FollowDto
@@ -100,6 +102,18 @@ namespace Fan_Website.Controllers
                 .FirstOrDefaultAsync();
 
             if (dto == null) return NotFound();
+
+            if (dto.IsHidden && !User.IsInRole("Admin") && !User.IsInRole("Moderator"))
+            {
+                return Ok(new ProfileDto
+                {
+                    UserId = dto.UserId,
+                    UserName = dto.UserName,
+                    MemberSince = dto.MemberSince,
+                    IsFollowing = false,
+                    IsHidden = true
+                });
+            }
 
             return Ok(dto);
         }
@@ -240,6 +254,18 @@ namespace Fan_Website.Controllers
             await _signInManager.SignOutAsync();
 
             return Ok(new { Message = "Username updated successfully." });
+        }
+
+        // POST: api/Profile/toggle-hidden/{id}
+        [HttpPost("toggle-hidden/{id}")]
+        [Authorize(Roles = "Admin,Moderator")]
+        public async Task<IActionResult> ToggleHidden(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound();
+            user.IsHidden = !user.IsHidden;
+            await _userManager.UpdateAsync(user);
+            return Ok(new { isHidden = user.IsHidden });
         }
 
         // POST: api/Profile/UploadProfileImage

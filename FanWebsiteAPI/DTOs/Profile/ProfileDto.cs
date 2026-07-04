@@ -18,5 +18,6 @@ namespace FanWebsiteAPI.DTOs.Profile
         public string? Bio { get; set; }
         public required bool IsFollowing { get; set; }
         public List<string> Roles { get; set; } = new();
+        public bool IsHidden { get; set; }
     }
 }
