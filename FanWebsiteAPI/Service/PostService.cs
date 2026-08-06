@@ -133,7 +133,7 @@ namespace Fan_Website.Service
                 .Include(p => p.User)
                 .Include(p => p.Forum).ThenInclude(f => f.User)
                 .Include(p => p.PostImages)
-                .Include(p => p.Replies)
+                .Include(p => p.Replies).ThenInclude(r => r.User)
                 .Include(p => p.Likes)
                 .OrderByDescending(p => p.UpdatedOn)
                 .Take(n)

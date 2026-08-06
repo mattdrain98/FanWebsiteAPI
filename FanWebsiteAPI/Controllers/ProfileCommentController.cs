@@ -62,6 +62,9 @@ namespace Fan_Website.Controllers
             if (currentUser == null)
                 return Unauthorized();
 
+            if (currentUser.IsHidden)
+                return BadRequest(new { message = "Hidden accounts cannot post comments." });
+
             var profileUser = await _userService.GetById(dto.ProfileUserId);
             if (profileUser == null)
                 return NotFound(new { message = "Profile not found" });
@@ -119,6 +122,7 @@ namespace Fan_Website.Controllers
 
         // DELETE: api/ProfileComment/{id}
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteComment(int id)
         {
             var currentUser = await _userManager.GetUserAsync(User);
@@ -129,7 +133,7 @@ namespace Fan_Website.Controllers
             if (comment == null)
                 return NotFound();
 
-            if (comment.CommentUser.Id != currentUser.Id)
+            if (comment.CommentUser.Id != currentUser.Id && !User.IsInRole("Admin") && !User.IsInRole("Moderator"))
                 return Forbid();
 
             await _userService.DeleteComment(id);

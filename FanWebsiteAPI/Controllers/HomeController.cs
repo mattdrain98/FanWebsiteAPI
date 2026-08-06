@@ -58,9 +58,10 @@ namespace Fan_Website.Controllers
         {
             if (count <= 0 || count > 50) count = 10;
 
+            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
             var posts = await _postService.GetLatestPosts(count);
 
-            var result = posts.Select(post => new PostDto
+            var result = posts.Where(post => canModerate || !post.User.IsHidden).Select(post => new PostDto
             {
                 PostId = post.PostId,
                 Title = post.Title,
@@ -68,10 +69,10 @@ namespace Fan_Website.Controllers
                 AuthorName = post.User.UserName ?? "Unknown",
                 AuthorId = post.User.Id,
                 AuthorRating = post.User.Rating,
-                AuthorImagePath = post.User.ImagePath,
+                AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
                 TotalLikes = post.TotalLikes,
                 DatePosted = post.UpdatedOn.ToString("yyyy-MM-dd HH:mm"),
-                RepliesCount = post.Replies.Count,
+                RepliesCount = post.Replies.Count(r => canModerate || !r.User.IsHidden),
                 ForumId = post.ForumId,          
                 ForumName = post.Forum.PostTitle  
             });
@@ -85,9 +86,10 @@ namespace Fan_Website.Controllers
         {
             if (count <= 0 || count > 50) count = 5;
 
+            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
             var forums = await _forumService.GetTopForums(count);
 
-            var result = forums.Select(forum => new ForumDto
+            var result = forums.Where(forum => canModerate || !forum.User.IsHidden).Select(forum => new ForumDto
             {
                 ForumId = forum.ForumId,
                 ForumTitle = forum.PostTitle,
@@ -95,9 +97,9 @@ namespace Fan_Website.Controllers
                 AuthorName = forum.User.UserName ?? "Unknown",
                 AuthorId = forum.User.Id,
                 AuthorRating = forum.User.Rating,
-                AuthorImagePath = forum.User.ImagePath,
+                AuthorImagePath = forum.User.IsHidden ? null : forum.User.ImagePath,
                 DatePosted = forum.UpdatedOn.ToString(),
-                PostsCount = forum.Posts?.Count() ?? 0
+                PostsCount = forum.Posts?.Count(p => canModerate || !p.User.IsHidden) ?? 0
             }); 
 
             return Ok(result);
@@ -114,11 +116,12 @@ namespace Fan_Website.Controllers
 
             // NOTE: filtering/ordering should ideally be pushed into the service/DB layer
             // rather than loading 200 posts into memory here
+            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
             var since = DateTime.UtcNow.AddDays(-days);
             var posts = await _postService.GetLatestPosts(200);
 
             var result = posts
-                .Where(p => p.UpdatedOn >= since)
+                .Where(p => p.UpdatedOn >= since && (canModerate || !p.User.IsHidden))
                 .OrderByDescending(p => p.TotalLikes)
                 .Take(count)
                 .Select(post => new PostDto
@@ -129,10 +132,10 @@ namespace Fan_Website.Controllers
                     AuthorName = post.User.UserName ?? "Unknown",
                     AuthorId = post.User.Id,
                     AuthorRating = post.User.Rating,
-                    AuthorImagePath = post.User.ImagePath,
+                    AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
                     TotalLikes = post.TotalLikes,
                     DatePosted = post.UpdatedOn.ToString("yyyy-MM-dd HH:mm"),
-                    RepliesCount = post.Replies.Count,
+                    RepliesCount = post.Replies.Count(r => canModerate || !r.User.IsHidden),
                     ForumId = post.ForumId,
                     ForumName = post.Forum.PostTitle
                 });

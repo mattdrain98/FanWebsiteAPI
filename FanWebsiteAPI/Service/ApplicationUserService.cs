@@ -62,7 +62,12 @@ namespace Fan_Website.Service
 
         public async Task<IEnumerable<ApplicationUser>> GetLatestUsers(int n)
         {
-            return await _context.ApplicationUsers.OrderByDescending(u => u.MemberSince).Take(n).ToListAsync();
+            var users = await _context.ApplicationUsers.OrderByDescending(u => u.MemberSince).Take(n).ToListAsync();
+            foreach (var user in users.Where(u => u.IsHidden))
+            {
+                user.ImagePath = null;
+            }
+            return users;
         }
 
         public async Task<ProfileComment?> GetCommentById(int id)

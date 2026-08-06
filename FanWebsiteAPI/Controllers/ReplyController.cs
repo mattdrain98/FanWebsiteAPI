@@ -62,6 +62,8 @@ namespace Fan_Website.Controllers
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return Unauthorized(new { message = "User not found" });
 
+            if (user.IsHidden) return BadRequest(new { message = "Hidden accounts cannot post replies." });
+
             var post = await _postService.GetById(model.PostId);
             if (post == null) return NotFound(new { message = "Post not found" });
 

@@ -44,6 +44,7 @@ namespace Fan_Website.Controllers
         public async Task<IActionResult> GetProfile(string id)
         {
             var currentUserId = _userManager.GetUserId(User);
+            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
 
             var dto = await _context.Users
                 .Include(u => u.Follows)
@@ -72,7 +73,7 @@ namespace Fan_Website.Controllers
                     {
                         Id = f.Following.Id,
                         UserName = f.Following.UserName ?? "",
-                        ImagePath = f.Following.ImagePath,
+                        ImagePath = f.Following.IsHidden ? null : f.Following.ImagePath,
                         Rating = f.Following.Rating,
                         MemberSince = f.Following.MemberSince.ToString("o")
                     }).ToList(),
@@ -80,20 +81,20 @@ namespace Fan_Website.Controllers
                     {
                         Id = f.Follower.Id,
                         UserName = f.Follower.UserName ?? "",
-                        ImagePath = f.Follower.ImagePath,
+                        ImagePath = f.Follower.IsHidden ? null : f.Follower.ImagePath,
                         Rating = f.Follower.Rating,
                         MemberSince = f.Follower.MemberSince.ToString("o")
                     }).ToList(),
-                    ProfileComments = u.ProfileComments.Select(c => new ProfileCommentDto
+                    ProfileComments = u.ProfileComments.Where(c => canModerate || !c.CommentUser.IsHidden).Select(c => new ProfileCommentDto
                     {
                         Id = c.Id,
                         CommentContent = c.Content,
                         AuthorId = c.CommentUser.Id,
                         AuthorName = c.CommentUser.UserName ?? "",
-                        AuthorImagePath = c.CommentUser.ImagePath,
+                        AuthorImagePath = c.CommentUser.IsHidden ? null : c.CommentUser.ImagePath,
                         AuthorRating = c.CommentUser.Rating,
                         ProfileUserId = c.ProfileUser.Id,
-                        ProfileUserImageUrl = c.ProfileUser.ImagePath,
+                        ProfileUserImageUrl = c.ProfileUser.IsHidden ? null : c.ProfileUser.ImagePath,
                         ProfileUserName = c.ProfileUser.UserName ?? "",
                         ProfileUserRating = c.ProfileUser.Rating,
                         DatePosted = c.UpdatedOn.ToString("o")
@@ -178,7 +179,7 @@ namespace Fan_Website.Controllers
                 {
                     Id = u.Id,
                     UserName = u.UserName ?? "",
-                    ImagePath = u.ImagePath,
+                    ImagePath = u.IsHidden ? null : u.ImagePath,
                     Rating = u.Rating,
                     MemberSince = u.MemberSince.ToString("o")
                 })
@@ -212,7 +213,7 @@ namespace Fan_Website.Controllers
                 {
                     Id = u.Id,
                     UserName = u.UserName ?? "",
-                    ImagePath = u.ImagePath,
+                    ImagePath = u.IsHidden ? null : u.ImagePath,
                     Rating = u.Rating,
                     MemberSince = u.MemberSince.ToString("o")
                 })

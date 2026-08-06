@@ -30,11 +30,22 @@ namespace Fan_Website.Controllers
 
         // GET: api/forum
         [HttpGet]
-        public async Task<IActionResult> GetAllForums()
+        public async Task<IActionResult> GetAllForums([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var forums = await _forumService.GetAll();
+            page = Math.Clamp(page, 1, 100);
+
+            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+            var forums = (await _forumService.GetAll())
+                .Where(forum => canModerate || !forum.User.IsHidden)
+                .OrderByDescending(forum => forum.UpdatedOn)
+                .ToList();
+
+            var totalForums = forums.Count;
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalForums / (double)pageSize));
 
             var result = forums
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(forum => new ForumDto
                 {
                     ForumId = forum.ForumId,
@@ -43,12 +54,13 @@ namespace Fan_Website.Controllers
                     AuthorId = forum.User.Id,
                     AuthorName = forum.User.UserName ?? "Unknown",
                     AuthorRating = forum.User.Rating,
-                    AuthorImagePath = forum.User.ImagePath,
+                    AuthorImagePath = forum.User.IsHidden ? null : forum.User.ImagePath,
                     DatePosted = forum.UpdatedOn.ToString("o"),
-                    PostsCount = forum.Posts.Count()
-                });
+                    PostsCount = forum.Posts.Count(p => canModerate || !p.User.IsHidden)
+                })
+                .ToList();
 
-            return Ok(result);
+            return Ok(new { forums = result, page, totalPages, totalForums });
         }
 
         [HttpGet("{id}")]
@@ -58,10 +70,16 @@ namespace Fan_Website.Controllers
             if (forum == null)
                 return NotFound();
 
+            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+
+            if (forum.User.IsHidden && !canModerate)
+                return NotFound();
+
             page = Math.Clamp(page, 1, 100);
 
             var query = _context.Posts
                 .Where(p => p.ForumId == forum.ForumId &&
+                            (canModerate || !p.User.IsHidden) &&
                             (string.IsNullOrEmpty(searchQuery) || p.Title.Contains(searchQuery)));
 
             var totalPosts = await query.CountAsync();
@@ -73,6 +91,7 @@ namespace Fan_Website.Controllers
                 .Include(p => p.PostImages)
                 .Include(p => p.Likes)
                 .Include(p => p.Replies)
+                    .ThenInclude(r => r.User)
                 .OrderByDescending(p => p.UpdatedOn)
                 .Skip((page - 1) * limit)
                 .Take(limit)
@@ -83,11 +102,11 @@ namespace Fan_Website.Controllers
                     AuthorId = post.User.Id,
                     AuthorName = post.User.UserName ?? "Unknown",
                     AuthorRating = post.User.Rating,
-                    AuthorImagePath = post.User.ImagePath,
+                    AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
                     Content = post.Content,
                     TotalLikes = post.TotalLikes,
                     DatePosted = post.UpdatedOn.ToString(),
-                    RepliesCount = post.Replies.Count,
+                    RepliesCount = post.Replies.Count(r => canModerate || !r.User.IsHidden),
                     ForumId = post.ForumId,
                     ForumName = post.Forum.PostTitle,
                     PostImages = post.PostImages.Select(img => new PostImageDto
@@ -126,6 +145,9 @@ namespace Fan_Website.Controllers
             if (user == null)
                 return Unauthorized(new { message = "User not found" });
 
+            if (user.IsHidden)
+                return BadRequest(new { message = "Hidden accounts cannot create forums." });
+
             var forum = new Forum
             {
                 PostTitle = model.Title,
@@ -147,11 +169,16 @@ namespace Fan_Website.Controllers
 
         // DELETE: api/forum/{id}
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteForum(int id)
         {
             var forum = await _forumService.GetByIdAsync(id);
             if (forum == null)
                 return NotFound();
+
+            var userId = _userManager.GetUserId(User);
+            if (forum.User.Id != userId && !User.IsInRole("Admin") && !User.IsInRole("Moderator"))
+                return Forbid();
 
             await _forumService.Delete(id);
             return NoContent();

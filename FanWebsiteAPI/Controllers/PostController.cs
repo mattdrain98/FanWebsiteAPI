@@ -45,6 +45,9 @@ namespace FanWebsiteAPI.Controllers
                 if (user == null)
                     return Unauthorized(new { message = "User not found" });
 
+                if (user.IsHidden)
+                    return BadRequest(new { message = "Hidden accounts cannot create posts." });
+
                 var forum = await _context.Forums.FindAsync(request.ForumId);
                 if (forum == null)
                     return BadRequest(new { message = "Forum not found" });
@@ -208,6 +211,11 @@ namespace FanWebsiteAPI.Controllers
                 if (post == null)
                     return NotFound(new { message = "Post not found" });
 
+                var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+
+                if (post.User.IsHidden && !canModerate)
+                    return NotFound(new { message = "Post not found" });
+
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var userHasLiked = userId != null && post.Likes?.Any(l => l.User.Id == userId) == true;
 
@@ -220,7 +228,7 @@ namespace FanWebsiteAPI.Controllers
                     AuthorId = post.User.Id,
                     AuthorName = post.User.UserName ?? "Unknown",
                     AuthorRating = post.User.Rating,
-                    AuthorImagePath = post.User.ImagePath,
+                    AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
                     ForumId = post.ForumId,
                     ForumName = post.Forum.PostTitle,
                     TotalLikes = post.TotalLikes,
@@ -234,14 +242,14 @@ namespace FanWebsiteAPI.Controllers
                         }
                     }).ToList(),
                     UserHasLiked = userHasLiked,
-                    Replies = post.Replies?.OrderByDescending(r => r.UpdatedOn).Select(r => new PostReplyDto
+                    Replies = post.Replies?.Where(r => canModerate || !r.User.IsHidden).OrderByDescending(r => r.UpdatedOn).Select(r => new PostReplyDto
                     {
                         Id = r.Id,
                         PostId = post.PostId,
                         AuthorId = r.User.Id,
                         AuthorName = r.User.UserName ?? "Unknown",
                         AuthorRating = r.User.Rating,
-                        AuthorImagePath = r.User.ImagePath,
+                        AuthorImagePath = r.User.IsHidden ? null : r.User.ImagePath,
                         DatePosted = r.UpdatedOn.ToString("o"),
                         ReplyContent = r.ReplyContent
                     }).ToList(),
@@ -269,14 +277,18 @@ namespace FanWebsiteAPI.Controllers
         {
             try
             {
-                var totalPosts = await _context.Posts.CountAsync();
+                var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+
+                var totalPosts = await _context.Posts.CountAsync(p => canModerate || !p.User.IsHidden);
                 var totalPages = Math.Min((int)Math.Ceiling(totalPosts / (double)pageSize), 100);
 
                 var rawPosts = await _context.Posts
                     .Include(p => p.PostImages)
                     .Include(p => p.Likes)
                     .Include(p => p.Replies)
+                        .ThenInclude(r => r.User)
                     .Include(p => p.Forum)
+                    .Where(p => canModerate || !p.User.IsHidden)
                     .OrderByDescending(p => p.TotalLikes)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
@@ -291,10 +303,10 @@ namespace FanWebsiteAPI.Controllers
                     AuthorId = post.User.Id,
                     AuthorName = post.User.UserName ?? "Unknown",
                     AuthorRating = post.User.Rating,
-                    AuthorImagePath = post.User.ImagePath,
+                    AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
                     TotalLikes = post.TotalLikes,
                     DatePosted = post.UpdatedOn.ToString("o"),
-                    RepliesCount = post.Replies.Count,
+                    RepliesCount = post.Replies.Count(r => canModerate || !r.User.IsHidden),
                     ForumId = post.ForumId,
                     ForumName = post.Forum.PostTitle,
                     PostImages = post.PostImages.Select(img => new PostImageDto
@@ -320,14 +332,18 @@ namespace FanWebsiteAPI.Controllers
             {
                 page = Math.Clamp(page, 1, 100);
 
-                var totalPosts = await _context.Posts.CountAsync();
+                var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+
+                var totalPosts = await _context.Posts.CountAsync(p => canModerate || !p.User.IsHidden);
                 var totalPages = Math.Min((int)Math.Ceiling(totalPosts / (double)pageSize), 100);
 
                 var rawPosts = await _context.Posts
                     .Include(p => p.PostImages)
                     .Include(p => p.Likes)
                     .Include(p => p.Replies)
+                        .ThenInclude(r => r.User)
                     .Include(p => p.Forum)
+                    .Where(p => canModerate || !p.User.IsHidden)
                     .OrderByDescending(p => p.UpdatedOn)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
@@ -342,10 +358,10 @@ namespace FanWebsiteAPI.Controllers
                     AuthorId = post.User.Id,
                     AuthorName = post.User.UserName ?? "Unknown",
                     AuthorRating = post.User.Rating,
-                    AuthorImagePath = post.User.ImagePath,
+                    AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
                     TotalLikes = post.TotalLikes,
-                    DatePosted = post.UpdatedOn.ToString("o"), 
-                    RepliesCount = post.Replies.Count,
+                    DatePosted = post.UpdatedOn.ToString("o"),
+                    RepliesCount = post.Replies.Count(r => canModerate || !r.User.IsHidden),
                     ForumId = post.ForumId,
                     ForumName = post.Forum.PostTitle,
                     PostImages = post.PostImages.Select(img => new PostImageDto
@@ -481,15 +497,18 @@ namespace FanWebsiteAPI.Controllers
 
                 page = Math.Clamp(page, 1, 100);
 
-                var totalLikedPosts = await _context.Likes.CountAsync(l => l.User.Id == userId);
+                var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+
+                var totalLikedPosts = await _context.Likes.CountAsync(l => l.User.Id == userId && (canModerate || !l.Post.User.IsHidden));
                 var totalPages = Math.Min((int)Math.Ceiling(totalLikedPosts / (double)pageSize), 100);
 
                 var rawPosts = await _context.Posts
                     .Include(p => p.PostImages)
                     .Include(p => p.Replies)
+                        .ThenInclude(r => r.User)
                     .Include(p => p.Forum)
                     .OrderByDescending(p => p.UpdatedOn)
-                    .Where(p => p.Likes.Any(l => l.User.Id == userId))
+                    .Where(p => p.Likes.Any(l => l.User.Id == userId) && (canModerate || !p.User.IsHidden))
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .Include(p => p.User)
@@ -503,10 +522,10 @@ namespace FanWebsiteAPI.Controllers
                     AuthorId = post.User.Id,
                     AuthorName = post.User.UserName ?? "Unknown",
                     AuthorRating = post.User.Rating,
-                    AuthorImagePath = post.User.ImagePath,
+                    AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
                     TotalLikes = post.TotalLikes,
                     DatePosted = post.UpdatedOn.ToString("o"), 
-                    RepliesCount = post.Replies.Count,
+                    RepliesCount = post.Replies.Count(r => canModerate || !r.User.IsHidden),
                     ForumId = post.ForumId,
                     ForumName = post.Forum.PostTitle,
                     PostImages = post.PostImages.Select(img => new PostImageDto
@@ -537,6 +556,8 @@ namespace FanWebsiteAPI.Controllers
 
                 page = Math.Clamp(page, 1, 100);
 
+                var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+
                 var totalUserPosts = await _context.Posts.CountAsync(p => p.User.Id == userId);
                 var totalPages = Math.Min((int)Math.Ceiling(totalUserPosts / (double)pageSize), 100);
 
@@ -544,6 +565,7 @@ namespace FanWebsiteAPI.Controllers
                     .Include(p => p.PostImages)
                     .Include(p => p.Likes)
                     .Include(p => p.Replies)
+                        .ThenInclude(r => r.User)
                     .Include(p => p.Forum)
                     .OrderByDescending(p => p.UpdatedOn)
                     .Where(p => p.User.Id == userId)
@@ -560,10 +582,10 @@ namespace FanWebsiteAPI.Controllers
                     AuthorId = post.User.Id,
                     AuthorName = post.User.UserName ?? "Unknown",
                     AuthorRating = post.User.Rating,
-                    AuthorImagePath = post.User.ImagePath,
+                    AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
                     TotalLikes = post.TotalLikes,
                     DatePosted = post.UpdatedOn.ToString("o"), 
-                    RepliesCount = post.Replies.Count,
+                    RepliesCount = post.Replies.Count(r => canModerate || !r.User.IsHidden),
                     ForumId = post.ForumId,
                     ForumName = post.Forum.PostTitle,
                     PostImages = post.PostImages.Select(img => new PostImageDto

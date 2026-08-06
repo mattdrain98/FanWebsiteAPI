@@ -28,7 +28,10 @@ namespace Fan_Website.Controllers
 
             page = Math.Clamp(page, 1, 100);
 
-            var allPosts = (await _postService.GetFilteredPosts(query)).ToList();
+            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+            var allPosts = (await _postService.GetFilteredPosts(query))
+                .Where(p => canModerate || !p.User.IsHidden)
+                .ToList();
             var totalPosts = allPosts.Count;
             var totalPages = Math.Min((int)Math.Ceiling(totalPosts / (double)pageSize), 100);
 
@@ -43,7 +46,7 @@ namespace Fan_Website.Controllers
                 AuthorId = post.User.Id,
                 AuthorName = post.User.UserName ?? "Unknown",
                 AuthorRating = post.User.Rating,
-                AuthorImagePath = post.User.ImagePath,
+                AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
                 Content = post.Content,
                 TotalLikes = post.TotalLikes,
                 DatePosted = post.UpdatedOn.ToString(),

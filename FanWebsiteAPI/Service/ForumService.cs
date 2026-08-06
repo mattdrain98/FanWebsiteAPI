@@ -31,6 +31,7 @@ namespace Fan_Website.Service
             return await _context.Forums
                 .Include(forum => forum.User)
                 .Include(forum => forum.Posts)
+                    .ThenInclude(p => p.User)
                 .ToListAsync();
         }
 
@@ -55,6 +56,7 @@ namespace Fan_Website.Service
             return await _context.Forums
                 .Include(f => f.User)
                 .Include(f => f.Posts)
+                    .ThenInclude(p => p.User)
                 .OrderByDescending(f => f.Posts.Count())
                 .Take(n)
                 .ToListAsync();

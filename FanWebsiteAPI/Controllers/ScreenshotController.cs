@@ -35,11 +35,20 @@ namespace Fan_Website.Controllers
 
         // GET: api/screenshot
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ScreenshotDto>>> GetAllScreenshots()
+        public async Task<IActionResult> GetAllScreenshots([FromQuery] int page = 1, [FromQuery] int pageSize = 12)
         {
-            var screenshots = await _screenshotService.GetAll(); 
+            page = Math.Clamp(page, 1, 100);
+
+            var screenshots = (await _screenshotService.GetAll())
+                .OrderByDescending(s => s.UpdatedOn)
+                .ToList();
+
+            var totalScreenshots = screenshots.Count;
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalScreenshots / (double)pageSize));
 
             var result = screenshots
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(s => new ScreenshotDto
                 {
                     Id = s.ScreenshotId,
@@ -48,13 +57,13 @@ namespace Fan_Website.Controllers
                     AuthorId = s.User.Id,
                     AuthorName = s.User.UserName,
                     AuthorRating = s.User.Rating,
-                    AuthorImagePath = s.User.ImagePath,
+                    AuthorImagePath = s.User.IsHidden ? null : s.User.ImagePath,
                     DatePosted = s.UpdatedOn.ToString("o"),
                     ImageUrl = s.ImagePath,
                     Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
                 }).ToList();
 
-            return Ok(result);
+            return Ok(new { screenshots = result, page, totalPages, totalScreenshots });
         }
 
         // GET: api/screenshot/user
@@ -89,6 +98,8 @@ namespace Fan_Website.Controllers
             var userId = _userManager.GetUserId(User);
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return Unauthorized("User not found");
+
+            if (user.IsHidden) return BadRequest(new { message = "Hidden accounts cannot post screenshots." });
 
             var imageUri = model.ImageFile != null
                 ? await UploadScreenshotImageAsync(model.ImageFile)
