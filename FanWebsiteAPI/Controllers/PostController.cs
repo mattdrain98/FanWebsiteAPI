@@ -269,9 +269,6 @@ namespace FanWebsiteAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Get top posts by likes
-        /// </summary>
         [HttpGet("top")]
         public async Task<IActionResult> GetTopPosts([FromQuery] int page = 1, [FromQuery] int pageSize = 6)
         {

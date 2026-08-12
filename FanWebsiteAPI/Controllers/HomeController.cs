@@ -114,8 +114,6 @@ namespace Fan_Website.Controllers
             if (count <= 0 || count > 50) count = 5;
             if (days <= 0 || days > 365) days = 7;
 
-            // NOTE: filtering/ordering should ideally be pushed into the service/DB layer
-            // rather than loading 200 posts into memory here
             var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
             var since = DateTime.UtcNow.AddDays(-days);
             var posts = await _postService.GetLatestPosts(200);
