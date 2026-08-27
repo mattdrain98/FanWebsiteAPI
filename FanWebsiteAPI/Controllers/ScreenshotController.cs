@@ -39,7 +39,9 @@ namespace Fan_Website.Controllers
         {
             page = Math.Clamp(page, 1, 100);
 
+            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
             var screenshots = (await _screenshotService.GetAll())
+                .Where(s => canModerate || !s.User.IsHidden)
                 .OrderByDescending(s => s.UpdatedOn)
                 .ToList();
 
