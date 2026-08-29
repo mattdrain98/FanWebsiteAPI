@@ -18,7 +18,7 @@ namespace FanWebsiteAPI.Service
             _userManager = userManager;
         }
 
-        public async Task<string> GenerateToken(ApplicationUser user)
+        public async Task<string> GenerateToken(ApplicationUser user, bool rememberMe = false)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -33,11 +33,15 @@ namespace FanWebsiteAPI.Service
             var roles = await _userManager.GetRolesAsync(user);
             claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
+            var expiry = rememberMe
+                ? DateTime.UtcNow.AddDays(30)
+                : DateTime.UtcNow.AddHours(24);
+
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(24),
+                expires: expiry,
                 signingCredentials: credentials
             );
 
