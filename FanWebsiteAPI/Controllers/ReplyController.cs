@@ -26,6 +26,27 @@ namespace Fan_Website.Controllers
             _notificationService = notificationService; 
         }
 
+        // GET: api/reply/{id}
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetReply(int id)
+        {
+            var reply = await _postService.GetReplyByIdAsync(id);
+            if (reply == null) return NotFound();
+
+            return Ok(new
+            {
+                id = reply.Id,
+                replyContent = reply.ReplyContent,
+                datePosted = reply.UpdatedOn,
+                authorId = reply.User.Id,
+                authorName = reply.User.UserName,
+                authorImagePath = reply.User.ImagePath,
+                authorRating = reply.User.Rating,
+                postId = reply.Post.PostId,
+                postTitle = reply.Post.Title
+            });
+        }
+
         // GET: api/reply/create/5
         [HttpGet("create/{postId}")]
         public async Task<ActionResult<PostReplyDto>> GetReplyModel(int postId)
