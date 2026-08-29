@@ -4,6 +4,7 @@ using Fan_Website.Models.ProfileComment;
 using FanWebsiteAPI.Infrastructure.Converters;
 using FanWebsiteAPI.Models.Notification;
 using FanWebsiteAPI.Models.Posts;
+using FanWebsiteAPI.Models.Report;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +26,7 @@ namespace Fan_Website
         public DbSet<Follow> Follows { get; set; }
         public DbSet<ProfileComment> ProfileComments { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Report> Reports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -69,7 +71,25 @@ namespace Fan_Website
             modelBuilder.Entity<PostImage>()
                 .HasOne(i => i.Post)
                 .WithMany(p => p.PostImages)
-                .OnDelete(DeleteBehavior.Cascade); 
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Report>()
+                .HasOne(r => r.Reporter)
+                .WithMany()
+                .HasForeignKey(r => r.ReporterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Report>()
+                .HasOne(r => r.TargetUser)
+                .WithMany()
+                .HasForeignKey(r => r.TargetUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Report>()
+                .HasOne(r => r.ReviewedBy)
+                .WithMany()
+                .HasForeignKey(r => r.ReviewedById)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         protected override void ConfigureConventions(ModelConfigurationBuilder builder)
