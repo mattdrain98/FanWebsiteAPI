@@ -68,6 +68,28 @@ namespace Fan_Website.Controllers
             return Ok(new { screenshots = result, page, totalPages, totalScreenshots });
         }
 
+        // GET: api/screenshot/{id}
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetScreenshot(int id)
+        {
+            var s = await _screenshotService.GetById(id);
+            if (s == null) return NotFound();
+
+            return Ok(new ScreenshotDto
+            {
+                Id = s.ScreenshotId,
+                Title = s.ScreenshotTitle,
+                Content = s.ScreenshotDescription,
+                AuthorId = s.User.Id,
+                AuthorName = s.User.UserName,
+                AuthorRating = s.User.Rating,
+                AuthorImagePath = s.User.ImagePath,
+                DatePosted = s.UpdatedOn.ToString("o"),
+                ImageUrl = s.ImagePath,
+                Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
+            });
+        }
+
         // GET: api/screenshot/user
         [HttpGet("user")]
         public async Task<ActionResult<IEnumerable<ScreenshotDto>>> GetUserScreenshots()
