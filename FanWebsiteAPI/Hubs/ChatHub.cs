@@ -35,7 +35,10 @@ namespace FanWebsiteAPI.Hubs
                     m.UserName,
                     m.UserImagePath,
                     m.Content,
-                    m.CreatedAt
+                    m.CreatedAt,
+                    m.ReplyToMessageId,
+                    m.ReplyToUserName,
+                    m.ReplyToContent
                 })
                 .ToListAsync();
 
@@ -47,7 +50,18 @@ namespace FanWebsiteAPI.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, RoomKey(forumId));
         }
 
-        public async Task SendMessage(int forumId, string content)
+        // Ephemeral — nothing persisted. Username comes straight off the JWT claim
+        // so this never touches the database, safe to call on every keystroke.
+        public Task Typing(int forumId)
+        {
+            var userId = _userManager.GetUserId(Context.User);
+            var userName = Context.User?.Identity?.Name;
+            if (userId == null || userName == null) return Task.CompletedTask;
+
+            return Clients.OthersInGroup(RoomKey(forumId)).SendAsync("UserTyping", new { userId, userName });
+        }
+
+        public async Task SendMessage(int forumId, string content, int? replyToMessageId = null)
         {
             content = content.Trim();
             if (string.IsNullOrEmpty(content) || content.Length > 500) return;
@@ -58,6 +72,20 @@ namespace FanWebsiteAPI.Hubs
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return;
 
+            string? replyToUserName = null;
+            string? replyToContent = null;
+            if (replyToMessageId.HasValue)
+            {
+                var parent = await _context.ChatMessages
+                    .Where(m => m.Id == replyToMessageId.Value && m.ForumId == forumId)
+                    .FirstOrDefaultAsync();
+                if (parent != null)
+                {
+                    replyToUserName = parent.UserName;
+                    replyToContent = parent.Content.Length > 120 ? parent.Content[..120] : parent.Content;
+                }
+            }
+
             var message = new ChatMessage
             {
                 ForumId = forumId,
@@ -65,7 +93,10 @@ namespace FanWebsiteAPI.Hubs
                 UserName = user.UserName ?? userId,
                 UserImagePath = user.ImagePath,
                 Content = content,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                ReplyToMessageId = replyToUserName != null ? replyToMessageId : null,
+                ReplyToUserName = replyToUserName,
+                ReplyToContent = replyToContent
             };
 
             _context.ChatMessages.Add(message);
@@ -78,7 +109,10 @@ namespace FanWebsiteAPI.Hubs
                 message.UserName,
                 message.UserImagePath,
                 message.Content,
-                message.CreatedAt
+                message.CreatedAt,
+                message.ReplyToMessageId,
+                message.ReplyToUserName,
+                message.ReplyToContent
             });
         }
 

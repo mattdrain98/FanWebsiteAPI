@@ -117,7 +117,11 @@ if (!string.IsNullOrEmpty(storageConnection))
         .SetApplicationName("FanWebsiteAPI");
 }
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    if (builder.Environment.IsDevelopment())
+        options.EnableDetailedErrors = true;
+});
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
