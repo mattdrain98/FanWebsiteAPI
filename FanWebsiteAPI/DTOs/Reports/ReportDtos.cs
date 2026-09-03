@@ -27,6 +27,7 @@ namespace FanWebsiteAPI.DTOs.Reports
         public string? ReviewNote { get; set; }
         public DateTime? ReviewedAt { get; set; }
         public string? ReviewedByName { get; set; }
+        public string? ContentPreview { get; set; }
     }
 
     public class ReviewReportDto

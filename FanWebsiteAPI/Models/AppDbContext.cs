@@ -4,6 +4,7 @@ using Fan_Website.Models.ProfileComment;
 using FanWebsiteAPI.Infrastructure.Converters;
 using FanWebsiteAPI.Models.Notification;
 using FanWebsiteAPI.Models.Posts;
+using FanWebsiteAPI.Models.Chat;
 using FanWebsiteAPI.Models.Report;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ namespace Fan_Website
         public DbSet<ProfileComment> ProfileComments { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Report> Reports { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

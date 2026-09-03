@@ -171,4 +171,5 @@ app.UseAuthorization();
 app.UseStaticFiles();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
+app.MapHub<ChatHub>("/hubs/chat");
 app.Run();

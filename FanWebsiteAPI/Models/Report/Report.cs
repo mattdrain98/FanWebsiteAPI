@@ -6,7 +6,8 @@ namespace FanWebsiteAPI.Models.Report
         Reply,
         Screenshot,
         ProfileComment,
-        User
+        User,
+        ChatMessage
     }
 
     public enum ReportStatus

@@ -109,6 +109,23 @@ namespace FanWebsiteAPI.Controllers
                 })
                 .ToListAsync();
 
+            // Populate chat message previews in a single follow-up query
+            var chatIds = reports
+                .Where(r => r.ContentType == "ChatMessage" && r.ContentId.HasValue)
+                .Select(r => r.ContentId!.Value)
+                .ToList();
+
+            if (chatIds.Count > 0)
+            {
+                var chatContents = await _context.ChatMessages
+                    .Where(m => chatIds.Contains(m.Id))
+                    .Select(m => new { m.Id, m.Content })
+                    .ToDictionaryAsync(m => m.Id, m => m.Content);
+
+                foreach (var r in reports.Where(r => r.ContentType == "ChatMessage" && r.ContentId.HasValue))
+                    r.ContentPreview = chatContents.GetValueOrDefault(r.ContentId!.Value);
+            }
+
             return Ok(new { reports, total, page, totalPages = (int)Math.Ceiling((double)total / pageSize) });
         }
 
