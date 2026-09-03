@@ -14,6 +14,7 @@ using Microsoft.Extensions.Azure;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System.Text;
+using System.Text.Json;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -121,6 +122,10 @@ builder.Services.AddSignalR(options =>
 {
     if (builder.Environment.IsDevelopment())
         options.EnableDetailedErrors = true;
+})
+.AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 });
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
