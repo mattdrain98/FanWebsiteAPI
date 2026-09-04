@@ -29,6 +29,7 @@ namespace Fan_Website
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Report> Reports { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<ChatParticipant> ChatParticipants { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -59,6 +60,10 @@ namespace Fan_Website
                 .WithMany(f => f.Posts)
                 .HasForeignKey(p => p.ForumId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ChatParticipant>()
+                .HasIndex(p => new { p.ForumId, p.UserId })
+                .IsUnique();
 
             modelBuilder.Entity<Like>()
                 .HasOne(l => l.Post)

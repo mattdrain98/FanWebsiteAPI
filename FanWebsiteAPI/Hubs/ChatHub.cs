@@ -23,26 +23,34 @@ namespace FanWebsiteAPI.Hubs
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, RoomKey(forumId));
 
+            // UserImagePath is joined live off the user's current avatar rather than read
+            // from ChatMessage's stored column, so history reflects profile picture
+            // changes instead of freezing whatever avatar was set at send time.
             var history = await _context.ChatMessages
                 .Where(m => m.ForumId == forumId && !m.IsDeleted)
-                .OrderByDescending(m => m.CreatedAt)
+                .Join(_context.Users, m => m.UserId, u => u.Id, (m, u) => new { m, u.ImagePath })
+                .OrderByDescending(x => x.m.CreatedAt)
                 .Take(50)
-                .OrderBy(m => m.CreatedAt)
-                .Select(m => new
+                .OrderBy(x => x.m.CreatedAt)
+                .Select(x => new
                 {
-                    m.Id,
-                    m.UserId,
-                    m.UserName,
-                    m.UserImagePath,
-                    m.Content,
-                    m.CreatedAt,
-                    m.ReplyToMessageId,
-                    m.ReplyToUserName,
-                    m.ReplyToContent
+                    x.m.Id,
+                    x.m.UserId,
+                    x.m.UserName,
+                    UserImagePath = x.ImagePath,
+                    x.m.Content,
+                    x.m.CreatedAt,
+                    x.m.ReplyToMessageId,
+                    x.m.ReplyToUserName,
+                    x.m.ReplyToContent,
+                    x.m.IsSystem
                 })
                 .ToListAsync();
 
             await Clients.Caller.SendAsync("LoadHistory", history);
+
+            var memberCount = await _context.ChatParticipants.CountAsync(p => p.ForumId == forumId);
+            await Clients.Caller.SendAsync("ParticipantCount", memberCount);
         }
 
         public async Task LeaveRoom(int forumId)
@@ -71,6 +79,12 @@ namespace FanWebsiteAPI.Hubs
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return;
+
+            // Enforce the "Join" gate server-side, not just in the UI — messages only
+            // count toward notification targeting for users who've actually opted in.
+            var hasJoined = await _context.ChatParticipants
+                .AnyAsync(p => p.ForumId == forumId && p.UserId == userId);
+            if (!hasJoined) return;
 
             string? replyToUserName = null;
             string? replyToContent = null;
@@ -112,7 +126,8 @@ namespace FanWebsiteAPI.Hubs
                 message.CreatedAt,
                 message.ReplyToMessageId,
                 message.ReplyToUserName,
-                message.ReplyToContent
+                message.ReplyToContent,
+                message.IsSystem
             });
         }
 

@@ -11,6 +11,11 @@ namespace FanWebsiteAPI.Models.Chat
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public bool IsDeleted { get; set; } = false;
 
+        // Join/leave notices ("X joined the chat"), persisted as real rows (instead of
+        // an ephemeral SignalR-only event) so they survive reconnects and reappear in
+        // history the same way real messages do.
+        public bool IsSystem { get; set; } = false;
+
         // Denormalized reply-to snapshot, captured at send time (same pattern as
         // UserName/UserImagePath above) so a quoted preview still renders correctly
         // even if the original message is later deleted or its author changes name.
