@@ -97,7 +97,8 @@ builder.Services.AddScoped<IPost, PostService>();
 builder.Services.AddScoped<IApplicationUser, ApplicationUserService>();
 builder.Services.AddScoped<IUpload, UploadService>();
 builder.Services.AddScoped<IScreenshot, ScreenshotService>();
-builder.Services.AddScoped<INotificationService, NotificationService>(); 
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSingleton<FanWebsiteAPI.Infrastructure.PresenceTracker>();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddHttpClient();
 
