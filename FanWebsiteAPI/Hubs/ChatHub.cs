@@ -1,4 +1,5 @@
 using Fan_Website;
+using FanWebsiteAPI.Infrastructure;
 using FanWebsiteAPI.Models.Chat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -12,11 +13,13 @@ namespace FanWebsiteAPI.Hubs
     {
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly INotificationService _notificationService;
 
-        public ChatHub(AppDbContext context, UserManager<ApplicationUser> userManager)
+        public ChatHub(AppDbContext context, UserManager<ApplicationUser> userManager, INotificationService notificationService)
         {
             _context = context;
             _userManager = userManager;
+            _notificationService = notificationService;
         }
 
         public async Task JoinRoom(int forumId)
@@ -80,8 +83,6 @@ namespace FanWebsiteAPI.Hubs
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return;
 
-            // Enforce the "Join" gate server-side, not just in the UI — messages only
-            // count toward notification targeting for users who've actually opted in.
             var hasJoined = await _context.ChatParticipants
                 .AnyAsync(p => p.ForumId == forumId && p.UserId == userId);
             if (!hasJoined) return;
@@ -129,6 +130,37 @@ namespace FanWebsiteAPI.Hubs
                 message.ReplyToContent,
                 message.IsSystem
             });
+
+            await NotifyOtherParticipants(forumId, userId, user.UserName ?? userId, content);
+        }
+
+        // Notifies everyone who's joined this forum's chat (except the sender) via the
+        // same channel used for follows/etc. — an in-app bell entry plus a push notification
+        // through the user's stored Expo token, so a message still reaches someone with the
+        // app closed. Joining the chat is what opts a user into this (see the "Join to send
+        // messages and get notified" prompt client-side).
+        private async Task NotifyOtherParticipants(int forumId, string senderId, string senderName, string content)
+        {
+            var recipientIds = await _context.ChatParticipants
+                .Where(p => p.ForumId == forumId && p.UserId != senderId)
+                .Select(p => p.UserId)
+                .ToListAsync();
+
+            if (recipientIds.Count == 0) return;
+
+            var forumName = await _context.Forums
+                .Where(f => f.ForumId == forumId)
+                .Select(f => f.PostTitle)
+                .FirstOrDefaultAsync() ?? "a forum";
+
+            var preview = content.Length > 120 ? content[..120] + "…" : content;
+            var message = $"{senderName} in {forumName} chat: {preview}";
+            var link = $"/forum/{forumId}";
+
+            foreach (var recipientId in recipientIds)
+            {
+                await _notificationService.CreateAsync(recipientId, message, "chat", link);
+            }
         }
 
         private static string RoomKey(int forumId) => $"forum-{forumId}";

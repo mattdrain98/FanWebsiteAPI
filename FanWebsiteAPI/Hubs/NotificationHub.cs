@@ -14,9 +14,6 @@ namespace FanWebsiteAPI.Hubs
             _presence = presence;
         }
 
-        // This connection is established for the app's whole foreground lifetime (see
-        // NotificationProvider on the client), not just while viewing a specific forum's
-        // chat — makes it the right signal for general "is this user online" presence.
         public override async Task OnConnectedAsync()
         {
             var userId = Context.UserIdentifier;
