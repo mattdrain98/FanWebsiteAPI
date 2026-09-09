@@ -3,6 +3,7 @@ using FanWebsiteAPI.Hubs;
 using FanWebsiteAPI.Infrastructure;
 using FanWebsiteAPI.Models.Notification;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.Json;
 
@@ -45,9 +46,14 @@ namespace FanWebsiteAPI.Service
                 CreatedOn = notification.CreatedOn.ToString("o")
             });
 
-            // Send Expo push notification for background delivery
-            var user = await _context.Users.FindAsync(userId);
-            var pushToken = user?.ExpoPushToken;
+            // Send Expo push notification for background delivery — projected straight to
+            // the one column needed, untracked, instead of loading (and tracking) the
+            // whole ApplicationUser row via Find.
+            var pushToken = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.Id == userId)
+                .Select(u => u.ExpoPushToken)
+                .FirstOrDefaultAsync();
             if (!string.IsNullOrEmpty(pushToken))
             {
                 try

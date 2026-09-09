@@ -47,6 +47,7 @@ namespace Fan_Website.Controllers
             var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
 
             var dto = await _context.Users
+                .AsNoTracking()
                 .Include(u => u.Follows)
                     .ThenInclude(f => f.Follower)
                 .Include(u => u.Followings)
@@ -132,6 +133,7 @@ namespace Fan_Website.Controllers
             if (user == null || currentUser == null) return NotFound();
 
             var existingFollow = _context.Set<Follow>()
+                .AsNoTracking()
                 .FirstOrDefault(f => f.Follower.Id == currentUserId && f.Following.Id == id);
 
             if (existingFollow != null)
@@ -169,11 +171,13 @@ namespace Fan_Website.Controllers
         public async Task<IActionResult> GetFollowers(string id)
         {
             var followerIds = await _context.Set<Follow>()
+                .AsNoTracking()
                 .Where(f => f.Following.Id == id)
                 .Select(f => f.Follower.Id)
                 .ToListAsync();
 
             var followers = await _context.Users
+                .AsNoTracking()
                 .Where(u => followerIds.Contains(u.Id))
                 .Select(u => new FollowDto
                 {
@@ -186,6 +190,7 @@ namespace Fan_Website.Controllers
                 .ToListAsync();
 
             var userName = await _context.Users
+                .AsNoTracking()
                 .Where(u => u.Id == id)
                 .Select(u => u.UserName)
                 .FirstOrDefaultAsync();
@@ -203,11 +208,13 @@ namespace Fan_Website.Controllers
         public async Task<IActionResult> GetFollowing(string id)
         {
             var followingIds = await _context.Set<Follow>()
+                .AsNoTracking()
                 .Where(f => f.Follower.Id == id)
                 .Select(f => f.Following.Id)
                 .ToListAsync();
 
             var following = await _context.Users
+                .AsNoTracking()
                 .Where(u => followingIds.Contains(u.Id))
                 .Select(u => new FollowDto
                 {
@@ -220,6 +227,7 @@ namespace Fan_Website.Controllers
                 .ToListAsync();
 
             var userName = await _context.Users
+                .AsNoTracking()
                 .Where(u => u.Id == id)
                 .Select(u => u.UserName)
                 .FirstOrDefaultAsync();

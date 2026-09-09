@@ -26,40 +26,26 @@ namespace Fan_Website.Service
             await _context.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<Forum>> GetAll()
+        public IQueryable<Forum> Query()
         {
-            return await _context.Forums
-                .Include(forum => forum.User)
-                .Include(forum => forum.Posts)
-                    .ThenInclude(p => p.User)
-                .ToListAsync();
+            return _context.Forums.AsNoTracking();
         }
 
         public Forum GetById(int id)
         {
-            throw new NotImplementedException();
+            return _context.Forums.AsNoTracking().Where(f => f.ForumId == id).FirstOrDefault(); 
         }
 
         public async Task<Forum> GetByIdAsync(int id)
         {
             return await _context.Forums
+                .AsNoTracking()
                 .Include(f => f.User)
                 .Include(f => f.Posts)
                     .ThenInclude(p => p.User)
                 .Include(f => f.Posts)
                     .ThenInclude(p => p.Replies).ThenInclude(r => r.User)
                 .FirstOrDefaultAsync(f => f.ForumId == id);
-        }
-
-        public async Task<IEnumerable<Forum>> GetTopForums(int n)
-        {
-            return await _context.Forums
-                .Include(f => f.User)
-                .Include(f => f.Posts)
-                    .ThenInclude(p => p.User)
-                .OrderByDescending(f => f.Posts.Count())
-                .Take(n)
-                .ToListAsync();
         }
 
         public async Task UpdateForumDescription(int id, string newDescription)

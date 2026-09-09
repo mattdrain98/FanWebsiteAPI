@@ -80,6 +80,7 @@ namespace FanWebsiteAPI.Controllers
                 : ReportStatus.Pending;
 
             var query = _context.Reports
+                .AsNoTracking()
                 .Include(r => r.Reporter)
                 .Include(r => r.TargetUser)
                 .Include(r => r.ReviewedBy)

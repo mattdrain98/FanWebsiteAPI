@@ -24,6 +24,7 @@ public class NotificationsController : ControllerBase
     {
         var userId = _userManager.GetUserId(User);
         var notifications = await _context.Notifications
+            .AsNoTracking()
             .Where(n => n.UserId == userId)
             .OrderByDescending(n => n.CreatedOn)
             .Take(50)
@@ -81,6 +82,7 @@ public class NotificationsController : ControllerBase
     {
         var userId = _userManager.GetUserId(User);
         var notification = await _context.Notifications
+            .AsNoTracking()
             .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
         if (notification == null) return NotFound();
         _context.Notifications.Remove(notification);

@@ -29,9 +29,9 @@ namespace Fan_Website.Service
             }
         }
 
-        public async Task<IEnumerable<Screenshot>> GetAll()
+        public IQueryable<Screenshot> Query()
         {
-            return await _context.Screenshots.Include(screenshot => screenshot.User).ToListAsync(); 
+            return _context.Screenshots.AsNoTracking();
         }
 
         public async Task<IEnumerable<ApplicationUser>> GetAllUsers()
@@ -41,7 +41,10 @@ namespace Fan_Website.Service
 
         public async Task<Screenshot?> GetById(int id)
         {
+            // Safe to no-track: Delete/SetScreenshotImage explicitly call _context.Remove/
+            // Update before saving, which re-attaches regardless of tracking state.
             return await _context.Screenshots
+                .AsNoTracking()
                 .Include(screenshot => screenshot.User)
                 .FirstOrDefaultAsync(screenshot => screenshot.ScreenshotId == id);
         }

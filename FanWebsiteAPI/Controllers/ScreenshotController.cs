@@ -2,6 +2,7 @@
 using FanWebsiteAPI.DTOs.Screenshots;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace Fan_Website.Controllers
@@ -40,15 +41,14 @@ namespace Fan_Website.Controllers
             page = Math.Clamp(page, 1, 100);
 
             var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
-            var screenshots = (await _screenshotService.GetAll())
-                .Where(s => canModerate || !s.User.IsHidden)
-                .OrderByDescending(s => s.UpdatedOn)
-                .ToList();
+            var query = _screenshotService.Query()
+                .Where(s => canModerate || !s.User.IsHidden);
 
-            var totalScreenshots = screenshots.Count;
+            var totalScreenshots = await query.CountAsync();
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalScreenshots / (double)pageSize));
 
-            var result = screenshots
+            var result = await query
+                .OrderByDescending(s => s.UpdatedOn)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(s => new ScreenshotDto
@@ -62,8 +62,8 @@ namespace Fan_Website.Controllers
                     AuthorImagePath = s.User.IsHidden ? null : s.User.ImagePath,
                     DatePosted = s.UpdatedOn.ToString("o"),
                     ImageUrl = s.ImagePath,
-                    Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
-                }).ToList();
+                    Slug = s.ScreenshotTitle.Replace(' ', '-').ToLower()
+                }).ToListAsync();
 
             return Ok(new { screenshots = result, page, totalPages, totalScreenshots });
         }
@@ -95,9 +95,7 @@ namespace Fan_Website.Controllers
         public async Task<ActionResult<IEnumerable<ScreenshotDto>>> GetUserScreenshots()
         {
             var userId = _userManager.GetUserId(User);
-            var screenshots = await _screenshotService.GetAll(); 
-
-            var result = screenshots
+            var result = await _screenshotService.Query()
                 .Where(s => s.User.Id == userId)
                 .Select(s => new ScreenshotDto
                 {
@@ -109,8 +107,8 @@ namespace Fan_Website.Controllers
                     AuthorRating = s.User.Rating,
                     DatePosted = s.UpdatedOn.ToString("o"),
                     ImageUrl = s.ImagePath,
-                    Slug = s.ScreenshotTitle?.Replace(' ', '-').ToLower() ?? ""
-                }).ToList();
+                    Slug = s.ScreenshotTitle.Replace(' ', '-').ToLower()
+                }).ToListAsync();
 
             return Ok(result);
         }

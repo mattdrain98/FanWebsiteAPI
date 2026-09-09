@@ -199,6 +199,7 @@ namespace FanWebsiteAPI.Controllers
             try
             {
                 var post = await _context.Posts
+                    .AsNoTracking()
                     .Include(p => p.User)
                     .Include(p => p.Forum)
                     .Include(p => p.PostImages)
@@ -280,6 +281,7 @@ namespace FanWebsiteAPI.Controllers
                 var totalPages = Math.Min((int)Math.Ceiling(totalPosts / (double)pageSize), 100);
 
                 var rawPosts = await _context.Posts
+                    .AsNoTracking()
                     .Include(p => p.PostImages)
                     .Include(p => p.Likes)
                     .Include(p => p.Replies)
@@ -335,6 +337,7 @@ namespace FanWebsiteAPI.Controllers
                 var totalPages = Math.Min((int)Math.Ceiling(totalPosts / (double)pageSize), 100);
 
                 var rawPosts = await _context.Posts
+                    .AsNoTracking()
                     .Include(p => p.PostImages)
                     .Include(p => p.Likes)
                     .Include(p => p.Replies)
@@ -388,6 +391,7 @@ namespace FanWebsiteAPI.Controllers
                     return Unauthorized(new { message = "User not found" });
 
                 var post = await _context.Posts
+                    .AsNoTracking()
                     .Include(p => p.User)
                     .Include(p => p.PostImages)
                     .Include(p => p.Likes)
@@ -500,6 +504,7 @@ namespace FanWebsiteAPI.Controllers
                 var totalPages = Math.Min((int)Math.Ceiling(totalLikedPosts / (double)pageSize), 100);
 
                 var rawPosts = await _context.Posts
+                    .AsNoTracking()
                     .Include(p => p.PostImages)
                     .Include(p => p.Replies)
                         .ThenInclude(r => r.User)
@@ -559,6 +564,7 @@ namespace FanWebsiteAPI.Controllers
                 var totalPages = Math.Min((int)Math.Ceiling(totalUserPosts / (double)pageSize), 100);
 
                 var rawPosts = await _context.Posts
+                    .AsNoTracking()
                     .Include(p => p.PostImages)
                     .Include(p => p.Likes)
                     .Include(p => p.Replies)

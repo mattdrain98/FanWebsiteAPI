@@ -30,6 +30,7 @@ namespace FanWebsiteAPI.Hubs
             // from ChatMessage's stored column, so history reflects profile picture
             // changes instead of freezing whatever avatar was set at send time.
             var history = await _context.ChatMessages
+                .AsNoTracking()
                 .Where(m => m.ForumId == forumId && !m.IsDeleted)
                 .Join(_context.Users, m => m.UserId, u => u.Id, (m, u) => new { m, u.ImagePath })
                 .OrderByDescending(x => x.m.CreatedAt)
@@ -92,6 +93,7 @@ namespace FanWebsiteAPI.Hubs
             if (replyToMessageId.HasValue)
             {
                 var parent = await _context.ChatMessages
+                    .AsNoTracking()
                     .Where(m => m.Id == replyToMessageId.Value && m.ForumId == forumId)
                     .FirstOrDefaultAsync();
                 if (parent != null)
@@ -142,6 +144,7 @@ namespace FanWebsiteAPI.Hubs
         private async Task NotifyOtherParticipants(int forumId, string senderId, string senderName, string content)
         {
             var recipientIds = await _context.ChatParticipants
+                .AsNoTracking()
                 .Where(p => p.ForumId == forumId && p.UserId != senderId)
                 .Select(p => p.UserId)
                 .ToListAsync();
@@ -149,6 +152,7 @@ namespace FanWebsiteAPI.Hubs
             if (recipientIds.Count == 0) return;
 
             var forumName = await _context.Forums
+                .AsNoTracking()
                 .Where(f => f.ForumId == forumId)
                 .Select(f => f.PostTitle)
                 .FirstOrDefaultAsync() ?? "a forum";

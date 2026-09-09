@@ -35,15 +35,14 @@ namespace Fan_Website.Controllers
             page = Math.Clamp(page, 1, 100);
 
             var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
-            var forums = (await _forumService.GetAll())
-                .Where(forum => canModerate || !forum.User.IsHidden)
-                .OrderByDescending(forum => forum.UpdatedOn)
-                .ToList();
+            var query = _forumService.Query()
+                .Where(forum => canModerate || !forum.User.IsHidden);
 
-            var totalForums = forums.Count;
+            var totalForums = await query.CountAsync();
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalForums / (double)pageSize));
 
-            var result = forums
+            var result = await query
+                .OrderByDescending(forum => forum.UpdatedOn)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(forum => new ForumDto
@@ -58,7 +57,7 @@ namespace Fan_Website.Controllers
                     DatePosted = forum.UpdatedOn.ToString("o"),
                     PostsCount = forum.Posts.Count(p => canModerate || !p.User.IsHidden)
                 })
-                .ToList();
+                .ToListAsync();
 
             return Ok(new { forums = result, page, totalPages, totalForums });
         }

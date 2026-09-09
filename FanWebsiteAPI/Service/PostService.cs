@@ -75,6 +75,7 @@ namespace Fan_Website.Service
         public async Task<IEnumerable<Post>> GetAll()
         {
             return await _context.Posts
+                .AsNoTracking()
                 .Include(p => p.User)
                 .Include(p => p.Replies).ThenInclude(r => r.User)
                 .Include(p => p.Forum)
@@ -82,6 +83,10 @@ namespace Fan_Website.Service
                 .ToListAsync();
         }
 
+        // NOT no-tracking: ReplyController.AddReply attaches a new PostReply to the Post
+        // returned here (Post = post) before calling _context.Add — if this were untracked,
+        // EF's Add() would treat the already-existing Post as new too and try to re-insert
+        // it, since Add() cascades Added state to any untracked entity in the graph.
         public async Task<Post?> GetById(int id)
         {
             return await _context.Posts
@@ -97,6 +102,7 @@ namespace Fan_Website.Service
         public async Task<IEnumerable<Post>> GetFilteredPosts(Forum forum, string searchQuery)
         {
             var query = _context.Posts
+                .AsNoTracking()
                 .Include(p => p.User)
                 .Include(p => p.Forum)
                 .Include(p => p.Replies)
@@ -116,6 +122,7 @@ namespace Fan_Website.Service
         public async Task<IEnumerable<Post>> GetFilteredPosts(string searchQuery)
         {
             return await _context.Posts
+                .AsNoTracking()
                 .Include(p => p.User)
                 .Include(p => p.Forum)
                 .Include(p => p.Replies)
@@ -130,6 +137,7 @@ namespace Fan_Website.Service
         public async Task<IEnumerable<Post>> GetLatestPosts(int n)
         {
             return await _context.Posts
+                .AsNoTracking()
                 .Include(p => p.User)
                 .Include(p => p.Forum).ThenInclude(f => f.User)
                 .Include(p => p.PostImages)
@@ -144,6 +152,7 @@ namespace Fan_Website.Service
         public async Task<IEnumerable<Post>> GetPostsByForum(int id)
         {
             var forum = await _context.Forums
+                .AsNoTracking()
                 .Include(f => f.Posts)
                     .ThenInclude(p => p.User)
                 .Where(f => f.ForumId == id)
@@ -152,9 +161,12 @@ namespace Fan_Website.Service
             return forum?.Posts ?? Enumerable.Empty<Post>();
         }
 
+        // Safe to no-track: DeleteReply/EditReply explicitly call _context.Remove/Replies
+        // .Update before saving, which re-attaches regardless of tracking state.
         public async Task<PostReply?> GetReplyByIdAsync(int id)
         {
             return await _context.Replies
+                .AsNoTracking()
                 .Include(r => r.User)
                 .Include(r => r.Post)
                 .FirstOrDefaultAsync(r => r.Id == id);
@@ -163,6 +175,7 @@ namespace Fan_Website.Service
         public async Task<IEnumerable<Post>> GetTopPosts(int n)
         {
             return await _context.Posts
+                .AsNoTracking()
                 .Include(p => p.User)
                 .Include(p => p.Forum).ThenInclude(f => f.User)
                 .Include(p => p.PostImages)
@@ -176,6 +189,7 @@ namespace Fan_Website.Service
         public async Task<Like?> GetLikeById(int id)
         {
             return await _context.Likes
+                .AsNoTracking()
                 .Include(l => l.User)
                 .Where(l => l.Id == id)
                 .FirstOrDefaultAsync();
@@ -184,6 +198,7 @@ namespace Fan_Website.Service
         public async Task<IEnumerable<Like>> GetAllLikes(int id)
         {
             var post = await _context.Posts
+                .AsNoTracking()
                 .Include(p => p.Likes)
                     .ThenInclude(l => l.User)
                 .Where(p => p.PostId == id)
@@ -195,6 +210,7 @@ namespace Fan_Website.Service
         public async Task<IEnumerable<PostDto>> SearchPostsAsync(string query)
         {
             return await _context.Posts
+                .AsNoTracking()
                 .Include(p => p.User)
                 .Include(p => p.Forum)
                 .Include(p => p.PostImages)

@@ -74,6 +74,7 @@ namespace FanWebsiteAPI.Controllers
             if (userId == null) return Unauthorized();
 
             var participant = await _context.ChatParticipants
+                .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.ForumId == forumId && p.UserId == userId);
 
             if (participant != null)
@@ -111,6 +112,7 @@ namespace FanWebsiteAPI.Controllers
             page = Math.Clamp(page, 1, 1000);
 
             var query = _context.ChatParticipants
+                .AsNoTracking()
                 .Where(p => p.ForumId == forumId)
                 .Join(_context.Users, p => p.UserId, u => u.Id, (p, u) => new { p.JoinedAt, u.Id, u.UserName, u.ImagePath });
 
@@ -135,6 +137,7 @@ namespace FanWebsiteAPI.Controllers
             if (userId == null) return Unauthorized();
 
             var chats = await _context.ChatParticipants
+                .AsNoTracking()
                 .Where(p => p.UserId == userId)
                 .OrderByDescending(p => p.JoinedAt)
                 .Join(_context.Forums,

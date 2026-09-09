@@ -7,6 +7,7 @@ namespace Fan_Website.Infrastructure
     {
         Task<ApplicationUser?> GetById(string id);
         Task<IEnumerable<ApplicationUser>> GetAll();
+        IQueryable<ApplicationUser> Query();
         Task SetProfileImage(string id, Uri uri);
         Task UpdateUserRating(string id, Type type);
         Task<IEnumerable<ApplicationUser>> GetLatestUsers(int n);

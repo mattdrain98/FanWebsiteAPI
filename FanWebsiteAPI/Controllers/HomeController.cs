@@ -6,6 +6,7 @@ using FanWebsiteAPI.DTOs.Home;
 using FanWebsiteAPI.DTOs.Posts;
 using FanWebsiteAPI.DTOs.Screenshots;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
 namespace Fan_Website.Controllers
@@ -41,13 +42,13 @@ namespace Fan_Website.Controllers
             var members = await _userManager.GetAll();
             var posts = await _postService.GetLatestPosts(int.MaxValue);
             var postList = posts.ToList();
-            var forums = await _forumService.GetTopForums(int.MaxValue);
+            var totalForums = await _forumService.Query().CountAsync();
 
             return Ok(new HomeStatsDto
             {
                 TotalMembers = members.Count(),
                 TotalPosts = postList.Count,
-                TotalForums = forums.Count(),
+                TotalForums = totalForums,
                 TotalReplies = postList.Sum(p => p.Replies.Count)
             });
         }
@@ -87,20 +88,24 @@ namespace Fan_Website.Controllers
             if (count <= 0 || count > 50) count = 5;
 
             var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
-            var forums = await _forumService.GetTopForums(count);
 
-            var result = forums.Where(forum => canModerate || !forum.User.IsHidden).Select(forum => new ForumDto
-            {
-                ForumId = forum.ForumId,
-                ForumTitle = forum.PostTitle,
-                Description = forum.Description,
-                AuthorName = forum.User.UserName ?? "Unknown",
-                AuthorId = forum.User.Id,
-                AuthorRating = forum.User.Rating,
-                AuthorImagePath = forum.User.IsHidden ? null : forum.User.ImagePath,
-                DatePosted = forum.UpdatedOn.ToString(),
-                PostsCount = forum.Posts?.Count(p => canModerate || !p.User.IsHidden) ?? 0
-            }); 
+            var result = await _forumService.Query()
+                .Where(forum => canModerate || !forum.User.IsHidden)
+                .OrderByDescending(forum => forum.Posts.Count())
+                .Take(count)
+                .Select(forum => new ForumDto
+                {
+                    ForumId = forum.ForumId,
+                    ForumTitle = forum.PostTitle,
+                    Description = forum.Description,
+                    AuthorName = forum.User.UserName ?? "Unknown",
+                    AuthorId = forum.User.Id,
+                    AuthorRating = forum.User.Rating,
+                    AuthorImagePath = forum.User.IsHidden ? null : forum.User.ImagePath,
+                    DatePosted = forum.UpdatedOn.ToString(),
+                    PostsCount = forum.Posts.Count(p => canModerate || !p.User.IsHidden)
+                })
+                .ToListAsync();
 
             return Ok(result);
         }
@@ -148,9 +153,7 @@ namespace Fan_Website.Controllers
         {
             if (count <= 0 || count > 50) count = 8;
 
-            var screenshots = await _screenshotService.GetAll();
-
-            var result = screenshots
+            var result = await _screenshotService.Query()
                 .OrderByDescending(s => s.UpdatedOn)
                 .Take(count)
                 .Select(s => new ScreenshotDto
@@ -164,7 +167,8 @@ namespace Fan_Website.Controllers
                     DatePosted = s.UpdatedOn.ToString(),
                     ImageUrl = s.ImagePath,
                     Slug = s.Slug
-                });
+                })
+                .ToListAsync();
 
             return Ok(result);
         }

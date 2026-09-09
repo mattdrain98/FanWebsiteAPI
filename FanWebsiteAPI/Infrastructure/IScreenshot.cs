@@ -5,7 +5,8 @@
         Task<Screenshot?> GetById(int id);
         Task SetScreenshotImage(int id, Uri uri);
         Task Add(Screenshot screenshot);
-        Task<IEnumerable<Screenshot>> GetAll(); 
+        IQueryable<Screenshot> Query();
+
         Task<IEnumerable<Screenshot>> GetLatestScreenshots(int n);
         Task<IEnumerable<ApplicationUser>> GetAllUsers();
         Task Delete(int id);

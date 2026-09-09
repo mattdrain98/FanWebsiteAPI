@@ -14,14 +14,21 @@ namespace Fan_Website.Service
         {
             _context = context;
         }
+
+        public IQueryable<ApplicationUser> Query()
+        {
+            return _context.ApplicationUsers.AsNoTracking();
+        }
+
         public async Task<IEnumerable<ApplicationUser>> GetAll()
         {
-            return await _context.ApplicationUsers.ToListAsync(); 
+            return await Query().ToListAsync();
         }
 
         public async Task<ApplicationUser?> GetById(string id)
         {
             return await _context.Users
+                .AsNoTracking()
                 .Include(u => u.ProfileComments).ThenInclude(c => c.CommentUser)
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
@@ -33,6 +40,7 @@ namespace Fan_Website.Service
             if (user != null)
             {
                 user.Rating = CalculateUserRating(type, user.Rating);
+                _context.Update(user);
                 await _context.SaveChangesAsync();
             }
         }
@@ -62,7 +70,7 @@ namespace Fan_Website.Service
 
         public async Task<IEnumerable<ApplicationUser>> GetLatestUsers(int n)
         {
-            var users = await _context.ApplicationUsers.OrderByDescending(u => u.MemberSince).Take(n).ToListAsync();
+            var users = await _context.ApplicationUsers.AsNoTracking().OrderByDescending(u => u.MemberSince).Take(n).ToListAsync();
             foreach (var user in users.Where(u => u.IsHidden))
             {
                 user.ImagePath = null;
@@ -73,6 +81,7 @@ namespace Fan_Website.Service
         public async Task<ProfileComment?> GetCommentById(int id)
         {
             return await _context.ProfileComments
+                .AsNoTracking()
                 .Include(c => c.CommentUser)
                 .Include(c => c.ProfileUser)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -96,6 +105,7 @@ namespace Fan_Website.Service
         {
             var user = await GetById(id);
             return await _context.Follows
+                .AsNoTracking()
                 .Where(f => f.Follower == user)
                 .ToListAsync();
         }
