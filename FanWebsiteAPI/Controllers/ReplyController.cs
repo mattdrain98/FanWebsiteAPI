@@ -31,6 +31,7 @@ namespace Fan_Website.Controllers
         public async Task<IActionResult> GetReply(int id)
         {
             var reply = await _postService.GetReplyByIdAsync(id);
+            
             if (reply == null) return NotFound();
 
             return Ok(new

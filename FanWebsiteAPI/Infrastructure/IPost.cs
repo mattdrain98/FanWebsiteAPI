@@ -6,6 +6,7 @@ namespace Fan_Website.Services
     {
         Task<Post?> GetById(int id);
         Task<IEnumerable<Post>> GetAll();
+        IQueryable<Post> Query();
         Task<IEnumerable<Post>> GetFilteredPosts(Forum forum, string searchQuery);
         Task<IEnumerable<Post>> GetFilteredPosts(string searchQuery);
         Task<IEnumerable<Post>> GetPostsByForum(int id);

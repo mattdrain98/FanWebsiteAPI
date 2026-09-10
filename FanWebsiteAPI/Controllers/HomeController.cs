@@ -39,17 +39,17 @@ namespace Fan_Website.Controllers
         [HttpGet("stats")]
         public async Task<ActionResult<HomeStatsDto>> GetStats()
         {
-            var members = await _userManager.GetAll();
-            var posts = await _postService.GetLatestPosts(int.MaxValue);
-            var postList = posts.ToList();
+            var totalMembers = await _userManager.Query().CountAsync();
+            var totalPosts = await _postService.Query().CountAsync();
             var totalForums = await _forumService.Query().CountAsync();
+            var totalReplies = await _postService.Query().SelectMany(p => p.Replies).CountAsync();
 
             return Ok(new HomeStatsDto
             {
-                TotalMembers = members.Count(),
-                TotalPosts = postList.Count,
+                TotalMembers = totalMembers,
+                TotalPosts = totalPosts,
                 TotalForums = totalForums,
-                TotalReplies = postList.Sum(p => p.Replies.Count)
+                TotalReplies = totalReplies
             });
         }
 
@@ -154,6 +154,7 @@ namespace Fan_Website.Controllers
             if (count <= 0 || count > 50) count = 8;
 
             var result = await _screenshotService.Query()
+                .AsNoTracking()
                 .OrderByDescending(s => s.UpdatedOn)
                 .Take(count)
                 .Select(s => new ScreenshotDto

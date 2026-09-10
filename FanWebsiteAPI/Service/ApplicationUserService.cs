@@ -28,7 +28,6 @@ namespace Fan_Website.Service
         public async Task<ApplicationUser?> GetById(string id)
         {
             return await _context.Users
-                .AsNoTracking()
                 .Include(u => u.ProfileComments).ThenInclude(c => c.CommentUser)
                 .FirstOrDefaultAsync(u => u.Id == id);
         }

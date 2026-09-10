@@ -13,6 +13,11 @@ namespace Fan_Website.Service
             _context = ctx;
         }
 
+        public IQueryable<Post> Query()
+        {
+            return _context.Posts.AsNoTracking();
+        }
+
         public async Task Add(Post post)
         {
             _context.Add(post);
@@ -161,8 +166,6 @@ namespace Fan_Website.Service
             return forum?.Posts ?? Enumerable.Empty<Post>();
         }
 
-        // Safe to no-track: DeleteReply/EditReply explicitly call _context.Remove/Replies
-        // .Update before saving, which re-attaches regardless of tracking state.
         public async Task<PostReply?> GetReplyByIdAsync(int id)
         {
             return await _context.Replies
