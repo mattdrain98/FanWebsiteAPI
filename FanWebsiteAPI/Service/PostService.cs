@@ -4,18 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Service
 {
-    public class PostService : IPost
+    public class PostService : EntityService<Post>, IPost
     {
-        private readonly AppDbContext _context;
-
-        public PostService(AppDbContext ctx)
+        public PostService(AppDbContext ctx) : base(ctx)
         {
-            _context = ctx;
-        }
-
-        public IQueryable<Post> Query()
-        {
-            return _context.Posts.AsNoTracking();
         }
 
         public async Task Add(Post post)

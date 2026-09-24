@@ -6,18 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Service
 {
-    public class ApplicationUserService : IApplicationUser
+    public class ApplicationUserService : EntityService<ApplicationUser>, IApplicationUser
     {
-        private readonly AppDbContext _context;
-
-        public ApplicationUserService(AppDbContext context)
+        public ApplicationUserService(AppDbContext context) : base(context)
         {
-            _context = context;
-        }
-
-        public IQueryable<ApplicationUser> Query()
-        {
-            return _context.ApplicationUsers.AsNoTracking();
         }
 
         public async Task<IEnumerable<ApplicationUser>> GetAll()

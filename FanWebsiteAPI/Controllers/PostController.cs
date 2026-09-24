@@ -15,7 +15,7 @@ namespace FanWebsiteAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PostsController : ControllerBase
+    public class PostsController : BaseApiController
     {
         private readonly AppDbContext _context;
         private readonly IPost _postService;
@@ -211,7 +211,7 @@ namespace FanWebsiteAPI.Controllers
                 if (post == null)
                     return NotFound(new { message = "Post not found" });
 
-                var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+                var canModerate = CanModerate;
 
                 if (post.User.IsHidden && !canModerate)
                     return NotFound(new { message = "Post not found" });
@@ -274,7 +274,7 @@ namespace FanWebsiteAPI.Controllers
         {
             try
             {
-                var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+                var canModerate = CanModerate;
 
                 var query = _postService.Query()
                     .Where(p => canModerate || !p.User.IsHidden);
@@ -322,9 +322,9 @@ namespace FanWebsiteAPI.Controllers
         {
             try
             {
-                page = Math.Clamp(page, 1, 100);
+                page = ClampPage(page);
 
-                var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+                var canModerate = CanModerate;
 
                 var query = _postService.Query()
                     .Where(p => canModerate || !p.User.IsHidden);
@@ -482,9 +482,9 @@ namespace FanWebsiteAPI.Controllers
                 if (string.IsNullOrEmpty(userId))
                     return Unauthorized(new { message = "User not found" });
 
-                page = Math.Clamp(page, 1, 100);
+                page = ClampPage(page);
 
-                var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+                var canModerate = CanModerate;
 
                 var totalLikedPosts = await _context.Likes.CountAsync(l => l.User.Id == userId && (canModerate || !l.Post.User.IsHidden));
                 var totalPages = Math.Min((int)Math.Ceiling(totalLikedPosts / (double)pageSize), 100);
@@ -536,9 +536,9 @@ namespace FanWebsiteAPI.Controllers
                 if (string.IsNullOrEmpty(userId))
                     return Unauthorized(new { message = "User not found" });
 
-                page = Math.Clamp(page, 1, 100);
+                page = ClampPage(page);
 
-                var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+                var canModerate = CanModerate;
 
                 var query = _postService.Query()
                     .Where(p => p.User.Id == userId);

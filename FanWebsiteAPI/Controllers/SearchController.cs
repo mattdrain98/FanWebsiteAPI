@@ -1,4 +1,5 @@
 using Fan_Website.Services;
+using FanWebsiteAPI.Controllers;
 using FanWebsiteAPI.DTOs.Posts;
 using FanWebsiteAPI.DTOs.Search;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ namespace Fan_Website.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class SearchController : ControllerBase
+    public class SearchController : BaseApiController
     {
         private readonly IPost _postService;
 
@@ -26,9 +27,9 @@ namespace Fan_Website.Controllers
             if (string.IsNullOrWhiteSpace(query))
                 return BadRequest(new { message = "Search query cannot be empty." });
 
-            page = Math.Clamp(page, 1, 100);
+            page = ClampPage(page);
 
-            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+            var canModerate = CanModerate;
             var allPosts = (await _postService.GetFilteredPosts(query))
                 .Where(p => canModerate || !p.User.IsHidden)
                 .ToList();

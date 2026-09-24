@@ -1,6 +1,7 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Models;
 using Fan_Website.Services;
+using FanWebsiteAPI.Controllers;
 using FanWebsiteAPI.DTOs.Forums;
 using FanWebsiteAPI.DTOs.Home;
 using FanWebsiteAPI.DTOs.Posts;
@@ -13,7 +14,7 @@ namespace Fan_Website.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class HomeController : ControllerBase
+    public class HomeController : BaseApiController
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IPost _postService;
@@ -59,7 +60,7 @@ namespace Fan_Website.Controllers
         {
             if (count <= 0 || count > 50) count = 10;
 
-            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+            var canModerate = CanModerate;
 
             var result = await _postService.Query()
                 .Where(post => canModerate || !post.User.IsHidden)
@@ -91,7 +92,7 @@ namespace Fan_Website.Controllers
         {
             if (count <= 0 || count > 50) count = 5;
 
-            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+            var canModerate = CanModerate;
 
             var result = await _forumService.Query()
                 .Where(forum => canModerate || !forum.User.IsHidden)
@@ -123,7 +124,7 @@ namespace Fan_Website.Controllers
             if (count <= 0 || count > 50) count = 5;
             if (days <= 0 || days > 365) days = 7;
 
-            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+            var canModerate = CanModerate;
             var since = DateTime.UtcNow.AddDays(-days);
 
             var result = await _postService.Query()

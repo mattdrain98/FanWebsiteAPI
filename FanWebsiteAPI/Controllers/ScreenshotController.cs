@@ -1,4 +1,5 @@
 ﻿using Fan_Website.Infrastructure;
+using FanWebsiteAPI.Controllers;
 using FanWebsiteAPI.DTOs.Screenshots;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace Fan_Website.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ScreenshotController : ControllerBase
+    public class ScreenshotController : BaseApiController
     {
         private readonly AppDbContext _context;
         private readonly IApplicationUser _userService;
@@ -38,9 +39,9 @@ namespace Fan_Website.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllScreenshots([FromQuery] int page = 1, [FromQuery] int pageSize = 12)
         {
-            page = Math.Clamp(page, 1, 100);
+            page = ClampPage(page);
 
-            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+            var canModerate = CanModerate;
             var query = _screenshotService.Query()
                 .Where(s => canModerate || !s.User.IsHidden);
 

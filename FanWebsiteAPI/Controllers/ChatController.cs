@@ -12,7 +12,7 @@ namespace FanWebsiteAPI.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class ChatController : ControllerBase
+    public class ChatController : BaseApiController
     {
         private readonly AppDbContext _context;
         private readonly IHubContext<ChatHub> _hub;
@@ -109,7 +109,7 @@ namespace FanWebsiteAPI.Controllers
         [HttpGet("{forumId}/members")]
         public async Task<IActionResult> GetMembers(int forumId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            page = Math.Clamp(page, 1, 1000);
+            page = ClampPage(page, 1000);
 
             var query = _context.ChatParticipants
                 .AsNoTracking()

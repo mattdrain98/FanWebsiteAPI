@@ -1,5 +1,6 @@
 using Fan_Website.Infrastructure;
 using Fan_Website.Services;
+using FanWebsiteAPI.Controllers;
 using FanWebsiteAPI.DTOs.Forums;
 using FanWebsiteAPI.DTOs.Posts;
 using FanWebsiteAPI.DTOs.Search;
@@ -13,7 +14,7 @@ namespace Fan_Website.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ForumController : ControllerBase
+    public class ForumController : BaseApiController
     {
         private readonly IForum _forumService;
         private readonly IApplicationUser _userService;
@@ -32,9 +33,9 @@ namespace Fan_Website.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllForums([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            page = Math.Clamp(page, 1, 100);
+            page = ClampPage(page);
 
-            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+            var canModerate = CanModerate;
             var query = _forumService.Query()
                 .Where(forum => canModerate || !forum.User.IsHidden);
 
@@ -69,12 +70,12 @@ namespace Fan_Website.Controllers
             if (forum == null)
                 return NotFound();
 
-            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+            var canModerate = CanModerate;
 
             if (forum.User.IsHidden && !canModerate)
                 return NotFound();
 
-            page = Math.Clamp(page, 1, 100);
+            page = ClampPage(page);
 
             var query = _context.Posts
                 .Where(p => p.ForumId == forum.ForumId &&

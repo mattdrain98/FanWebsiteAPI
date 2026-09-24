@@ -2,6 +2,7 @@
 using Azure.Storage.Blobs.Models;
 using Fan_Website.Infrastructure;
 using Fan_Website.Models.Follow;
+using FanWebsiteAPI.Controllers;
 using FanWebsiteAPI.DTOs.Follow;
 using FanWebsiteAPI.DTOs.Profile;
 using FanWebsiteAPI.DTOs.ProfileComments;
@@ -15,7 +16,7 @@ namespace Fan_Website.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ProfileController : ControllerBase
+    public class ProfileController : BaseApiController
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
@@ -44,7 +45,7 @@ namespace Fan_Website.Controllers
         public async Task<IActionResult> GetProfile(string id)
         {
             var currentUserId = _userManager.GetUserId(User);
-            var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
+            var canModerate = CanModerate;
 
             var dto = await _context.Users
                 .AsNoTracking()

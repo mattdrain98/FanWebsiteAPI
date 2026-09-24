@@ -3,13 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Service
 {
-    public class ForumService : IForum
+    public class ForumService : EntityService<Forum>, IForum
     {
-        private readonly AppDbContext _context;
-
-        public ForumService(AppDbContext context)
+        public ForumService(AppDbContext context) : base(context)
         {
-            _context = context;
         }
 
         public async Task Create(Forum forum)
@@ -24,11 +21,6 @@ namespace Fan_Website.Service
             if (forum is null) return;
             _context.Remove(forum);
             await _context.SaveChangesAsync();
-        }
-
-        public IQueryable<Forum> Query()
-        {
-            return _context.Forums.AsNoTracking();
         }
 
         public Forum GetById(int id)

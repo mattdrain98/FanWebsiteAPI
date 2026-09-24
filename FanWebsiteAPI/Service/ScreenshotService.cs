@@ -3,13 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Service
 {
-    public class ScreenshotService : IScreenshot
+    public class ScreenshotService : EntityService<Screenshot>, IScreenshot
     {
-        private readonly AppDbContext _context;
-
-        public ScreenshotService(AppDbContext context)
+        public ScreenshotService(AppDbContext context) : base(context)
         {
-            _context = context;
         }
 
         public async Task Add(Screenshot screenshot)
@@ -27,11 +24,6 @@ namespace Fan_Website.Service
                 _context.Remove(screenshot);
                 await _context.SaveChangesAsync();
             }
-        }
-
-        public IQueryable<Screenshot> Query()
-        {
-            return _context.Screenshots.AsNoTracking();
         }
 
         public async Task<IEnumerable<ApplicationUser>> GetAllUsers()
