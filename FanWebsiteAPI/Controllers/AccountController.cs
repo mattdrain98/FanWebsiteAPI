@@ -1,12 +1,15 @@
 ﻿using Fan_Website.Infrastructure;
+using FanWebsiteAPI.Controllers;
+using FanWebsiteAPI.DTOs.Account;
 using FanWebsiteAPI.DTOs.Auth;
 using FanWebsiteAPI.DTOs.Profile;
 using FanWebsiteAPI.Infrastructure;
 using FanWebsiteAPI.Service;
-using Microsoft.AspNetCore.Authorization; 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -14,7 +17,7 @@ namespace Fan_Website.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AccountController : ControllerBase
+    public class AccountController : BaseApiController
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
@@ -35,15 +38,35 @@ namespace Fan_Website.Controllers
 
         // GET: api/account/users
         [HttpGet("users")]
-        public ActionResult<IEnumerable<ApplicationUser>> GetAllUsers()
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<IEnumerable<UserSummaryDto>>> GetAllUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            var users = _userManager.Users.ToList();
-            return Ok(users);
+            page = ClampPage(page);
+
+            var query = _userService.Query();
+            var totalUsers = await query.CountAsync();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalUsers / (double)pageSize));
+
+            var users = await query
+                .OrderByDescending(u => u.MemberSince)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new UserSummaryDto
+                {
+                    Id = u.Id,
+                    UserName = u.UserName ?? "Unknown",
+                    ImagePath = u.ImagePath,
+                    Rating = u.Rating,
+                    MemberSince = u.MemberSince.ToString("o")
+                })
+                .ToListAsync();
+
+            return Ok(new { users, page, totalPages, totalUsers });
         }
 
         // GET: api/account/new-users
         [HttpGet("new-users")]
-        public async Task<ActionResult<IEnumerable<ApplicationUser>>> GetLatestUsers()
+        public async Task<ActionResult<IEnumerable<UserSummaryDto>>> GetLatestUsers()
         {
             var latestUsers = await _userService.GetLatestUsers(10);
             return Ok(latestUsers);

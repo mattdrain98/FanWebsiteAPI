@@ -1,6 +1,7 @@
 ﻿using Fan_Website.Infrastructure;
 using Fan_Website.Models.Follow;
 using Fan_Website.Models.ProfileComment;
+using FanWebsiteAPI.DTOs.Account;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -59,14 +60,24 @@ namespace Fan_Website.Service
             await _context.SaveChangesAsync(); 
         }
 
-        public async Task<IEnumerable<ApplicationUser>> GetLatestUsers(int n)
+        // Projects straight to FollowDto — never return raw ApplicationUser (IdentityUser)
+        // entities from an API response, since they carry PasswordHash, SecurityStamp,
+        // Email, and other fields that must never be serialized out.
+        public async Task<IEnumerable<UserSummaryDto>> GetLatestUsers(int n)
         {
-            var users = await _context.ApplicationUsers.AsNoTracking().OrderByDescending(u => u.MemberSince).Take(n).ToListAsync();
-            foreach (var user in users.Where(u => u.IsHidden))
-            {
-                user.ImagePath = null;
-            }
-            return users;
+            return await _context.ApplicationUsers
+                .AsNoTracking()
+                .OrderByDescending(u => u.MemberSince)
+                .Take(n)
+                .Select(u => new UserSummaryDto
+                {
+                    Id = u.Id,
+                    UserName = u.UserName ?? "Unknown",
+                    ImagePath = u.IsHidden ? null : u.ImagePath,
+                    Rating = u.Rating,
+                    MemberSince = u.MemberSince.ToString("o")
+                })
+                .ToListAsync();
         }
 
         public async Task<ProfileComment?> GetCommentById(int id)

@@ -1,5 +1,6 @@
 ﻿using Fan_Website.Models.Follow;
 using Fan_Website.Models.ProfileComment;
+using FanWebsiteAPI.DTOs.Account;
 
 namespace Fan_Website.Infrastructure
 {
@@ -10,7 +11,7 @@ namespace Fan_Website.Infrastructure
         IQueryable<ApplicationUser> Query();
         Task SetProfileImage(string id, Uri uri);
         Task UpdateUserRating(string id, Type type);
-        Task<IEnumerable<ApplicationUser>> GetLatestUsers(int n);
+        Task<IEnumerable<UserSummaryDto>> GetLatestUsers(int n);
         Task<IEnumerable<Follow?>> GetFollowing(string id);
         Task AddComment(ProfileComment comment);
         Task EditProfile(string id, string bio, string username);
