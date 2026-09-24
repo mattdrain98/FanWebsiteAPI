@@ -26,9 +26,6 @@ namespace FanWebsiteAPI.Hubs
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, RoomKey(forumId));
 
-            // UserImagePath is joined live off the user's current avatar rather than read
-            // from ChatMessage's stored column, so history reflects profile picture
-            // changes instead of freezing whatever avatar was set at send time.
             var history = await _context.ChatMessages
                 .AsNoTracking()
                 .Where(m => m.ForumId == forumId && !m.IsDeleted)
