@@ -13,6 +13,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 
@@ -101,6 +103,37 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<FanWebsiteAPI.Infrastructure.PresenceTracker>();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddHttpClient();
+
+// Used for fetching images from user-supplied URLs (ImagesController.FetchFromUrl).
+// The ConnectCallback resolves DNS itself and connects only to a validated public
+// IP, rather than letting HttpClient re-resolve the hostname at connect time —
+// closing a DNS-rebinding SSRF gap where a hostname could resolve to a public IP
+// when checked and a private one when actually connected to.
+builder.Services.AddHttpClient("ExternalImageFetch", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    ConnectCallback = async (context, cancellationToken) =>
+    {
+        var address = await PrivateNetworkGuard.ResolvePublicAddressAsync(context.DnsEndPoint.Host, cancellationToken);
+        if (address == null)
+            throw new InvalidOperationException("Refusing to connect to a non-public address.");
+
+        var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+        try
+        {
+            await socket.ConnectAsync(new IPEndPoint(address, context.DnsEndPoint.Port), cancellationToken);
+            return new NetworkStream(socket, ownsSocket: true);
+        }
+        catch
+        {
+            socket.Dispose();
+            throw;
+        }
+    }
+});
 
 var storageConnection = builder.Configuration.GetConnectionString("AzureStorageAccount");
 if (!string.IsNullOrEmpty(storageConnection))

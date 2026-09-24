@@ -40,11 +40,24 @@ namespace FanWebsiteAPI.Controllers
             if (string.IsNullOrWhiteSpace(request.Url) || !Uri.TryCreate(request.Url, UriKind.Absolute, out var uri))
                 return BadRequest(new { message = "Invalid URL" });
 
-            using var httpClient = _httpClientFactory.CreateClient();
+            if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+                return BadRequest(new { message = "Invalid URL" });
+
+            using var httpClient = _httpClientFactory.CreateClient("ExternalImageFetch");
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             httpClient.DefaultRequestHeaders.Add("Referer", uri.Host);
 
-            using var response = await httpClient.GetAsync(uri);
+            HttpResponseMessage response;
+            try
+            {
+                response = await httpClient.GetAsync(uri);
+            }
+            catch (HttpRequestException)
+            {
+                return BadRequest(new { message = "Failed to fetch image" });
+            }
+
+            using var _response = response;
             if (!response.IsSuccessStatusCode)
                 return BadRequest(new { message = "Failed to fetch image" });
 

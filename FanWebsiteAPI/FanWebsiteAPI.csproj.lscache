@@ -132,6 +132,7 @@ Infrastructure/
  IScreenshot.cs
  IUpload.cs
  PresenceTracker.cs
+ PrivateNetworkGuard.cs
 Migrations/
  20260312113738_AddPostImages.cs
  20260312113738_AddPostImages.Designer.cs
