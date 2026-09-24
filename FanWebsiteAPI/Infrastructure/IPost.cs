@@ -10,7 +10,6 @@ namespace Fan_Website.Services
         Task<IEnumerable<Post>> GetFilteredPosts(Forum forum, string searchQuery);
         Task<IEnumerable<Post>> GetFilteredPosts(string searchQuery);
         Task<IEnumerable<Post>> GetPostsByForum(int id);
-        Task<IEnumerable<Post>> GetLatestPosts(int n);
         Task<IEnumerable<PostDto>> SearchPostsAsync(string query);
         Task<IEnumerable<Post>> GetTopPosts(int likes); 
         Task Add(Post post);

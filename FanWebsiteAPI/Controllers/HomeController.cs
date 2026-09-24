@@ -60,23 +60,27 @@ namespace Fan_Website.Controllers
             if (count <= 0 || count > 50) count = 10;
 
             var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
-            var posts = await _postService.GetLatestPosts(count);
 
-            var result = posts.Where(post => canModerate || !post.User.IsHidden).Select(post => new PostDto
-            {
-                PostId = post.PostId,
-                Title = post.Title,
-                Content = post.Content,
-                AuthorName = post.User.UserName ?? "Unknown",
-                AuthorId = post.User.Id,
-                AuthorRating = post.User.Rating,
-                AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
-                TotalLikes = post.TotalLikes,
-                DatePosted = post.UpdatedOn.ToString("yyyy-MM-dd HH:mm"),
-                RepliesCount = post.Replies.Count(r => canModerate || !r.User.IsHidden),
-                ForumId = post.ForumId,          
-                ForumName = post.Forum.PostTitle  
-            });
+            var result = await _postService.Query()
+                .Where(post => canModerate || !post.User.IsHidden)
+                .OrderByDescending(post => post.UpdatedOn)
+                .Take(count)
+                .Select(post => new PostDto
+                {
+                    PostId = post.PostId,
+                    Title = post.Title,
+                    Content = post.Content,
+                    AuthorName = post.User.UserName ?? "Unknown",
+                    AuthorId = post.User.Id,
+                    AuthorRating = post.User.Rating,
+                    AuthorImagePath = post.User.IsHidden ? null : post.User.ImagePath,
+                    TotalLikes = post.TotalLikes,
+                    DatePosted = post.UpdatedOn.ToString("yyyy-MM-dd HH:mm"),
+                    RepliesCount = post.Replies.Count(r => canModerate || !r.User.IsHidden),
+                    ForumId = post.ForumId,
+                    ForumName = post.Forum.PostTitle
+                })
+                .ToListAsync();
 
             return Ok(result);
         }
@@ -121,15 +125,14 @@ namespace Fan_Website.Controllers
 
             var canModerate = User.IsInRole("Admin") || User.IsInRole("Moderator");
             var since = DateTime.UtcNow.AddDays(-days);
-            var posts = await _postService.GetLatestPosts(200);
 
-            var result = posts
+            var result = await _postService.Query()
                 .Where(p => p.UpdatedOn >= since && (canModerate || !p.User.IsHidden))
                 .OrderByDescending(p => p.TotalLikes)
                 .Take(count)
                 .Select(post => new PostDto
                 {
-                    PostId = post.PostId, 
+                    PostId = post.PostId,
                     Title = post.Title,
                     Content = post.Content,
                     AuthorName = post.User.UserName ?? "Unknown",
@@ -141,7 +144,8 @@ namespace Fan_Website.Controllers
                     RepliesCount = post.Replies.Count(r => canModerate || !r.User.IsHidden),
                     ForumId = post.ForumId,
                     ForumName = post.Forum.PostTitle
-                });
+                })
+                .ToListAsync();
 
             return Ok(result);
         }
@@ -154,7 +158,6 @@ namespace Fan_Website.Controllers
             if (count <= 0 || count > 50) count = 8;
 
             var result = await _screenshotService.Query()
-                .AsNoTracking()
                 .OrderByDescending(s => s.UpdatedOn)
                 .Take(count)
                 .Select(s => new ScreenshotDto

@@ -139,20 +139,6 @@ namespace Fan_Website.Service
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Post>> GetLatestPosts(int n)
-        {
-            return await _context.Posts
-                .AsNoTracking()
-                .Include(p => p.User)
-                .Include(p => p.Forum).ThenInclude(f => f.User)
-                .Include(p => p.PostImages)
-                .Include(p => p.Replies).ThenInclude(r => r.User)
-                .Include(p => p.Likes)
-                .OrderByDescending(p => p.UpdatedOn)
-                .Take(n)
-                .ToListAsync();
-        }
-
         // FIX: include Posts in the query so forum.Posts isn't null
         public async Task<IEnumerable<Post>> GetPostsByForum(int id)
         {
