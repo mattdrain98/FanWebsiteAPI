@@ -1,4 +1,5 @@
 ﻿using Fan_Website.Infrastructure;
+using Fan_Website.Service.RatingSources;
 using FanWebsiteAPI.Controllers;
 using FanWebsiteAPI.DTOs.Screenshots;
 using Microsoft.AspNetCore.Identity;
@@ -138,7 +139,7 @@ namespace Fan_Website.Controllers
             };
 
             await _screenshotService.Add(screenshot);
-            await _userService.UpdateUserRating(userId, typeof(Screenshot));
+            await _userService.AddRating(userId, new ScreenshotRatingSource());
 
             return Ok(new { Message = "Screenshot added successfully", ScreenshotId = screenshot.ScreenshotId });
         }
@@ -160,11 +161,13 @@ namespace Fan_Website.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteScreenshot(int id)
         {
-            var screenshot = _context.Screenshots.Find(id);
+            var screenshot = await _screenshotService.GetById(id);
             if (screenshot == null) return NotFound("Screenshot not found");
 
             _context.Screenshots.Remove(screenshot);
             await _context.SaveChangesAsync();
+
+            await _userService.RemoveRating(screenshot.User.Id, new ScreenshotRatingSource());
 
             return Ok(new { Message = "Screenshot deleted successfully" });
         }

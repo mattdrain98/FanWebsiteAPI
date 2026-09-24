@@ -1,4 +1,6 @@
 ﻿using Fan_Website;
+using Fan_Website.Infrastructure;
+using Fan_Website.Service.RatingSources;
 using Fan_Website.Services;
 using FanWebsiteAPI.DTOs.Likes;
 using FanWebsiteAPI.DTOs.Posts;
@@ -19,13 +21,15 @@ namespace FanWebsiteAPI.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IPost _postService;
+        private readonly IApplicationUser _userService;
         private readonly INotificationService _notificationService;
         private readonly ILogger<PostsController> _logger;
 
-        public PostsController(AppDbContext context, IPost postService, ILogger<PostsController> logger, INotificationService notificationService)
+        public PostsController(AppDbContext context, IPost postService, IApplicationUser userService, ILogger<PostsController> logger, INotificationService notificationService)
         {
             _context = context;
             _postService = postService;
+            _userService = userService;
             _notificationService = notificationService;
             _logger = logger;
         }
@@ -107,6 +111,8 @@ namespace FanWebsiteAPI.Controllers
                 {
                     _logger.LogInformation("Content unchanged");
                 }
+
+                await _userService.AddRating(userId, new PostRatingSource());
 
                 _logger.LogInformation("Post {PostId} created by user {UserId}", post.PostId, userId);
 
@@ -401,6 +407,9 @@ namespace FanWebsiteAPI.Controllers
 
                 _context.Posts.Remove(post);
                 await _context.SaveChangesAsync();
+
+                if (post.User != null)
+                    await _userService.RemoveRating(post.User.Id, new PostRatingSource());
 
                 _logger.LogInformation("Post {PostId} deleted by user {UserId}", id, userId);
 

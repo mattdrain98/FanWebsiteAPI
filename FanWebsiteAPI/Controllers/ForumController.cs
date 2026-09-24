@@ -1,4 +1,5 @@
 using Fan_Website.Infrastructure;
+using Fan_Website.Service.RatingSources;
 using Fan_Website.Services;
 using FanWebsiteAPI.Controllers;
 using FanWebsiteAPI.DTOs.Forums;
@@ -157,7 +158,7 @@ namespace Fan_Website.Controllers
             };
 
             await _forumService.Create(forum);
-            await _userService.UpdateUserRating(userId, typeof(Forum));
+            await _userService.AddRating(userId, new ForumRatingSource());
 
             return CreatedAtAction(nameof(GetForumById), new { id = forum.ForumId }, new
             {
@@ -181,6 +182,7 @@ namespace Fan_Website.Controllers
                 return Forbid();
 
             await _forumService.Delete(id);
+            await _userService.RemoveRating(forum.User.Id, new ForumRatingSource());
             return NoContent();
         }
 

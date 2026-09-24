@@ -10,7 +10,8 @@ namespace Fan_Website.Infrastructure
         Task<IEnumerable<ApplicationUser>> GetAll();
         IQueryable<ApplicationUser> Query();
         Task SetProfileImage(string id, Uri uri);
-        Task UpdateUserRating(string id, Type type);
+        Task AddRating(string userId, IRatingSource source);
+        Task RemoveRating(string userId, IRatingSource source);
         Task<IEnumerable<UserSummaryDto>> GetLatestUsers(int n);
         Task<IEnumerable<Follow?>> GetFollowing(string id);
         Task AddComment(ProfileComment comment);

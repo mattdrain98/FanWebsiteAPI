@@ -1,4 +1,5 @@
 ﻿using Fan_Website.Infrastructure;
+using Fan_Website.Service.RatingSources;
 using Fan_Website.Services;
 using FanWebsiteAPI.DTOs.Replies;
 using FanWebsiteAPI.DTOs.Notifications;
@@ -108,7 +109,7 @@ namespace Fan_Website.Controllers
             };
 
             await _postService.AddReply(reply);
-            await _userService.UpdateUserRating(userId, typeof(PostReply));
+            await _userService.AddRating(userId, new PostReplyRatingSource());
 
             return Ok(new { message = "Reply added successfully", postId = model.PostId });
         }
@@ -135,6 +136,7 @@ namespace Fan_Website.Controllers
             if (reply.User.Id != userId && !User.IsInRole("Admin") && !User.IsInRole("Moderator"))
                 return Forbid();
             await _postService.DeleteReply(id);
+            await _userService.RemoveRating(reply.User.Id, new PostReplyRatingSource());
             return NoContent();
         }
     }

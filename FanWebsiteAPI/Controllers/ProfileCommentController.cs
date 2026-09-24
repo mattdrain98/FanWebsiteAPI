@@ -1,5 +1,6 @@
 using Fan_Website.Infrastructure;
 using Fan_Website.Models.ProfileComment;
+using Fan_Website.Service.RatingSources;
 using FanWebsiteAPI.DTOs.ProfileComments;
 using FanWebsiteAPI.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
@@ -95,7 +96,7 @@ namespace Fan_Website.Controllers
             };
 
             await _userService.AddComment(comment);
-            await _userService.UpdateUserRating(currentUser.Id, typeof(ProfileComment));
+            await _userService.AddRating(currentUser.Id, new ProfileCommentRatingSource());
 
             return Ok(new { message = "Comment added successfully" });
         }

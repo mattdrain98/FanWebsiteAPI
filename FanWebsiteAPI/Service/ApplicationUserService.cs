@@ -25,31 +25,24 @@ namespace Fan_Website.Service
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
-        public async Task UpdateUserRating(string userId, Type type)
+        public async Task AddRating(string userId, IRatingSource source)
         {
             var user = await GetById(userId);
+            if (user == null) return;
 
-            if (user != null)
-            {
-                user.Rating = CalculateUserRating(type, user.Rating);
-                _context.Update(user);
-                await _context.SaveChangesAsync();
-            }
+            user.Rating += source.RatingPoints;
+            _context.Update(user);
+            await _context.SaveChangesAsync();
         }
 
-        private int CalculateUserRating(Type type, int userRating)
+        public async Task RemoveRating(string userId, IRatingSource source)
         {
-            var inc = type switch
-            {
-                _ when type == typeof(Post) => 1,
-                _ when type == typeof(Screenshot) => 2,
-                _ when type == typeof(Forum) => 2,
-                _ when type == typeof(PostReply) => 3,
-                _ when type == typeof(ProfileComment) => 3,
-                _ => 0
-            };
+            var user = await GetById(userId);
+            if (user == null) return;
 
-            return userRating + inc;
+            user.Rating = Math.Max(0, user.Rating - source.RatingPoints);
+            _context.Update(user);
+            await _context.SaveChangesAsync();
         }
 
         public async Task SetProfileImage(string id, Uri uri)
