@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Fan_Website;
 using FanWebsiteAPI.Infrastructure;
 using FanWebsiteAPI.Models.Chat;
@@ -8,9 +9,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FanWebsiteAPI.Hubs
 {
+    public record RoomMemberInfo(string UserId, string? UserName, string? UserImagePath);
+
     [Authorize]
     public class ChatHub : Hub
     {
+        private static readonly ConcurrentDictionary<string, int> _connectionRoom = new();
+        private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, RoomMemberInfo>> _roomMembers = new();
+
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly INotificationService _notificationService;
@@ -24,7 +30,18 @@ namespace FanWebsiteAPI.Hubs
 
         public async Task JoinRoom(int forumId)
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, RoomKey(forumId));
+            var roomKey = RoomKey(forumId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, roomKey);
+            _connectionRoom[Context.ConnectionId] = forumId;
+
+            var userId = _userManager.GetUserId(Context.User)!;
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                var members = _roomMembers.GetOrAdd(roomKey, _ => new ConcurrentDictionary<string, RoomMemberInfo>());
+                members[userId] = new RoomMemberInfo(userId, user.UserName, user.ImagePath);
+                await Clients.Group(roomKey).SendAsync("RoomMembersUpdated", members.Values.ToList());
+            }
 
             var history = await _context.ChatMessages
                 .AsNoTracking()
@@ -56,7 +73,31 @@ namespace FanWebsiteAPI.Hubs
 
         public async Task LeaveRoom(int forumId)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, RoomKey(forumId));
+            var roomKey = RoomKey(forumId);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomKey);
+            _connectionRoom.TryRemove(Context.ConnectionId, out _);
+
+            var userId = _userManager.GetUserId(Context.User);
+            if (userId != null && _roomMembers.TryGetValue(roomKey, out var members))
+            {
+                members.TryRemove(userId, out _);
+                await Clients.Group(roomKey).SendAsync("RoomMembersUpdated", members.Values.ToList());
+            }
+        }
+
+        public override async Task OnDisconnectedAsync(Exception? exception)
+        {
+            if (_connectionRoom.TryRemove(Context.ConnectionId, out var forumId))
+            {
+                var roomKey = RoomKey(forumId);
+                var userId = _userManager.GetUserId(Context.User);
+                if (userId != null && _roomMembers.TryGetValue(roomKey, out var members))
+                {
+                    members.TryRemove(userId, out _);
+                    await Clients.Group(roomKey).SendAsync("RoomMembersUpdated", members.Values.ToList());
+                }
+            }
+            await base.OnDisconnectedAsync(exception);
         }
 
         // Ephemeral — nothing persisted. Username comes straight off the JWT claim
@@ -133,11 +174,6 @@ namespace FanWebsiteAPI.Hubs
             await NotifyOtherParticipants(forumId, userId, user.UserName ?? userId, content);
         }
 
-        // Notifies everyone who's joined this forum's chat (except the sender) via the
-        // same channel used for follows/etc. — an in-app bell entry plus a push notification
-        // through the user's stored Expo token, so a message still reaches someone with the
-        // app closed. Joining the chat is what opts a user into this (see the "Join to send
-        // messages and get notified" prompt client-side).
         private async Task NotifyOtherParticipants(int forumId, string senderId, string senderName, string content)
         {
             var recipientIds = await _context.ChatParticipants
