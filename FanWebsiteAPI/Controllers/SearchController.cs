@@ -1,8 +1,10 @@
+﻿using Fan_Website.Infrastructure;
 using Fan_Website.Services;
 using FanWebsiteAPI.Controllers;
 using FanWebsiteAPI.DTOs.Posts;
 using FanWebsiteAPI.DTOs.Search;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fan_Website.Controllers
 {
@@ -10,11 +12,15 @@ namespace Fan_Website.Controllers
     [Route("api/[controller]")]
     public class SearchController : BaseApiController
     {
-        private readonly IPost _postService;
+        private const int MaxRankedCandidates = 1000;
 
-        public SearchController(IPost postService)
+        private readonly IPost _postService;
+        private readonly IPostSearchIndex _searchIndex;
+
+        public SearchController(IPost postService, IPostSearchIndex searchIndex)
         {
             _postService = postService;
+            _searchIndex = searchIndex;
         }
 
         // GET: api/Search?query=keyword&page=1&pageSize=6
@@ -28,19 +34,60 @@ namespace Fan_Website.Controllers
                 return BadRequest(new { message = "Search query cannot be empty." });
 
             page = ClampPage(page);
-
             var canModerate = CanModerate;
-            var allPosts = (await _postService.GetFilteredPosts(query))
-                .Where(p => canModerate || !p.User.IsHidden)
-                .ToList();
-            var totalPosts = allPosts.Count;
+
+            var candidateIds = _searchIndex.Search(query).Take(MaxRankedCandidates).ToList();
+
+            if (candidateIds.Count == 0)
+            {
+                return Ok(new SearchResultDto
+                {
+                    Posts = new List<PostDto>(),
+                    SearchQuery = query,
+                    EmptySearchResults = true,
+                    Page = page,
+                    TotalPages = 0,
+                    TotalPosts = 0
+                });
+            }
+
+            List<int> visibleIds;
+            if (canModerate)
+            {
+                visibleIds = candidateIds;
+            }
+            else
+            {
+                var hiddenIds = await _postService.Query()
+                    .Where(p => candidateIds.Contains(p.PostId) && p.User.IsHidden)
+                    .Select(p => p.PostId)
+                    .ToHashSetAsync();
+
+                visibleIds = candidateIds.Where(id => !hiddenIds.Contains(id)).ToList();
+            }
+
+            var totalPosts = visibleIds.Count;
             var totalPages = Math.Min((int)Math.Ceiling(totalPosts / (double)pageSize), 100);
 
-            var pagedPosts = allPosts
+            var pageIds = visibleIds
                 .Skip((page - 1) * pageSize)
-                .Take(pageSize);
+                .Take(pageSize)
+                .ToList();
 
-            var postListings = pagedPosts.Select(post => new PostDto
+            var pagePosts = await _postService.Query()
+                .Include(p => p.User)
+                .Include(p => p.Forum)
+                .Include(p => p.Replies)
+                .Where(p => pageIds.Contains(p.PostId))
+                .ToListAsync();
+
+            var postsById = pagePosts.ToDictionary(p => p.PostId);
+            var orderedPosts = pageIds
+                .Select(id => postsById.TryGetValue(id, out var p) ? p : null)
+                .Where(p => p != null)
+                .Select(p => p!);
+
+            var postListings = orderedPosts.Select(post => new PostDto
             {
                 PostId = post.PostId,
                 Title = post.Title,

@@ -2,6 +2,7 @@ using Azure.Storage.Blobs;
 using Fan_Website;
 using Fan_Website.Infrastructure;
 using Fan_Website.Service;
+using Fan_Website.Service.Search;
 using Fan_Website.Services;
 using FanWebsiteAPI.Hubs;
 using FanWebsiteAPI.Infrastructure;
@@ -100,6 +101,7 @@ builder.Services.AddScoped<IApplicationUser, ApplicationUserService>();
 builder.Services.AddScoped<IUpload, UploadService>();
 builder.Services.AddScoped<IScreenshot, ScreenshotService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSingleton<IPostSearchIndex, PostSearchIndex>();
 builder.Services.AddSingleton<FanWebsiteAPI.Infrastructure.PresenceTracker>();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddHttpClient();
@@ -194,6 +196,14 @@ using (var scope = app.Services.CreateScope())
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new IdentityRole(role));
     }
+
+    // Build the in-memory search index once at startup. No Include() — only
+    // PostId/Title/Content are read, matching this codebase's no-unnecessary-
+    // includes discipline elsewhere.
+    var searchIndex = scope.ServiceProvider.GetRequiredService<IPostSearchIndex>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var allPosts = await dbContext.Posts.AsNoTracking().ToListAsync();
+    searchIndex.Load(allPosts);
 }
 
 if (app.Environment.IsDevelopment())

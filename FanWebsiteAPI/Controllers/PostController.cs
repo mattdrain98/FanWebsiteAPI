@@ -22,14 +22,16 @@ namespace FanWebsiteAPI.Controllers
         private readonly AppDbContext _context;
         private readonly IPost _postService;
         private readonly IApplicationUser _userService;
+        private readonly IPostSearchIndex _searchIndex;
         private readonly INotificationService _notificationService;
         private readonly ILogger<PostsController> _logger;
 
-        public PostsController(AppDbContext context, IPost postService, IApplicationUser userService, ILogger<PostsController> logger, INotificationService notificationService)
+        public PostsController(AppDbContext context, IPost postService, IApplicationUser userService, IPostSearchIndex searchIndex, ILogger<PostsController> logger, INotificationService notificationService)
         {
             _context = context;
             _postService = postService;
             _userService = userService;
+            _searchIndex = searchIndex;
             _notificationService = notificationService;
             _logger = logger;
         }
@@ -112,6 +114,7 @@ namespace FanWebsiteAPI.Controllers
                     _logger.LogInformation("Content unchanged");
                 }
 
+                _searchIndex.Add(post);
                 await _userService.AddRating(userId, new PostRatingSource());
 
                 _logger.LogInformation("Post {PostId} created by user {UserId}", post.PostId, userId);
@@ -186,6 +189,8 @@ namespace FanWebsiteAPI.Controllers
 
                 _context.Posts.Update(post);
                 await _context.SaveChangesAsync();
+
+                _searchIndex.Update(post);
 
                 _logger.LogInformation("Post {PostId} edited by user {UserId}, {NewImageCount} new images added",
                     id, userId, request.NewImageUrls?.Count ?? 0);
@@ -407,6 +412,8 @@ namespace FanWebsiteAPI.Controllers
 
                 _context.Posts.Remove(post);
                 await _context.SaveChangesAsync();
+
+                _searchIndex.Remove(id);
 
                 if (post.User != null)
                     await _userService.RemoveRating(post.User.Id, new PostRatingSource());

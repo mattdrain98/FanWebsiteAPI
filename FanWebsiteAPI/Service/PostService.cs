@@ -116,21 +116,6 @@ namespace Fan_Website.Service
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Post>> GetFilteredPosts(string searchQuery)
-        {
-            return await _context.Posts
-                .AsNoTracking()
-                .Include(p => p.User)
-                .Include(p => p.Forum)
-                .Include(p => p.Replies)
-                .Include(p => p.Likes)
-                .Where(p =>
-                    p.Title.Contains(searchQuery) ||
-                    p.Content.Contains(searchQuery))
-                .OrderByDescending(p => p.UpdatedOn)
-                .ToListAsync();
-        }
-
         // FIX: include Posts in the query so forum.Posts isn't null
         public async Task<IEnumerable<Post>> GetPostsByForum(int id)
         {
