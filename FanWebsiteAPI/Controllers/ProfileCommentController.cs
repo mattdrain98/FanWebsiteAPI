@@ -138,6 +138,7 @@ namespace Fan_Website.Controllers
                 return Forbid();
 
             await _userService.DeleteComment(id);
+            await _userService.RemoveRating(comment.CommentUser.Id, new ProfileCommentRatingSource());
             return NoContent();
         }
     }
