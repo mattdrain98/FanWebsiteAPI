@@ -24,6 +24,14 @@ namespace FanWebsiteAPI.Hubs
         // modified client could call Typing on every keystroke otherwise).
         private static readonly ConcurrentDictionary<string, TokenBucketRateLimiter> _typingLimiters = new();
 
+        // Separate, stricter-per-call-cost limiter for actual messages — a flood
+        // here is worse than a flood of typing pings, since each one hits the DB,
+        // broadcasts to the whole room, and fires a notification to every other
+        // participant. Unlike Typing, over-limit throws rather than silently
+        // dropping, since a lost chat message (vs. a missed typing ping) is
+        // something the sender needs to know about.
+        private static readonly ConcurrentDictionary<string, TokenBucketRateLimiter> _messageLimiters = new();
+
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly INotificationService _notificationService;
@@ -97,6 +105,9 @@ namespace FanWebsiteAPI.Hubs
             if (_typingLimiters.TryRemove(Context.ConnectionId, out var limiter))
                 limiter.Dispose();
 
+            if (_messageLimiters.TryRemove(Context.ConnectionId, out var messageLimiter))
+                messageLimiter.Dispose();
+
             if (_connectionRoom.TryRemove(Context.ConnectionId, out var forumId))
             {
                 var roomKey = RoomKey(forumId);
@@ -136,6 +147,17 @@ namespace FanWebsiteAPI.Hubs
             QueueLimit = 0
         });
 
+        // A burst of 5 messages, then one every 3 seconds — generous enough for a
+        // real back-and-forth conversation, tight enough to stop a flood.
+        private static TokenBucketRateLimiter CreateMessageRateLimiter() => new(new TokenBucketRateLimiterOptions
+        {
+            TokenLimit = 5,
+            TokensPerPeriod = 1,
+            ReplenishmentPeriod = TimeSpan.FromSeconds(3),
+            AutoReplenishment = true,
+            QueueLimit = 0
+        });
+
         public async Task SendMessage(int forumId, string content, int? replyToMessageId = null)
         {
             content = content.Trim();
@@ -143,6 +165,13 @@ namespace FanWebsiteAPI.Hubs
 
             var userId = _userManager.GetUserId(Context.User);
             if (userId == null) return;
+
+            var messageLimiter = _messageLimiters.GetOrAdd(Context.ConnectionId, _ => CreateMessageRateLimiter());
+            using (var lease = messageLimiter.AttemptAcquire())
+            {
+                if (!lease.IsAcquired)
+                    throw new HubException("You're sending messages too quickly. Please wait a moment.");
+            }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return;
