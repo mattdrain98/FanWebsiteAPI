@@ -474,7 +474,24 @@ namespace FanWebsiteAPI.Controllers
                     );
                 }
 
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException) when (existingLike == null)
+                {
+                    // Lost a race against another concurrent like from the same user on
+                    // the same post — the unique index on (PostId, UserId) rejected the
+                    // insert. The other request already recorded the like, so just report
+                    // the current count rather than surfacing a 500 for this harmless race.
+                    _context.Entry(post).State = EntityState.Detached;
+                    var currentLikes = await _context.Posts
+                        .AsNoTracking()
+                        .Where(p => p.PostId == id)
+                        .Select(p => p.TotalLikes)
+                        .FirstOrDefaultAsync();
+                    return Ok(currentLikes);
+                }
 
                 _logger.LogInformation("Like toggled on post {PostId} by user {UserId}. Total: {TotalLikes}",
                     id, userId, post.TotalLikes);

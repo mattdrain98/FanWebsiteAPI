@@ -352,9 +352,10 @@ namespace FanWebsiteAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PostId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("PostId", "UserId")
+                        .IsUnique();
 
                     b.ToTable("Likes");
                 });

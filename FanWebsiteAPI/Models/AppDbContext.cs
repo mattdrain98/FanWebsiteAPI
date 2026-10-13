@@ -70,6 +70,10 @@ namespace Fan_Website
                 .WithMany(p => p.Likes)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<Like>()
+                .HasIndex("PostId", "UserId")
+                .IsUnique();
+
             modelBuilder.Entity<PostReply>()
             .HasOne(r => r.Post)
             .WithMany(p => p.Replies)
