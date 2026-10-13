@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Threading.RateLimiting;
 using Fan_Website;
 using FanWebsiteAPI.Infrastructure;
 using FanWebsiteAPI.Models.Chat;
@@ -16,6 +17,12 @@ namespace FanWebsiteAPI.Hubs
     {
         private static readonly ConcurrentDictionary<string, int> _connectionRoom = new();
         private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, RoomMemberInfo>> _roomMembers = new();
+
+        // One token-bucket limiter per connection, created lazily on first Typing
+        // call. Caps bursts at 2, then refills 1 token/sec — enforces this server-
+        // side since the client's own debounce is just UX, not a guarantee (a
+        // modified client could call Typing on every keystroke otherwise).
+        private static readonly ConcurrentDictionary<string, TokenBucketRateLimiter> _typingLimiters = new();
 
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -87,6 +94,9 @@ namespace FanWebsiteAPI.Hubs
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
+            if (_typingLimiters.TryRemove(Context.ConnectionId, out var limiter))
+                limiter.Dispose();
+
             if (_connectionRoom.TryRemove(Context.ConnectionId, out var forumId))
             {
                 var roomKey = RoomKey(forumId);
@@ -101,15 +111,30 @@ namespace FanWebsiteAPI.Hubs
         }
 
         // Ephemeral — nothing persisted. Username comes straight off the JWT claim
-        // so this never touches the database, safe to call on every keystroke.
+        // so this never touches the database, safe to call on every keystroke —
+        // rate-limited per connection below so "every keystroke" can't translate
+        // into a broadcast storm.
         public Task Typing(int forumId)
         {
             var userId = _userManager.GetUserId(Context.User);
             var userName = Context.User?.Identity?.Name;
             if (userId == null || userName == null) return Task.CompletedTask;
 
+            var limiter = _typingLimiters.GetOrAdd(Context.ConnectionId, _ => CreateTypingRateLimiter());
+            using var lease = limiter.AttemptAcquire();
+            if (!lease.IsAcquired) return Task.CompletedTask;
+
             return Clients.OthersInGroup(RoomKey(forumId)).SendAsync("UserTyping", new { userId, userName });
         }
+
+        private static TokenBucketRateLimiter CreateTypingRateLimiter() => new(new TokenBucketRateLimiterOptions
+        {
+            TokenLimit = 2,
+            TokensPerPeriod = 1,
+            ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+            AutoReplenishment = true,
+            QueueLimit = 0
+        });
 
         public async Task SendMessage(int forumId, string content, int? replyToMessageId = null)
         {
