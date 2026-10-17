@@ -540,7 +540,7 @@ namespace Fan_Website.Controllers
                 return Unauthorized("Please confirm your email before logging in.");
 
             var result = await _signInManager.PasswordSignInAsync(
-                user.UserName, model.Password, model.RememberMe, false);
+                user.UserName, model.Password, model.RememberMe, true);
 
             if (!result.Succeeded) return Unauthorized("Invalid login attempt");
 
