@@ -37,6 +37,8 @@ namespace Fan_Website.Service
             await _context.SaveChangesAsync();
         }
 
+        public Task<int> CountReplies() => _context.Replies.AsNoTracking().CountAsync();
+
         public async Task DeleteReply(int id)
         {
             var reply = await GetReplyByIdAsync(id);

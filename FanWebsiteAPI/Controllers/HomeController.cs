@@ -43,7 +43,7 @@ namespace Fan_Website.Controllers
             var totalMembers = await _userManager.Query().CountAsync();
             var totalPosts = await _postService.Query().CountAsync();
             var totalForums = await _forumService.Query().CountAsync();
-            var totalReplies = await _postService.Query().SelectMany(p => p.Replies).CountAsync();
+            var totalReplies = await _postService.CountReplies();
 
             return Ok(new HomeStatsDto
             {

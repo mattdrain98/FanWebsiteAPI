@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Fan_Website;
 using FanWebsiteAPI.DTOs.Reports;
 using FanWebsiteAPI.Models.Report;
@@ -81,9 +84,6 @@ namespace FanWebsiteAPI.Controllers
 
             var query = _context.Reports
                 .AsNoTracking()
-                .Include(r => r.Reporter)
-                .Include(r => r.TargetUser)
-                .Include(r => r.ReviewedBy)
                 .Where(r => r.Status == statusEnum)
                 .OrderByDescending(r => r.CreatedAt);
 

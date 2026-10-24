@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="FanWebsiteAPI.Benchmarks/FanWebsiteAPI.Benchmarks.csproj" />
   <Project Path="FanWebsiteAPI/FanWebsiteAPI.csproj" />
 </Solution>

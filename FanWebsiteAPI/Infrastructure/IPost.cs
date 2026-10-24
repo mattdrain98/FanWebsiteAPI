@@ -15,6 +15,7 @@ namespace Fan_Website.Services
         Task Delete(int id);
         Task EditPost(int id, string newContent, string newTitle);
         Task AddReply(PostReply reply);
+        Task<int> CountReplies();
         Task EditReply(int id, string newContent); 
         Task DeleteReply(int id);
         Task UpdatePostLikes(int likes);
