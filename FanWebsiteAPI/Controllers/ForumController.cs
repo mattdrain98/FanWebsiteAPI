@@ -22,7 +22,7 @@ namespace Fan_Website.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly AppDbContext _context;
 
-        public ForumController(IForum forumService, IPost postService, IApplicationUser userService, UserManager<ApplicationUser> userManager, AppDbContext context)
+        public ForumController(IForum forumService, IApplicationUser userService, UserManager<ApplicationUser> userManager, AppDbContext context)
         {
             _forumService = forumService;
             _userService = userService;
