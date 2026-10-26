@@ -8,7 +8,11 @@ using FanWebsiteAPI.DTOs.Posts;
 using FanWebsiteAPI.DTOs.Screenshots;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace Fan_Website.Controllers
 {
