@@ -1,3 +1,5 @@
+using System;
+
 namespace FanWebsiteAPI.Models.Chat
 {
     // A user's opt-in membership in a forum's chat, established via the "Join" action.
@@ -9,5 +11,9 @@ namespace FanWebsiteAPI.Models.Chat
         public int ForumId { get; set; }
         public required string UserId { get; set; }
         public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
+
+        // When the user last read this chat. Null means they haven't read it since joining,
+        // so unread counts fall back to JoinedAt. Used for the "My chats" unread badge.
+        public DateTime? LastReadAt { get; set; }
     }
 }

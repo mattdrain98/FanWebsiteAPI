@@ -68,6 +68,8 @@ namespace FanWebsiteAPI.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ForumId", "CreatedAt");
+
                     b.ToTable("ChatMessages");
                 });
 
@@ -83,6 +85,9 @@ namespace FanWebsiteAPI.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastReadAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UserId")

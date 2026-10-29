@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Fan_Website;
 using FanWebsiteAPI.Hubs;
 using FanWebsiteAPI.Models.Chat;
@@ -136,17 +139,67 @@ namespace FanWebsiteAPI.Controllers
             var userId = _userManager.GetUserId(User);
             if (userId == null) return Unauthorized();
 
+            // System notices ("X joined the chat") and deleted messages don't count as
+            // activity or unread, and a user's own messages are never unread for them.
             var chats = await _context.ChatParticipants
                 .AsNoTracking()
                 .Where(p => p.UserId == userId)
-                .OrderByDescending(p => p.JoinedAt)
                 .Join(_context.Forums,
                     p => p.ForumId,
                     f => f.ForumId,
-                    (p, f) => new { forumId = f.ForumId, forumName = f.PostTitle, joinedAt = p.JoinedAt })
+                    (p, f) => new
+                    {
+                        forumId = f.ForumId,
+                        forumName = f.PostTitle,
+                        joinedAt = p.JoinedAt,
+                        lastReadAt = p.LastReadAt ?? p.JoinedAt,
+                        memberCount = _context.ChatParticipants.Count(x => x.ForumId == f.ForumId),
+                        lastMessage = _context.ChatMessages
+                            .Where(m => m.ForumId == f.ForumId && !m.IsSystem && !m.IsDeleted)
+                            .OrderByDescending(m => m.CreatedAt)
+                            .Select(m => new { userName = m.UserName, content = m.Content, createdAt = m.CreatedAt })
+                            .FirstOrDefault(),
+                        unreadCount = _context.ChatMessages.Count(m =>
+                            m.ForumId == f.ForumId &&
+                            !m.IsSystem && !m.IsDeleted &&
+                            m.UserId != userId &&
+                            m.CreatedAt > (p.LastReadAt ?? p.JoinedAt))
+                    })
                 .ToListAsync();
 
-            return Ok(chats);
+            // Most recently active chat first; chats with no messages yet fall back to join date.
+            var result = chats
+                .Select(c => new
+                {
+                    c.forumId,
+                    c.forumName,
+                    c.joinedAt,
+                    c.memberCount,
+                    c.unreadCount,
+                    c.lastMessage,
+                    lastActivityAt = c.lastMessage?.createdAt ?? c.joinedAt
+                })
+                .OrderByDescending(c => c.lastActivityAt)
+                .ToList();
+
+            return Ok(result);
+        }
+
+        // POST: api/Chat/{forumId}/read
+        // Marks the chat as read up to now, clearing its unread count in "My chats".
+        [HttpPost("{forumId}/read")]
+        public async Task<IActionResult> MarkChatRead(int forumId)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Unauthorized();
+
+            var updated = await _context.ChatParticipants
+                .Where(p => p.ForumId == forumId && p.UserId == userId)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastReadAt, DateTime.UtcNow));
+
+            if (updated == 0) return NotFound(new { message = "You have not joined this chat." });
+
+            return NoContent();
         }
 
         // Persists a join/leave notice as a real ChatMessage (IsSystem = true) instead of

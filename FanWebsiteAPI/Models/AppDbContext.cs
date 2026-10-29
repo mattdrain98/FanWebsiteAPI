@@ -8,6 +8,7 @@ using FanWebsiteAPI.Models.Chat;
 using FanWebsiteAPI.Models.Report;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace Fan_Website
 {
@@ -64,6 +65,11 @@ namespace Fan_Website
             modelBuilder.Entity<ChatParticipant>()
                 .HasIndex(p => new { p.ForumId, p.UserId })
                 .IsUnique();
+
+            // Chat history, last-message and unread-count queries all filter by forum and
+            // order/compare on CreatedAt.
+            modelBuilder.Entity<ChatMessage>()
+                .HasIndex(m => new { m.ForumId, m.CreatedAt });
 
             modelBuilder.Entity<Like>()
                 .HasOne(l => l.Post)
