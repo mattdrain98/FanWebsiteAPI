@@ -15,18 +15,18 @@ lastDtbSucceeded
 
 [properties]
 AssemblyName=FanWebsiteAPI
-BaseIntermediateOutputPath=<PATH>../FanWebsiteAPI.Benchmarks/bin/Release/net10.0/FanWebsiteAPI.Benchmarks-DefaultJob-1/obj/FanWebsiteAPI/
-BaseOutputPath=<PATH>../FanWebsiteAPI.Benchmarks/bin/Release/net10.0/FanWebsiteAPI.Benchmarks-DefaultJob-1//bin/FanWebsiteAPI/
+BaseIntermediateOutputPath=<PATH>obj/
+BaseOutputPath=bin/
 IsTestProject=true
 MaxSupportedLangVersion=14.0
 OutputType=Exe
-ProjectAssetsFile=<PATH>../FanWebsiteAPI.Benchmarks/bin/Release/net10.0/FanWebsiteAPI.Benchmarks-DefaultJob-1/obj/FanWebsiteAPI/project.assets.json
+ProjectAssetsFile=<PATH>obj/project.assets.json
 RootNamespace=FanWebsiteAPI
 TargetFramework=net10.0
 TargetFrameworkIdentifier=.NETCoreApp
 TargetFrameworkVersion=v10.0
-TargetPath=<PATH>../FanWebsiteAPI.Benchmarks/bin/Release/net10.0/FanWebsiteAPI.Benchmarks-DefaultJob-1/bin/Release/net10.0/FanWebsiteAPI.dll
-TargetRefPath=<PATH>../FanWebsiteAPI.Benchmarks/bin/Release/net10.0/FanWebsiteAPI.Benchmarks-DefaultJob-1/obj/FanWebsiteAPI/release/ref/FanWebsiteAPI.dll
+TargetPath=<PATH>bin/Debug/net10.0/FanWebsiteAPI.dll
+TargetRefPath=<PATH>obj/Debug/net10.0/ref/FanWebsiteAPI.dll
 TemporaryDependencyNodeTargetIdentifier=net10.0
 
 [commandLineArguments]
@@ -38,16 +38,16 @@ TemporaryDependencyNodeTargetIdentifier=net10.0
 /nostdlib+
 /errorreport:prompt
 /warn:10
-/define:TRACE;RELEASE;NET;NET10_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER
+/define:TRACE;DEBUG;NET;NET10_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER
 /highentropyva+
 /nullable:enable
 /features:"InterceptorsNamespaces=;Microsoft.AspNetCore.OpenApi.Generated;;Microsoft.Extensions.Validation.Generated"
 /debug+
 /debug:portable
 /filealign:512
-/optimize+
-/out:<PATH>../FanWebsiteAPI.Benchmarks/bin/Release/net10.0/FanWebsiteAPI.Benchmarks-DefaultJob-1/obj/FanWebsiteAPI/release/FanWebsiteAPI.dll
-/refout:<PATH>../FanWebsiteAPI.Benchmarks/bin/Release/net10.0/FanWebsiteAPI.Benchmarks-DefaultJob-1/obj/FanWebsiteAPI/release/refint/FanWebsiteAPI.dll
+/optimize-
+/out:obj/Debug/net10.0/FanWebsiteAPI.dll
+/refout:obj/Debug/net10.0/refint/FanWebsiteAPI.dll
 /target:exe
 /warnaserror-
 /utf8output
@@ -57,11 +57,6 @@ TemporaryDependencyNodeTargetIdentifier=net10.0
 /warnaserror+:NU1605,SYSLIB0011
 
 [sourceFiles]
-../FanWebsiteAPI.Benchmarks/bin/Release/net10.0/FanWebsiteAPI.Benchmarks-DefaultJob-1/obj/FanWebsiteAPI/release/
- .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
- FanWebsiteAPI.AssemblyInfo.cs
- FanWebsiteAPI.GlobalUsings.g.cs
- FanWebsiteAPI.MvcApplicationPartsAssemblyInfo.cs
 Controllers/
  AccountController.cs
  AdminController.cs
@@ -162,6 +157,8 @@ Migrations/
  20260904190446_AddChatMessageIsSystem.Designer.cs
  20261013214235_AddLikesUniqueIndex.cs
  20261013214235_AddLikesUniqueIndex.Designer.cs
+ 20261029182611_AddChatParticipantLastReadAt.cs
+ 20261029182611_AddChatParticipantLastReadAt.Designer.cs
  AppDbContextModelSnapshot.cs
 Models/
  Chat/
@@ -182,6 +179,11 @@ Models/
  AppDbContext.cs
  ApplicationUser.cs
  ErrorViewModel.cs
+obj/Debug/net10.0/
+ .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
+ FanWebsiteAPI.AssemblyInfo.cs
+ FanWebsiteAPI.GlobalUsings.g.cs
+ FanWebsiteAPI.MvcApplicationPartsAssemblyInfo.cs
 Service/
  RatingSources/
   ForumRatingSource.cs
@@ -299,7 +301,7 @@ Microsoft.NETCore.App.Ref
 Microsoft.NET.Sdk/analyzers
 
 [analyzerConfigFiles]
-../FanWebsiteAPI.Benchmarks/bin/Release/net10.0/FanWebsiteAPI.Benchmarks-DefaultJob-1/obj/FanWebsiteAPI/release/FanWebsiteAPI.GeneratedMSBuildEditorConfig.editorconfig
+obj/Debug/net10.0/FanWebsiteAPI.GeneratedMSBuildEditorConfig.editorconfig
 
 [projectReferences]
 
