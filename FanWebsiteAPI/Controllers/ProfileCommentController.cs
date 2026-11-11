@@ -16,9 +16,11 @@ namespace Fan_Website.Controllers
         private readonly IApplicationUser _userService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly INotificationService _notificationService;
+        private readonly ILogger<ProfileCommentController> _logger;
 
-        public ProfileCommentController(IApplicationUser userService, UserManager<ApplicationUser> userManager, INotificationService notificationService)
+        public ProfileCommentController(IApplicationUser userService, UserManager<ApplicationUser> userManager, INotificationService notificationService, ILogger<ProfileCommentController> logger)
         {
+            _logger = logger;
             _userService = userService;
             _userManager = userManager;
             _notificationService = notificationService;
@@ -84,7 +86,7 @@ namespace Fan_Website.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Notification error: {ex.Message}");
+                _logger.LogError(ex, "Failed to send profile comment notification");
             }
 
             var comment = new ProfileComment

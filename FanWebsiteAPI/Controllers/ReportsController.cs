@@ -34,41 +34,36 @@ namespace FanWebsiteAPI.Controllers
             if (reporterId == dto.TargetUserId)
                 return BadRequest(new { message = "You cannot report yourself." });
 
-            try
+            // Unexpected failures are logged and turned into a generic 500 by the global
+            // exception handler in Program.cs, so no exception details reach the client.
+            var query = _context.Reports.Where(r =>
+                r.ReporterId == reporterId &&
+                r.TargetUserId == dto.TargetUserId &&
+                r.ContentType == dto.ContentType &&
+                r.Status == ReportStatus.Pending);
+
+            query = dto.ContentId.HasValue
+                ? query.Where(r => r.ContentId == dto.ContentId.Value)
+                : query.Where(r => r.ContentId == null);
+
+            if (await query.AnyAsync())
+                return BadRequest(new { message = "You have already reported this content." });
+
+            var report = new Report
             {
-                var query = _context.Reports.Where(r =>
-                    r.ReporterId == reporterId &&
-                    r.TargetUserId == dto.TargetUserId &&
-                    r.ContentType == dto.ContentType &&
-                    r.Status == ReportStatus.Pending);
+                ReporterId = reporterId,
+                TargetUserId = dto.TargetUserId,
+                ContentType = dto.ContentType,
+                ContentId = dto.ContentId,
+                Reason = dto.Reason,
+                Details = dto.Details,
+                CreatedAt = DateTime.UtcNow
+            };
 
-                query = dto.ContentId.HasValue
-                    ? query.Where(r => r.ContentId == dto.ContentId.Value)
-                    : query.Where(r => r.ContentId == null);
+            _context.Reports.Add(report);
+            await _context.SaveChangesAsync();
 
-                if (await query.AnyAsync())
-                    return BadRequest(new { message = "You have already reported this content." });
-
-                var report = new Report
-                {
-                    ReporterId = reporterId,
-                    TargetUserId = dto.TargetUserId,
-                    ContentType = dto.ContentType,
-                    ContentId = dto.ContentId,
-                    Reason = dto.Reason,
-                    Details = dto.Details,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.Reports.Add(report);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { message = "Report submitted successfully." });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = $"Error: {ex.Message}" });
-            }
+            return Ok(new { message = "Report submitted successfully." });
         }
 
         [HttpGet]

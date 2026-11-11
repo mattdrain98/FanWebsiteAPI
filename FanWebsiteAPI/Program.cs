@@ -206,6 +206,19 @@ using (var scope = app.Services.CreateScope())
     searchIndex.Load(allPosts);
 }
 
+// Safety net for any exception a controller doesn't handle itself. The middleware logs
+// the full exception (including any SQL details) server-side; the client only ever gets
+// a generic message plus a trace id that can be matched to the log entry.
+app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
+{
+    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    await context.Response.WriteAsJsonAsync(new
+    {
+        message = "An unexpected error occurred. Please try again later.",
+        traceId = context.TraceIdentifier
+    });
+}));
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

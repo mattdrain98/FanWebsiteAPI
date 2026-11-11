@@ -129,7 +129,7 @@ namespace FanWebsiteAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating post");
-                return StatusCode(500, new { message = "Error creating post", error = ex.Message });
+                return StatusCode(500, new { message = "Error creating post" });
             }
         }
 
@@ -200,7 +200,7 @@ namespace FanWebsiteAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error editing post");
-                return StatusCode(500, new { message = "Error editing post", error = ex.Message });
+                return StatusCode(500, new { message = "Error editing post" });
             }
         }
 
@@ -276,7 +276,7 @@ namespace FanWebsiteAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving post");
-                return StatusCode(500, new { message = "Error retrieving post", error = ex.Message });
+                return StatusCode(500, new { message = "Error retrieving post" });
             }
         }
 
@@ -324,7 +324,7 @@ namespace FanWebsiteAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving top posts");
-                return StatusCode(500, new { message = "Error retrieving top posts", error = ex.Message });
+                return StatusCode(500, new { message = "Error retrieving top posts" });
             }
         }
 
@@ -374,7 +374,7 @@ namespace FanWebsiteAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving latest posts");
-                return StatusCode(500, new { message = "Error retrieving latest posts", error = ex.Message });
+                return StatusCode(500, new { message = "Error retrieving latest posts" });
             }
         }
 
@@ -425,7 +425,7 @@ namespace FanWebsiteAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting post");
-                return StatusCode(500, new { message = "Error deleting post", error = ex.Message });
+                return StatusCode(500, new { message = "Error deleting post" });
             }
         }
 
@@ -501,7 +501,7 @@ namespace FanWebsiteAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error toggling like");
-                return StatusCode(500, new { message = "Error toggling like", error = ex.Message });
+                return StatusCode(500, new { message = "Error toggling like" });
             }
         }
 
@@ -554,7 +554,7 @@ namespace FanWebsiteAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving liked posts");
-                return StatusCode(500, new { message = "Error retrieving liked posts", error = ex.Message });
+                return StatusCode(500, new { message = "Error retrieving liked posts" });
             }
         }
 
@@ -610,7 +610,7 @@ namespace FanWebsiteAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving user posts");
-                return StatusCode(500, new { message = "Error retrieving user posts", error = ex.Message });
+                return StatusCode(500, new { message = "Error retrieving user posts" });
             }
         }
     }

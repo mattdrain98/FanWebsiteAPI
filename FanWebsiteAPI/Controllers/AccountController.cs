@@ -25,9 +25,12 @@ namespace Fan_Website.Controllers
         private readonly IEmailSender _emailSender;
         private readonly IConfiguration _configuration;
         private readonly IUpload _uploadService; 
+        private readonly ILogger<AccountController> _logger;
         public AccountController(UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager, IApplicationUser userService, IEmailSender emailSender, IConfiguration configuration, IUpload uploadService)
+            SignInManager<ApplicationUser> signInManager, IApplicationUser userService, IEmailSender emailSender, IConfiguration configuration, IUpload uploadService,
+            ILogger<AccountController> logger)
         {
+            _logger = logger;
             _userManager = userManager;
             _signInManager = signInManager;
             _userService = userService;
@@ -89,7 +92,8 @@ namespace Fan_Website.Controllers
                 }
                 catch (Exception ex)
                 {
-                    return StatusCode(500, $"File upload failed: {ex.Message}");
+                    _logger.LogError(ex, "Profile image upload failed");
+                    return StatusCode(500, new { message = "File upload failed." });
                 }
             }
 
