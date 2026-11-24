@@ -14,7 +14,7 @@ namespace FanWebsiteAPI.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class ReportsController : ControllerBase
+    public class ReportsController : BaseApiController
     {
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -73,6 +73,9 @@ namespace FanWebsiteAPI.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
+            page = ClampPage(page);
+            pageSize = ClampPageSize(pageSize);
+
             var statusEnum = Enum.TryParse<ReportStatus>(status, true, out var parsed)
                 ? parsed
                 : ReportStatus.Pending;

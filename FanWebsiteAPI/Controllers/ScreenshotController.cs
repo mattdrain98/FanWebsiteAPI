@@ -41,6 +41,7 @@ namespace Fan_Website.Controllers
         public async Task<IActionResult> GetAllScreenshots([FromQuery] int page = 1, [FromQuery] int pageSize = 12)
         {
             page = ClampPage(page);
+            pageSize = ClampPageSize(pageSize);
 
             var canModerate = CanModerate;
             var query = _screenshotService.Query()

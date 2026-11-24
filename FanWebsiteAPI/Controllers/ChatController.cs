@@ -113,6 +113,7 @@ namespace FanWebsiteAPI.Controllers
         public async Task<IActionResult> GetMembers(int forumId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             page = ClampPage(page, 1000);
+            pageSize = ClampPageSize(pageSize);
 
             var query = _context.ChatParticipants
                 .AsNoTracking()

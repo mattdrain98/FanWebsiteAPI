@@ -45,6 +45,7 @@ namespace Fan_Website.Controllers
         public async Task<ActionResult<IEnumerable<UserSummaryDto>>> GetAllUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
             page = ClampPage(page);
+            pageSize = ClampPageSize(pageSize);
 
             var query = _userService.Query();
             var totalUsers = await query.CountAsync();

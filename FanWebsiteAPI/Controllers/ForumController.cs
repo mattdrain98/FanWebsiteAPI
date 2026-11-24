@@ -35,6 +35,7 @@ namespace Fan_Website.Controllers
         public async Task<IActionResult> GetAllForums([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             page = ClampPage(page);
+            pageSize = ClampPageSize(pageSize);
 
             var canModerate = CanModerate;
             var query = _forumService.Query()
@@ -77,6 +78,7 @@ namespace Fan_Website.Controllers
                 return NotFound();
 
             page = ClampPage(page);
+            limit = ClampPageSize(limit);
 
             var query = _context.Posts
                 .Where(p => p.ForumId == forum.ForumId &&

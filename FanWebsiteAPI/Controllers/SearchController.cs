@@ -34,6 +34,7 @@ namespace Fan_Website.Controllers
                 return BadRequest(new { message = "Search query cannot be empty." });
 
             page = ClampPage(page);
+            pageSize = ClampPageSize(pageSize);
             var canModerate = CanModerate;
 
             var candidateIds = _searchIndex.Search(query).Take(MaxRankedCandidates).ToList();

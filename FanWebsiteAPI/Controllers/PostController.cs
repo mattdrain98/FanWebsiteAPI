@@ -285,6 +285,9 @@ namespace FanWebsiteAPI.Controllers
         {
             try
             {
+                page = ClampPage(page);
+                pageSize = ClampPageSize(pageSize);
+
                 var canModerate = CanModerate;
 
                 var query = _postService.Query()
@@ -334,6 +337,7 @@ namespace FanWebsiteAPI.Controllers
             try
             {
                 page = ClampPage(page);
+                pageSize = ClampPageSize(pageSize);
 
                 var canModerate = CanModerate;
 
@@ -516,6 +520,7 @@ namespace FanWebsiteAPI.Controllers
                     return Unauthorized(new { message = "User not found" });
 
                 page = ClampPage(page);
+                pageSize = ClampPageSize(pageSize);
 
                 var canModerate = CanModerate;
 
@@ -570,6 +575,7 @@ namespace FanWebsiteAPI.Controllers
                     return Unauthorized(new { message = "User not found" });
 
                 page = ClampPage(page);
+                pageSize = ClampPageSize(pageSize);
 
                 var canModerate = CanModerate;
 
